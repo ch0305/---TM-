@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第一课 · 参考方向决定了欧姆定律的正负号 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+    <marker id="arw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9fd3ff"/></marker>
+  </defs></svg>
+
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第一课 · 参考方向决定了欧姆定律的正负号</span>
+    <span class="meta">教案先行样板 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">按顺序往下走，答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 一道会算但答不对的题</a></li>
+        <li><a href="#stage-1">1 · 把电流变成代数量</a></li>
+        <li><a href="#stage-2">2 · 电压也要先指定</a></li>
+        <li><a href="#stage-3">3 · 先猜：换个箭头还灵吗</a></li>
+        <li><a href="#stage-4">4 · 把负号推出来</a></li>
+        <li><a href="#stage-5">5 · 示范与独立练习</a></li>
+        <li><a href="#stage-6">6 · 回答开场问题</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">只处理<strong>一个二端线性电阻</strong>。功率推导、KCL/KVL、串并联、器件物理今天都不展开。</div>
+      <div class="mini">前置只需：初中学过 I=U/R，会 mA↔A、kΩ↔Ω。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-01.md</code>（邱关源 §1-2 / §1-5 原文 4 页）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-01-教案.md</code>。学习目标与来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>随时查</h4>
+      <div class="mini"><code>u_AB = V_A − V_B</code>：A 相对 B 的电压</div>
+      <div class="mini"><strong>关联</strong>：电流从电压 + 端流入 → <code>u = Ri</code></div>
+      <div class="mini"><strong>非关联</strong>：电流从电压 − 端流入 → <code>u = −Ri</code></div>
+      <div class="mini">mA × kΩ = V；2 kΩ = 2000 Ω</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+<a onclick="flashQA('q-neg-voltage')" data-qa-link="q-neg-voltage">1. 负电压是不是算错了？</a>
+        <a onclick="flashQA('q-why-minus')" data-qa-link="q-why-minus">2. 为什么翻个箭头就要加负号？</a>
+<!-- QA-INDEX:END -->
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第一课（L1-01）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §1-2 p.12–13、§1-5 p.16–17（已摘录校对）</span>
+      </div>
+      <h1>参考方向决定了欧姆定律的正负号</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先遇到问题，再要工具。点“继续”才会出现下一段，不要把整页当资料表扫读。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">参考方向</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">电位差</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">关联？</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">负号</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">算两遍</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 一道你“会算”但答不对的题（4′）</div>
+        <p class="qbig">A 点电位比 B 点高 10 V，中间接一个 2 kΩ 的电阻。<br>流过它的电流是 <strong>+5 mA 还是 −5 mA？</strong></p>
+        <p class="speak">“先别算。你大概会脱口而出 5 mA——但你有没有发现，题目没告诉你电流往哪边算？”</p>
+        <p class="speak">“而且你刚才那一步偷偷用了 <code>u = Ri</code>。这个公式什么时候能用，你真想过吗？”</p>
+        <button class="reveal-btn" data-target="rev-0" data-stage="0" onclick="revealBlock(this)">写下你的第一反应，然后继续 →</button>
+        <div class="reveal" id="rev-0">
+          <p>题目缺的条件是：<strong>电流的参考方向</strong>。今天就把这个条件补上，顺便把 <code>u=Ri</code> 被省略的前提找回来。</p>
+        </div>
+          <!-- QA:stage-0:BEGIN -->
+          <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 把电流变成一个“可以算的数”（8′）〔邱 p.12〕</div>
+        <p class="speak teacher">“电流的实际流动方向可能是未知的，也可能是随时间变动的。而参考方向的给定有一定的任意性。指定参考方向的目的，总是在于把电流看成<strong>代数量</strong>。”</p>
+        <p><strong>代数量</strong>就是带正负号的数：<strong>正号 = 与参考方向相同；负号 = 与参考方向相反</strong>。它不是“电流变小了”，也不是“算错了”。</p>
+
+        <svg class="sketch" viewBox="0 0 320 110" aria-label="电流参考方向 A 到 B">
+          <text x="8" y="32">A</text><line class="ln" x1="24" y1="60" x2="90" y2="60"/>
+          <rect class="res" x="90" y="48" width="140" height="24"/>
+          <line class="ln" x1="230" y1="60" x2="296" y2="60"/><text x="300" y="32">B</text>
+          <text x="95" y="44">+</text><text x="218" y="44">−</text>
+          <path class="ar" d="M40,26 L280,26" marker-end="url(#arw)"/>
+          <text x="108" y="20">i 参考 A→B</text><text x="112" y="96">u = V(A) − V(B)</text>
+        </svg>
+        <svg class="sketch" viewBox="0 0 320 110" aria-label="电流参考方向 B 到 A">
+          <text x="8" y="32">A</text><line class="ln" x1="24" y1="60" x2="90" y2="60"/>
+          <rect class="res" x="90" y="48" width="140" height="24"/>
+          <line class="ln" x1="230" y1="60" x2="296" y2="60"/><text x="300" y="32">B</text>
+          <text x="95" y="44">+</text><text x="218" y="44">−</text>
+          <path class="ar" d="M280,26 L40,26" marker-end="url(#arw)"/>
+          <text x="108" y="20">i 参考 B→A</text><text x="96" y="96">u 不变，仍是 V(A) − V(B)</text>
+        </svg>
+        <p><strong>要说透的一句</strong>：参考方向是你画的，实际方向是电路的，两者不必一致；负号只报告“你画反了”。双下标 <code>i_AB</code> 表示参考方向由 A 指向 B。</p>
+        <div class="pred" data-pred="q1">
+          <p class="ask">即时检查：参考方向画成 B→A，算出 <code>i = −3 mA</code>。实际电流往哪边、多大？</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a')">A→B，3 mA</button>
+            <button class="pred-opt" onclick="pickPred(this,'b')">B→A，3 mA</button>
+          </div>
+          <button class="reveal-btn" data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 →</button>
+          <div class="reveal" id="rev-1"><p>选 A。负号只表示实际与假定方向相反：实际 <strong>A→B，3 mA</strong>。</p></div>
+        </div>
+                <!-- QA:stage-1:BEGIN -->
+          <!-- QA:stage-1:END -->
+</section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 电压也要“先指定”：把定性变成能算的数（7′）〔邱 p.13〕</div>
+        <p class="speak teacher">“用 <strong>+</strong> 表示高电位、<strong>−</strong> 表示低电位；正极指向负极的方向就是电压的参考方向。指定后，电压也是代数量。”</p>
+        <div class="formula">u_AB = V_A − V_B</div>
+        <p>“A 相对 B 的电压”就是 A 点电位减 B 点电位。书上说“A 实际高于 B 则 u&gt;0”，就是这句话的定性版本。</p>
+        <ul>
+          <li><code>V_A = 7 V</code>、<code>V_B = 3 V</code> ⇒ <code>u_AB = +4 V</code></li>
+          <li>若 <code>V_A = 3 V</code>、<code>V_B = 7 V</code> ⇒ <code>u_AB = −4 V</code>。<strong>电压可以是负的</strong>。
+            <!-- QA:stage-2:BEGIN -->
+<span class="anchor" data-qa-anchor="q-neg-voltage"><button class="q-tag" data-qa-id="q-neg-voltage" onclick="flashQA('q-neg-voltage')" aria-label="疑问">疑问</button><span class="popover" role="dialog"><button class="close" onclick="closePop(this)">×</button><div class="pq">1. 负电压是不是算错了？</div><div class="pq">Q：算出 u_AB = −4 V，这个负号是不是说明哪里算错了？</div><div class="pa">A：不是。电压永远是“两点之间”的差：u_AB = V_A − V_B。差当然可以是负的——u_AB = −4 V 只是说：按我标的 A 为 +、B 为 − 去看，A 实际比 B 低 4 V。符号报告的是参考极性与实际高低相反，不是电路出错，也不是电压变小了。</div><div class="mini-viz"><strong>小可视化：</strong>V_A = 3 V，V_B = 7 V ⇒ u_AB = 3 − 7 = −4 V（数值对，符号对）</div></span></span>
+<!-- QA:stage-2:END -->
+          </li>
+        </ul>
+        <p class="muted"><strong>记号对照</strong>：<code>u_AB</code> 与“A 为 +、B 为 −”是同一约定；电压也可用箭头标参考方向，箭头方向就是从 + 指向 −。本课主练 +/− 与双下标。</p>
+        <p class="muted">日常说“这一点有 5 V”，是省略了“相对于某个参考点（地）”。严格讲，<strong>电压永远是“两点之间”的量</strong>；参考点今天不展开。</p>
+        <p class="ask">衔接提问：电流的参考方向和电压的参考极性，是必须绑在一起，还是可以各选各的？</p>
+        <button class="reveal-btn" data-target="rev-2" data-stage="2" onclick="revealBlock(this)">想一想，继续 →</button>
+        <div class="reveal" id="rev-2"><p>书的回答：<strong>可以独立地任意指定</strong>。于是才有“关联 / 非关联”这两种情况——下一环节先让你自己猜。</p></div>
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 先预测，再揭示（9′）〔邱 p.13〕</div>
+        <div class="pred" data-pred="q2">
+          <p class="ask">预测 1：电压标成 A(+) → B(−)，电流箭头却画成 B → A。你觉得 <code>u = Ri</code> 还能直接用吗？<strong>先猜，再说理由。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'yes')">能</button>
+            <button class="pred-opt" onclick="pickPred(this,'no')">不能</button>
+          </div>
+          <p class="ask" style="margin-top:8px;">预测 2：其他不变，只把电流箭头改成 A → B。同一物理状态算出的电流符号会不会变？</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'change')">会翻号</button>
+            <button class="pred-opt" onclick="pickPred(this,'same')">不变</button>
+          </div>
+          <button class="reveal-btn" data-target="rev-3" data-stage="3" onclick="revealBlock(this)" disabled>公布答案 →</button>
+          <div class="reveal" id="rev-3">
+            <p class="speak teacher">“一个元件的电流和电压的参考方向可以<strong>独立地任意指定</strong>。电流从电压 <strong>+</strong> 端流入、从 <strong>−</strong> 端流出 ⇒ <strong>关联参考方向</strong>；否则 ⇒ <strong>非关联参考方向</strong>。”</p>
+            <p><strong>揭晓只到这一句</strong>：预测 1 是“非关联”，<code>u = Ri</code> 不成立；预测 2 是“会翻号，大小与真实流向不变”。<strong>为什么不行、负号怎么来——下一环节现场推，不在这里背规则。</strong></p>
+            <p class="muted">同一电路只改参考方向，正负号就翻了：物理没变，标记变了。</p>
+          </div>
+        </div>
+                <!-- QA:stage-3:BEGIN -->
+          <!-- QA:stage-3:END -->
+</section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 欧姆定律的“开关”：把负号推出来（11′）〔邱 p.16–17〕</div>
+        <p>先别念规则，按三步推一遍：</p>
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">第 1 步 →</button>
+        <div class="reveal" id="rev-4a"><p><strong>第 1 步</strong>（环节 1 已证明）：把电流箭头翻过来，同一个实际电流会从 <code>+i</code> 变成 <code>−i</code>。</p></div>
+        <button class="reveal-btn" data-target="rev-4b" data-stage="4" onclick="revealBlock(this)">第 2 步 →</button>
+        <div class="reveal" id="rev-4b"><p><strong>第 2 步</strong>：电压 <code>u = V_A − V_B</code> 是两点电位差，<strong>跟你画哪个电流箭头毫无关系</strong>；<code>R</code> 是正的常数，也不变。</p></div>
+        <button class="reveal-btn" data-target="rev-4c" data-stage="4" onclick="revealBlock(this)">第 3 步 →</button>
+        <div class="reveal" id="rev-4c">
+          <p><strong>第 3 步</strong>：按关联约定写出的那个电流值 <code>u/R</code> 没有变，但代数式里的 <code>i</code> 因为箭头翻了而翻号。要让等式继续描述同一件事，代数式就必须补一个负号：</p>
+          <div class="formula">关联：u = Ri　　翻电流箭头 ⇒ i 翻号　⇒　非关联：u = −Ri</div>
+          <p class="speak teacher">“这时才引书，作为印证而非唯一来源：线性电阻元件<strong>在电压和电流取关联参考方向时</strong>服从 <code>u = Ri</code>；<strong>非关联时</strong> <code>u = −Ri</code>。”</p>
+          <p><strong>两个条件缺一不可</strong>：① 关联参考方向；② <strong>线性电阻元件</strong>（书原话的主语）。</p>
+          <p><strong>回头点破开场那一步</strong>：你脱口而出的 <code>10 / 2000 = 5 mA</code>，偷偷用了 <code>u = Ri</code>，而且默认了“电流从 + 端流入”。现在你知道这个默认是什么了。</p>
+          <p class="ok-box"><strong>自检依据</strong>（邱 p.17，今天不推导）：关联时 <code>p = ui = Ri² ≥ 0</code>——<strong>电阻只会吸热，不会发电</strong>。若算出的电流意味着电流从低电位端流入还要输出能量，就该怀疑用错了公式或标错了方向。</p>
+        </div>
+
+        <h3 style="margin-top:10px;">回到开场题，当堂算两遍：V_A − V_B = +10 V，R = 2 kΩ</h3>
+        <button class="reveal-btn" data-target="rev-4d" data-stage="4" onclick="revealBlock(this)">第一遍（箭头 A→B）→</button>
+        <div class="reveal" id="rev-4d">
+          <p>电流从 + 端(A)流入 ⇒ <strong>关联</strong> ⇒ <code>i = u/R = 10/2000 = +5 mA</code>。正号：实际与箭头一致，A→B。</p>
+        </div>
+        <button class="reveal-btn" data-target="rev-4e" data-stage="4" onclick="revealBlock(this)">第二遍（箭头 B→A）→</button>
+        <div class="reveal" id="rev-4e">
+          <p>电压极性没变（A 仍是 +、B 仍是 −），电流从 − 端(B)流入、从 + 端(A)流出 ⇒ <strong>非关联</strong> ⇒ <code>i = −u/R = −10/2000 = −5 mA</code>。负号：实际与箭头相反，仍是 A→B。</p>
+          <p class="ok-box">两个答案的物理内容<strong>一模一样</strong>：5 mA，从 A 流向 B。单位换算在这里才用：2 kΩ = 2000 Ω，结果 A→mA 乘 1000；<code>mA × kΩ = V</code> 是同一件事。</p>
+          <!-- QA:stage-4:BEGIN -->
+<span class="anchor" data-qa-anchor="q-why-minus"><button class="q-tag" data-qa-id="q-why-minus" onclick="flashQA('q-why-minus')" aria-label="疑问">疑问</button><span class="popover" role="dialog"><button class="close" onclick="closePop(this)">×</button><div class="pq">2. 为什么翻个箭头就要加负号？</div><div class="pq">Q：u=Ri 和 u=−Ri 要死记吗？那个负号到底从哪来？</div><div class="pa">A：不用死记，推一遍就通。① 把电流参考箭头翻过来，同一个实际电流从 +i 变成 −i（环节 1 已证）；② 电压 u = V_A − V_B 是两点电位差，与电流箭头无关，电阻 R 是正常数，也不变；③ 于是按旧约定写的 u/R 数值没变，但代数式里的 i 翻了号，要让等式继续描述同一件事，就必须补一个负号：u = −Ri。所以 u=Ri 本来就附带“关联、线性电阻”两个条件，不是无条件公式。</div><div class="mini-viz"><strong>小可视化：</strong>箭头 A→B（关联）：i = +5 mA；箭头 B→A（非关联）：i = −5 mA——同一个 5 mA，从 A 流向 B</div></span></span>
+<!-- QA:stage-4:END -->
+        </div>
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 教师完整示范 + 你的独立练习（4′）</div>
+        <p class="ask">示范题（跟着走一遍）：R = 1 kΩ，<code>u_AB</code> 参考 A(+)→B(−)，电流箭头 A→B。<strong>实际 B 比 A 高 4 V</strong>。求 <code>u_AB</code>、<code>i</code>。</p>
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">第 1 步 →</button>
+        <div class="reveal" id="rev-5a"><p><strong>先不代公式。</strong><code>u_AB = V_A − V_B</code>，B 高 A 低 ⇒ <code>u_AB = −4 V</code>。电压可以是负的，这是参考方向告诉我的，不是算错。</p></div>
+        <button class="reveal-btn" data-target="rev-5b" data-stage="5" onclick="revealBlock(this)">第 2 步 →</button>
+        <div class="reveal" id="rev-5b"><p>关联吗？电流从 + 端(A)流入 ⇒ <strong>关联</strong> ⇒ 用 <code>u = Ri</code>。</p></div>
+        <button class="reveal-btn" data-target="rev-5c" data-stage="5" onclick="revealBlock(this)">第 3 步 →</button>
+        <div class="reveal" id="rev-5c"><p><code>i = −4 / 1000 = −4 mA</code>。负号说明实际方向与箭头相反，即 <strong>B→A</strong>。</p></div>
+        <button class="reveal-btn" data-target="rev-5d" data-stage="5" onclick="revealBlock(this)">自检 →</button>
+        <div class="reveal" id="rev-5d"><p>B 电位高，电流从高电位经电阻流向低电位，B→A，符合；<code>−4 V × (−4 mA) = +16 mW &gt; 0</code>，电阻吸能，也符合。</p></div>
+
+        <div class="exercise" style="margin-top:12px;">
+          <h4>该你了（非关联 + 负电压，本课第一次独立应用）</h4>
+          <p>R = 2 kΩ。电压参考极性标为 <strong>B 为 +、A 为 −</strong>（即 <code>u_BA</code>），电流参考箭头画 <strong>A→B</strong>。已知<strong>实际 A 比 B 高 6 V</strong>。求 <code>u_BA</code>、<code>i</code>，并说出实际电流方向。</p>
+          <div class="numcheck" id="ex-u" data-qid="ex-u"><label>u_BA = <input type="text" placeholder="例如 -6" /> V</label><button class="btn-sm" onclick="checkNum('ex-u',-6,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-i" data-qid="ex-i"><label>i = <input type="text" placeholder="例如 3" /> mA</label><button class="btn-sm" onclick="checkNum('ex-i',3,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-5e" data-stage="5" onclick="revealBlock(this)">做完再看答案 →</button>
+          <div class="reveal" id="rev-5e">
+            <p><code>u_BA = V_B − V_A = −6 V</code>；电流参考 A→B，从电压负端(A)流入、正端(B)流出 ⇒ <strong>非关联</strong>；<code>i = −u_BA/R = −(−6)/2000 = +3 mA</code>；正号说明实际与箭头一致，即 <strong>A→B</strong>。A 电位高、电流从高电位经电阻流向低电位，自检通过。</p>
+          </div>
+        </div>
+                <!-- QA:stage-5:BEGIN -->
+          <!-- QA:stage-5:END -->
+</section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 回答开场问题（2′）</div>
+        <div class="formula">“电流往哪边算”是我指定的；正负告诉我“实际往哪边”。<br>u = Ri 只在关联参考方向、线性电阻元件下成立；非关联写 u = −Ri。</div>
+        <p class="muted">下一课钩子：今天电流一直待在一个电阻里。放进有多个元件的电路后，光靠欧姆定律就不够了，还需要两条更基本的规则。</p>
+        <button class="reveal-btn" data-target="rev-6" data-stage="6" onclick="revealBlock(this)">展开：过关自检 →</button>
+        <div class="reveal" id="rev-6">
+          <ul>
+            <li>给我一个只标了 <code>i_AB</code> 和 A(+)/B(−) 的电阻，我能说出它关联还是非关联吗？</li>
+            <li>我能解释“+5 mA 和 −5 mA 是同一物理事实”吗？</li>
+            <li>看到 <code>u_AB = −4 V</code>，我知道是参考极性与实际高低相反，而不是算错吗？</li>
+          </ul>
+        </div>
+                <!-- QA:stage-6:BEGIN -->
+          <!-- QA:stage-6:END -->
+</section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：参考方向必要性、电流方向与双下标、电位差 <code>u_AB=V_A−V_B</code>、代数量、关联/非关联、<code>u=Ri</code> 与 <code>u=−Ri</code> 的推导与条件、符号自检。</p>
+          <p class="mini"><strong>不讲</strong>：KCL/KVL、节点法（第二课，今天只留“还需要两条更基本的规则”一句）；功率公式推导与额定值（第三课，今天只留“电阻只吸热”一句）；串并联/分压分流（L1-04）；电源与受控源；载流子微观机理；电导 G；参考点/地的系统讲法。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出为什么“先假定方向”是能开始计算的前提。</li>
+            <li>解释为什么 +5 mA 和 −5 mA 可以是同一物理事实。</li>
+            <li>说清 <code>u=Ri</code> 的两个条件（关联参考方向、线性电阻元件）。</li>
+            <li>拿到用箭头或 +/− 任意标定的二端电阻，能判关联、选式、算结果、用正负说方向。</li>
+          </ol>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>必须指定参考方向才能算、正负反映实际方向、代数量、<code>i_AB</code></td><td>邱 p.12 原文（“代数量=带符号的数”为讲解补充）</td></tr>
+            <tr><td>电压参考极性、正极指向负极、<code>u_AB</code>、双下标/箭头表示</td><td>邱 p.13 原文</td></tr>
+            <tr><td><code>u_AB = V_A − V_B</code></td><td>讲解补充：把书的定性说法写成数值式</td></tr>
+            <tr><td>两方向独立任意指定、关联/非关联</td><td>邱 p.13 原文</td></tr>
+            <tr><td><code>u=Ri</code>（关联、线性电阻）、<code>u=−Ri</code>（非关联）</td><td>邱 p.16–17 原文</td></tr>
+            <tr><td>负号推导链、mA·kΩ=V、五步自检流程</td><td>教学设计补充</td></tr>
+            <tr><td><code>p=Ri²≥0</code>、电阻只吸热</td><td>邱 p.17 有一句，本页只作自检依据，不推导</td></tr>
+            <tr><td>三道数值题（10V/2kΩ、4V/1kΩ、6V/2kΩ）</td><td>我编的题</td></tr>
+          </table>
+          <p class="mini">本页未引用 H&amp;H / 李瀚荪章节号——这次没摘它们的正文，不冒充读过。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '001-v2-can-kao-fang-xiang';</script>
+  <script src="../assets/lesson.js"></script>
+</body>
+</html>

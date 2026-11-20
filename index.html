@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>硬件修炼场 · 课程导航</title>
+  <link rel="stylesheet" href="assets/lesson.css" />
+  <style>
+    body.hub .main { padding: 0 0 32px; }
+    .topbar { padding: 0 20px; }
+    .topbar .brand { font-weight: 800; font-size: 1rem; color: var(--chalk); letter-spacing: .5px; }
+    .topbar .nav-links { display: flex; gap: 18px; margin-left: 18px; }
+    .topbar .nav-links a { color: var(--chalk-dim); font-size: .88rem; }
+    .topbar .nav-links a:hover { color: var(--chalk-yellow); text-decoration: none; }
+    .topbar .nav-links a.active { color: var(--chalk-yellow); border-bottom: 2px solid var(--chalk-yellow); padding-bottom: 2px; }
+
+    .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px; }
+    .hero { padding: 46px 0 8px; }
+    .hero .eyebrow { font-family: var(--mono); font-size: .78rem; letter-spacing: 2px; color: var(--chalk-yellow); margin: 0 0 10px; }
+    .hero h1 { font-size: 2rem; margin: 0 0 10px; line-height: 1.3; }
+    .hero .sub { color: var(--chalk-dim); margin: 0; max-width: 62ch; }
+
+    .sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 30px 0 12px; }
+    .sec-head h2 { font-size: 1.05rem; margin: 0; }
+    .sec-head .note { font-size: .8rem; color: var(--chalk-faint); }
+
+    .course-list { display: flex; flex-direction: column; gap: 10px; }
+    .course {
+      display: grid; grid-template-columns: 56px 1fr auto auto; align-items: center; gap: 16px;
+      padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px;
+      background: rgba(0,0,0,.15); color: var(--chalk); text-decoration: none;
+      transition: background .15s, border-color .15s, transform .15s;
+    }
+    a.course:hover { background: rgba(255,255,255,.07); border-color: rgba(255,224,138,.6); transform: translateY(-1px); text-decoration: none; }
+    .course .no { font-family: var(--mono); font-size: 1.8rem; color: var(--chalk-yellow); text-align: center; line-height: 1; }
+    .course .ttl { display: block; font-size: 1.05rem; font-weight: 700; }
+    .course .desc { display: block; font-size: .84rem; color: var(--chalk-dim); margin-top: 5px; }
+    .course.next { border-style: dashed; opacity: .85; }
+    .course.next .no { color: var(--chalk-faint); }
+    .course .go { font-size: .85rem; color: var(--chalk-blue); white-space: nowrap; }
+    .course.next .go { color: var(--chalk-faint); }
+    .badge { font-size: .74rem; padding: 3px 10px; border-radius: 999px; border: 1px solid; white-space: nowrap; }
+    .badge.done { color: var(--ok); border-color: rgba(183,240,192,.5); background: rgba(183,240,192,.1); }
+    .badge.next { color: var(--chalk-yellow); border-color: rgba(255,224,138,.5); background: rgba(255,204,102,.1); }
+
+    .doc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .doc-card { display: block; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; background: rgba(0,0,0,.12); color: var(--chalk); text-decoration: none; }
+    .doc-card:hover { border-color: rgba(159,211,255,.55); text-decoration: none; }
+    .doc-card h4 { font-size: .92rem; margin: 0 0 4px; color: var(--chalk-blue); }
+    .doc-card p { font-size: .8rem; color: var(--chalk-dim); margin: 0; }
+
+    .foot { margin: 34px 0 0; padding: 16px 0 0; border-top: 1px solid var(--line); font-size: .78rem; color: var(--chalk-faint); }
+    @media (max-width: 720px) {
+      .topbar .nav-links { gap: 12px; margin-left: 8px; }
+      .course { grid-template-columns: 44px 1fr; gap: 10px; }
+      .course .badge, .course .go { grid-column: 2; justify-self: start; }
+      .doc-grid { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 1.6rem; }
+    }
+  </style>
+</head>
+<body class="hub">
+  <div class="topbar">
+    <a class="brand" href="index.html">硬件修炼场</a>
+    <nav class="nav-links">
+      <a href="#courses" class="active">课程</a>
+      <a href="#docs">文档</a>
+      <a href="README.md">关于</a>
+    </nav>
+    <span class="spacer"></span>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <main class="main">
+    <div class="wrap">
+      <header class="hero">
+        <p class="eyebrow">S1 · 直流电路基础</p>
+        <h1>从一道题开始，把电路学明白</h1>
+        <p class="sub">每课 45 分钟，教案先行、独立审核、学完才转正。点课号直接进入；下一课会在这里提前预告。</p>
+      </header>
+
+      <section id="courses">
+        <div class="sec-head">
+          <h2>课程</h2>
+          <span class="note">当前：第一课已转正 · 第二课排期中</span>
+        </div>
+        <div class="course-list">
+          <a class="course" href="lessons/一 参考方向决定了欧姆定律的正负号.html">
+            <span class="no">一</span>
+            <span class="body">
+              <span class="ttl">参考方向决定了欧姆定律的正负号</span>
+              <span class="desc">一道题贯穿 · 先预测再推导 · 把 u=Ri 的前提找回来 · 45 min</span>
+            </span>
+            <span class="badge done">已转正</span>
+            <span class="go">进入 →</span>
+          </a>
+          <div class="course next">
+            <span class="no">二</span>
+            <span class="body">
+              <span class="ttl">两条更基本的规则：KCL 与 KVL</span>
+              <span class="desc">把第一课的正负号用进多条支路的电路 · 原著摘录 → 教案 → 独立审核通过后才生成页面</span>
+            </span>
+            <span class="badge next">排期中</span>
+            <span class="go">预告</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="docs">
+        <div class="sec-head">
+          <h2>文档</h2>
+          <span class="note">排课、生产、记录都有据可查</span>
+        </div>
+        <div class="doc-grid">
+          <a class="doc-card" href="docs/体系结构与进度总览.md">
+            <h4>体系结构与进度总览</h4>
+            <p>唯一的排课依据：阶段、前置、知识点与书目映射。</p>
+          </a>
+          <a class="doc-card" href="docs/课程生产流程.md">
+            <h4>课程生产流程（强制）</h4>
+            <p>六步流程与硬门槛：没过独立审核不写 HTML。</p>
+          </a>
+          <a class="doc-card" href="docs/疑问标签工作流.md">
+            <h4>疑问标签工作流</h4>
+            <p>终端提问 → 回答 → 沉淀成课程页面上的锚定标签。</p>
+          </a>
+          <a class="doc-card" href="README.md">
+            <h4>项目规则</h4>
+            <p>教学形式、模板规范、命名约定与知识优先级。</p>
+          </a>
+        </div>
+      </section>
+
+      <footer class="foot">以本地书目为纲 · 板书式讲解，不做资料陈列 · 遗留页面已清理，只保留正式课程</footer>
+    </div>
+  </main>
+
+  <script>
+    function toggleFullscreen(){
+      if(!document.fullscreenElement){ document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(()=>{}); }
+      else { document.exitFullscreen && document.exitFullscreen(); }
+    }
+    document.addEventListener('fullscreenchange', ()=>{
+      const btn=document.getElementById('btn-fs');
+      if(btn) btn.textContent = document.fullscreenElement ? '⛶ 退出全屏' : '⛶ 全屏';
+    });
+  </script>
+</body>
+</html>
