@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>拉普拉斯变换与 s 域直觉 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .pred-opt[disabled]{opacity:.42;cursor:not-allowed}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.9rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem;line-height:1.5}
+    .numcheck label{font-size:.88rem;line-height:2.1}
+    .numcheck input{width:92px}
+    .numcheck input.txtin{width:170px}
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .mode-btns{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+    .mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:var(--chalk-dim);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.85rem}
+    .mode-btn.active{background:rgba(255,224,138,.18);color:var(--chalk-yellow);border-color:var(--chalk-yellow);font-weight:700}
+    .cmp-tbl{border-collapse:collapse;font-size:.82rem;margin-top:8px;width:100%}
+    .cmp-tbl th,.cmp-tbl td{border:1px solid var(--line);padding:4px 6px;text-align:left}
+    .cmp-tbl th{color:var(--chalk-blue);font-weight:600}
+    .cmp-tbl td.mono{font-family:var(--mono);color:var(--chalk-green)}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}.cmp-tbl{font-size:.76rem}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">拉普拉斯变换与 s 域直觉</span>
+    <span class="meta">教案先行 · 45 min · S3 第四课（选学强化）</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（旧办法的痛点 → 换个域 → 微分变代数 → 元件新长相 → 分母里读脾气）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 换域之后微分会变什么（陈述② · 揭晓预测 2）</a></li>
+        <li><a href="#stage-2">2 · 元件在新域里的长相（陈述③ · 揭晓预测 3）</a></li>
+        <li><a href="#stage-3">3 · 解出来之后怎么读回时域（陈述④ · 揭晓预测 4）</a></li>
+        <li><a href="#stage-4">4 · 两个实验台（翻译台 / 迁移台）</a></li>
+        <li><a href="#stage-5">5 · 独立练习与过关</a></li>
+        <li><a href="#stage-6">6 · 收尾与下一课钩子</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">一个核心问题：能不能让微分方程直接变成代数方程、初始状态自己带进去，还能让那个"特征根"变成可四则运算的量，从而照搬电阻电路那一整套办法？</div>
+      <div class="mini">因果顺序：旧办法麻烦 → 换个域 → 微分变代数 → 元件新长相 → 解出来读回时域。<strong>不是时间安排</strong>；公式都在预测揭晓后才上板。</div>
+      <div class="mini">本课是<strong>选学强化</strong>：只求会换域、会读结构；复杂的展开技巧标为「了解即可」，不要求手算。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-04.md</code>（邱 §14-1~§14-5 + 李下 §12-1~§12-3 正文 OCR + 校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-04-教案.md</code>（独立审核四审通过、数值全自洽）。目标、节奏、台账与答案在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（揭晓后才解锁）</div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>换域的定义与微分性质</h4>
+      <div class="mini"><code>F(s)=∫₀₋^∞ f(t)e^(−st)dt</code>，<code>s=σ+jω</code>；<code>L[f']=sF(s)−f(0₋)</code>；<code>ΣI(s)=0</code>、<code>ΣU(s)=0</code>。</div>
+      <div class="mini">常用对：<code>ε(t)↔1/s</code>、<code>e^(−at)↔1/(s+a)</code>、<code>sin ωt↔ω/(s²+ω²)</code>、<code>cos ωt↔s/(s²+ω²)</code>。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>元件的 s 域长相</h4>
+      <div class="mini"><code>Z_R=R</code>、<code>Z_L=sL</code>、<code>Z_C=1/(sC)</code>；非零初值：电感串 <code>−Li(0₋)</code>、电容串 <code>u_C(0₋)/s</code>。</div>
+      <div class="mini"><strong>零初始</strong>时才可"把 jω 换成 s"；σ=0 时 s 域阻抗退回相量阻抗。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>分母的根怎么读</h4>
+      <div class="mini"><code>K_i/(s−s_i)↔K_i e^(s_i t)</code>：实部=衰减率、虚部=振荡频率。<strong>只有 Z(s)=0 的根才是特征根 p（定瞬态）</strong>；激励极点对应稳态（例12-8 的 ±j3）。</div>
+      <div class="mini">全响应 = 瞬态（固有） + 稳态（强迫）。复杂部分分式 P3 了解即可。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 第四课（L3-04 · 选学强化）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">换域 · 微分变代数 · 初值自动带入 · 像电阻一样算</span>
+      </div>
+      <h1>拉普拉斯变换与 s 域直觉</h1>
+      <p class="muted">上一课我们看一眼特征根就预判了二阶电路的性格。<strong>但这节课要解决的是：每次都得先列微分方程、再求根、还要把电感电流与电容电压的初值换算成各阶导数的初值——能不能换一种"运算"方式，让微分方程直接变成代数方程、把初始状态自动带进去，还能让那个特征根变成一个像电阻一样可以做四则运算的量，从而用同一套电阻电路办法系统求解，并从结果里一眼看出响应由哪些指数衰减成分（衰减快慢、振荡频率）组成？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">微分变代数</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">元件新长相</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">读回时域</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">练习/过关</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">钩子</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，先判断这是不是老朋友）</div>
+        <div class="speak teacher">师：上一课看一眼特征根就知道电路会振铃还是单调——但要先列微分方程、求根，初值还得从电感电流、电容电压换算成各阶导数的初值，又慢又容易错。今天换一种玩法：把整个问题搬到一个新"域"里。</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上这条路线是今天全部工作的骨架：<strong>时域里列方程 → 换到新域 → 在新域里解代数方程 → 换回时域读结果</strong>。先只回答一个问题：这种"换域简化"的思路，是不是你见过的老朋友？</p>
+          </div>
+          <div class="fig-box md" aria-label="四步流程图：时域微分方程加初始状态，换到新域，在新域里解代数方程，再换回时域读结果，四步之间用箭头连接">
+            <svg class="svg-diag" viewBox="0 0 380 200" role="img">
+              <rect class="box" x="10" y="24" width="106" height="44" rx="7"/>
+              <text class="ylb" x="22" y="44">时域</text>
+              <text class="dim" x="22" y="60">微分方程 + 初值</text>
+              <path class="wire" d="M122 46 L152 46"/><path class="wire" d="M146 40 L154 46 L146 52" fill="none"/>
+              <rect class="box" x="160" y="24" width="104" height="44" rx="7"/>
+              <text class="lbl" x="172" y="44">换个域</text>
+              <text class="dim" x="172" y="60">微分变代数</text>
+              <path class="wire" d="M270 46 L300 46"/><path class="wire" d="M294 40 L302 46 L294 52" fill="none"/>
+              <rect class="box" x="306" y="24" width="66" height="44" rx="7"/>
+              <text class="glb" x="316" y="44">解代数</text>
+              <text class="dim" x="316" y="60">初值自带</text>
+              <path class="wire" d="M340 72 L340 104"/><path class="wire" d="M334 98 L340 106 L346 98" fill="none"/>
+              <rect class="box" x="272" y="110" width="100" height="44" rx="7"/>
+              <text class="plb" x="284" y="130">换回时域</text>
+              <text class="dim" x="284" y="146">读衰减与振荡</text>
+              <text class="dim" x="14" y="140">核心问题：能不能把"列方程 → 求根 → 换初值"</text>
+              <text class="dim" x="14" y="158">这一整套麻烦，变成像电阻电路那样的代数运算？</text>
+              <text class="ylb" x="14" y="184">先看：这是不是换域简化的老朋友？</text>
+            </svg>
+            <div class="fig-cap">图① · 今天四步路线（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>拉氏变换和我们学过的相量法，是什么关系？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">A 完全无关的两种东西</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">B 同一类"换域简化"的方法，拉氏更一般</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">C 拉氏只能算正弦稳态</button>
+          </div>
+          <p class="gate-note">先自己选。公布只到"同属换域方法 + 新域比老朋友多一个实部 + 常用对查表"；名字与定义式在下一步"继续"里才给。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：同一类换域方法 + 常用对 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选 B。</strong>相量法把正弦量换成复数相量、微分变乘 jω，把正弦稳态问题变成复数代数方程；今天这个变换把任意时间函数换成新域里的函数、微分变乘 s，把动态电路的微分方程变成代数方程。两者都是"换域 → 简化运算 → 换回"的<strong>变换域方法</strong>。区别在新变量 <code>s=σ+jω</code> 比 <code>jω</code> 多一个实部 σ：于是既能描述等幅正弦（σ=0），也能描述衰减振荡（σ&lt;0）、单调衰减与增长——这正是上一课那些形态在新域里的样子。</p>
+          <p class="muted">常用对应查表即可，少数常用的记住：<code>δ(t)↔1</code>、<code>ε(t)↔1/s</code>、<code>t↔1/s²</code>、<code>e^(−at)↔1/(s+a)</code>、<code>sin ωt↔ω/(s²+ω²)</code>、<code>cos ωt↔s/(s²+ω²)</code>。<strong>此处只给"换域 + 查表"，不写微分性质、不写元件的新长相、不提分母里藏着什么。</strong></p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：老朋友与新朋友。</strong>相量法只用虚轴上的 <code>jω</code>，所以只能说等幅正弦；新变量 <code>s=σ+jω</code> 在复平面上是个点，实部 σ 告诉你衰减（或增长）快慢，虚部 ω 告诉你振荡频率。上一课的过阻尼、欠阻尼，在新域里就是实部不同的位置。</p>
+            </div>
+            <div class="fig-box lg" aria-label="相量jω与新变量s=σ加jω对照示意图：左图复平面只有虚轴上的点jω标注只能描述等幅正弦，右图复平面标出s等于σ加jω的点，实部σ决定衰减快慢，虚部ω决定振荡频率，标注sigma小于0为衰减">
+              <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+                <text class="ylb" x="14" y="22">老朋友：相量法</text>
+                <text class="plb" x="250" y="22">新朋友：s = σ + jω</text>
+                <line class="guide" x1="36" y1="70" x2="212" y2="70"/>
+                <line class="guide" x1="60" y1="32" x2="60" y2="176"/>
+                <circle cx="60" cy="70" r="4" fill="var(--chalk-blue)"/>
+                <text class="lbl" x="70" y="64">jω</text>
+                <text class="dim" x="22" y="98">只在虚轴上</text>
+                <text class="dim" x="22" y="116">→ 等幅正弦稳态</text>
+                <line class="guide" x1="230" y1="10" x2="230" y2="184"/>
+                <line class="guide" x1="272" y1="70" x2="446" y2="70"/>
+                <text class="dim" x="440" y="88">jω</text>
+                <text class="dim" x="232" y="14">σ</text>
+                <circle cx="336" cy="42" r="4" fill="var(--chalk-yellow)"/>
+                <text class="ylb" x="344" y="38">s = σ + jω</text>
+                <line class="guide" x1="336" y1="42" x2="336" y2="70" stroke-dasharray="3 3"/>
+                <line class="guide" x1="272" y1="42" x2="336" y2="42" stroke-dasharray="3 3"/>
+                <text class="glb" x="286" y="34">σ &lt; 0</text>
+                <text class="dim" x="252" y="118">实部 σ：衰减/增长快慢</text>
+                <text class="dim" x="252" y="136">虚部 ω：振荡频率</text>
+                <text class="plb" x="252" y="164">σ = 0 时退回相量法</text>
+              </svg>
+              <div class="fig-cap">图② · 相量 jω 与复频率 s 的对照（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def1" data-stage="1" onclick="revealBlock(this)">继续：给这件事命名 + 定义（陈述时刻 1） →</button>
+          <div class="reveal" id="rev-def1">
+            <div class="ok-box"><strong>陈述时刻 1 · 拉普拉斯变换与复频率 s</strong><br/><strong>全称/命名</strong>：拉普拉斯变换（Laplace transform）、象函数（image function）、原函数（original function）、复频率（complex frequency）。<br/><strong>一句定义</strong>：定义在 [0,∞) 的函数 f(t) 的拉普拉斯变换为 <code>F(s)=∫₀₋^∞ f(t)e^(−st)dt</code>，其中 <code>s=σ+jω</code> 为复数（复频率）；F(s) 叫 f(t) 的象函数，f(t) 叫 F(s) 的原函数。积分下限取 0₋ 可计及 t=0 的冲激。它与相量法同属变换域方法，但 s 的实部 σ 使它可描述衰减/增长，不局限于正弦稳态。<br/><strong>符号式</strong>：<code>F(s)=∫₀₋^∞ f(t)e^(−st)dt</code>；<code>s=σ+jω</code>；常用对 <code>ε(t)↔1/s</code>、<code>e^(−at)↔1/(s+a)</code>、<code>sin ωt↔ω/(s²+ω²)</code>。〔邱 §14-1 印刷 p.320–321；李下 §12-1 / PDF 202–204〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1：微分性质 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 换域之后，微分会变成什么（陈述时刻 2 · 揭晓预测 2）</div>
+        <div class="speak teacher">师：换域本身不值钱，值钱的是微分在新域里变简单了。先别看公式——猜一猜。</div>
+        <p class="muted">经典法最烦的是"要各阶导数的初值"，而电路实际上只给你电感电流、电容电压这两个初始状态。下面这步就是来看：这个老麻烦在新域里会不会自己消失。</p>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>相量法里微分变成乘 jω；猜新域里微分会变成什么运算？经典法最烦的"各阶导数初值"，会不会自动带进来？KCL/KVL 搬到新域会怎样？<strong>此时黑板上还没有微分性质公式，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred2')">微分变乘 s，且只用到函数自己在 0₋ 的值；KCL/KVL 照搬</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred2')">微分还是微分，只是换了个写法；KCL/KVL 要重写</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred2')">微分变成除法，且需要更多初值</button>
+          </div>
+          <p class="gate-note">先表态。公式此时还没上板；选定后才板书推导。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2：微分变乘 s + 初值自带（陈述②） →</button>
+        <div class="reveal" id="rev-2">
+          <p><strong>选第一项。</strong>用分部积分把这条性质"可见地推出来"：</p>
+          <div class="eq-line">L[f′] = ∫₀₋^∞ f′(t)e^(−st)dt = [f(t)e^(−st)]₀₋^∞ + s∫₀₋^∞ f(t)e^(−st)dt = sF(s) − f(0₋)</div>
+          <p>关键在最后那一项 <code>−f(0₋)</code>：<strong>微分一次，只需要 f 自己在 0₋ 的值</strong>，不是它的导数值；微分两次是 <code>s²F−s f(0₋)−f'(0₋)</code>。在随后写出的元件 VCR 里只出现 i_L(0₋)、u_C(0₋)——恰好就是电路给你的初始状态，不必像经典法那样去换算回路电流的各阶导数初值。至于元件到底长什么样、sL 会不会出现，<strong>留到下一个预测揭晓，这里不写</strong>。</p>
+          <p>线性性质还让基尔霍夫定律直接搬过来：<code>ΣI(s)=0</code>、<code>ΣU(s)=0</code>，和相量形式一模一样。既然 KCL/KVL 照搬，那电阻电路那套节点/网孔/叠加/戴维南是不是也能照搬？差就差在元件的长相。</p>
+          <button class="reveal-btn" data-target="rev-def2" data-stage="2" onclick="revealBlock(this)">继续：给这条性质命名 + 定义（陈述时刻 2） →</button>
+          <div class="reveal" id="rev-def2">
+            <div class="ok-box"><strong>陈述时刻 2 · 微分性质、初值自动带入与 KCL/KVL 运算形式</strong><br/><strong>全称/命名</strong>：拉氏变换的微分性质（differentiation property）、基尔霍夫定律的运算形式。<br/><strong>一句定义</strong>：若 <code>L[f(t)]=F(s)</code>，则 <code>L[df/dt]=sF(s)−f(0₋)</code>——时域微分变成 s 域乘 s 再减去初值 <code>f(0₋)</code>，只需 f 自己在 0₋ 的值；微分两次 <code>s²F−s f(0₋)−f'(0₋)</code> 的高阶初值由低阶初值递推。在后面写出的 s 域元件 VCR 里只出现 i_L(0₋)、u_C(0₋)（电路给的初始状态），不必像经典法那样换算回路电流各阶导数初值。由线性性质，KCL/KVL 在 s 域仍是各支路电流的象函数和为零、各支路电压的象函数和为零：<code>ΣI(s)=0</code>、<code>ΣU(s)=0</code>。<br/><strong>符号式</strong>：<code>L[f']=sF(s)−f(0₋)</code>；<code>L[f'']=s²F−s f(0₋)−f'(0₋)</code>；<code>ΣI(s)=0</code>、<code>ΣU(s)=0</code>。（元件 VCR 与 sL、1/sC 留陈述时刻 3。）〔邱 §14-2 印刷 p.322–324；李下 §12-1 / PDF 204–205〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2：运算电路 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 元件在新域里的长相（陈述时刻 3 · 揭晓预测 3）</div>
+        <div class="speak teacher">师：电阻 u=Ri 取变换还是 U=RI。电感、电容靠微分/积分性质推出新长相——先猜长相，再对答案。</div>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>相量域里 <code>Z_L=jωL</code>、<code>Z_C=1/(jωC)</code>；猜新域里对应的运算阻抗长什么样？如果把新变量取成纯虚数 jω（σ=0），它们会不会退回相量值？<strong>此时黑板上还没有 sL / 1/sC 的答案。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred3')">把 jω 换成 s：电感 sL、电容 1/(sC)，σ=0 时退回相量值</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred3')">把 jω 换成 1/s：电感 1/(sL)、电容 sC</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred3')">元件长相与新变量无关，还是 R、L、C 本身</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3：运算阻抗与"把 jω 换成 s"（陈述③） →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选第一项。</strong>板书元件的新长相：</p>
+          <div class="eq-line">Z_R = R　｜　Z_L = sL　｜　Z_C = 1/(sC)　｜　Z(s) = U(s)/I(s)（零状态元件）</div>
+          <p>电感由 <code>u=L di/dt</code> 得 <code>U(s)=sL·I(s)−L i(0₋)</code>：运算阻抗 sL 之外，还串一个附加电压源 <code>−L i(0₋)</code>。电容由积分关系得 <code>U(s)=(1/sC)I(s)+u_C(0₋)/s</code>：运算阻抗 1/sC 之外，串附加电压源 <code>u_C(0₋)/s</code>。<strong>这就是"把 jω 换成 s"</strong>：零初始时相量模型直接变成运算电路，电阻电路那套办法可以照搬；非零初始时再加附加电源。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图③：微分性质怎样长出电感的运算模型。</strong>乘 s 的部分变成运算阻抗 sL，减掉的初值 <code>−L i(0₋)</code> 变成一个附加电源——初始状态就是这样"自己跳进来"的。</p>
+            </div>
+            <div class="fig-box md" aria-label="电感运算模型示意图：时域电感u等于L乘di/dt，经微分性质变为s域的运算阻抗sL串联附加电压源负L乘i零负，标注初值自动带入">
+              <svg class="svg-diag" viewBox="0 0 380 190" role="img">
+                <text class="ylb" x="14" y="22">时域：u = L·di/dt</text>
+                <path class="wire" d="M120 46 L166 46"/><path class="wire" d="M160 40 L168 46 L160 52" fill="none"/>
+                <text class="dim" x="180" y="42">取变换</text>
+                <text class="lbl" x="180" y="64">L[f′]=sF−f(0₋)</text>
+                <line class="guide" x1="20" y1="86" x2="360" y2="86"/>
+                <text class="glb" x="14" y="112">s 域运算模型</text>
+                <line class="wire" x1="30" y1="140" x2="72" y2="140"/>
+                <rect class="box" x="72" y="128" width="72" height="24" rx="5"/>
+                <text class="ylb" x="88" y="145">sL</text>
+                <line class="wire" x1="144" y1="140" x2="186" y2="140"/>
+                <circle cx="204" cy="140" r="14" fill="none" stroke="var(--chalk-pink)" stroke-width="2"/>
+                <text class="plb" x="192" y="145">+</text>
+                <text class="plb" x="188" y="126">−</text>
+                <line class="wire" x1="218" y1="140" x2="286" y2="140"/>
+                <text class="plb" x="230" y="126">−L i(0₋)</text>
+                <text class="dim" x="22" y="178">运算阻抗 sL 管"形状"，附加源 −L i(0₋) 管"初始状态"</text>
+              </svg>
+              <div class="fig-cap">图③ · 电感运算模型（自包含示意）。</div>
+            </div>
+          </div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：把整个 RLC 搬进新域。</strong>电阻仍是 R，电感变 sL，电容变 1/sC，初值各带一个附加源；右侧箭头提示"相量法的 jω 直接换成 s"，所以节点法、网孔法、叠加、戴维南都能照搬，只是代数里的量变成了含 s 的分式。</p>
+            </div>
+            <div class="fig-box lg" aria-label="RLC运算电路示意图：电阻R电感运算阻抗sL电容运算阻抗1/sC串联，电感串附加源负Li零负，电容串附加源uC零负除以s，右侧箭头标注相量jω换成s">
+              <svg class="svg-diag" viewBox="0 0 460 190" role="img">
+                <text class="ylb" x="14" y="20">运算电路（零初始时就是"jω → s"）</text>
+                <line class="wire" x1="30" y1="70" x2="70" y2="70"/>
+                <rect class="box" x="70" y="62" width="46" height="16" rx="4"/><text class="lbl" x="82" y="75">R</text>
+                <line class="wire" x1="116" y1="70" x2="150" y2="70"/>
+                <rect class="box" x="150" y="58" width="58" height="24" rx="5"/><text class="ylb" x="164" y="75">sL</text>
+                <circle cx="226" cy="70" r="12" fill="none" stroke="var(--chalk-pink)" stroke-width="2"/><text class="plb" x="218" y="75">−</text>
+                <text class="plb" x="206" y="52">−L i(0₋)</text>
+                <line class="wire" x1="238" y1="70" x2="268" y2="70"/>
+                <line class="cap-plate" x1="268" y1="62" x2="292" y2="62"/>
+                <line class="cap-plate" x1="268" y1="78" x2="292" y2="78"/>
+                <text class="lbl" x="298" y="78">1/sC</text>
+                <circle cx="332" cy="70" r="12" fill="none" stroke="var(--chalk-pink)" stroke-width="2"/><text class="plb" x="324" y="75">+</text>
+                <text class="plb" x="312" y="52">u_C(0₋)/s</text>
+                <line class="wire" x1="344" y1="70" x2="400" y2="70"/>
+                <line class="wire" x1="400" y1="70" x2="400" y2="150"/>
+                <line class="wire" x1="30" y1="70" x2="30" y2="150"/>
+                <line class="wire" x1="30" y1="150" x2="400" y2="150"/>
+                <path class="wire" d="M406 104 L444 104"/><path class="wire" d="M438 98 L446 104 L438 110" fill="none"/>
+                <text class="glb" x="404" y="94">jω → s</text>
+                <text class="dim" x="30" y="178">Z_R=R，Z_L=sL，Z_C=1/(sC)；非零初始再串附加源</text>
+              </svg>
+              <div class="fig-cap">图④ · RLC 运算电路与 jω→s（自包含示意）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def3" data-stage="3" onclick="revealBlock(this)">继续：给元件新长相命名 + 定义（陈述时刻 3） →</button>
+          <div class="reveal" id="rev-def3">
+            <div class="ok-box"><strong>陈述时刻 3 · 运算阻抗、运算电路与"jω→s"</strong><br/><strong>全称/命名</strong>：运算阻抗（operational impedance）/广义阻抗（generalized impedance）、运算电路（operational circuit）、拉普拉斯阻抗。<br/><strong>一句定义</strong>：由微分/积分性质，元件 VCR 的 s 域形式为 <code>U(s)=Z(s)I(s)+初值源</code>：电阻 <code>Z_R=R</code>，电感 <code>Z_L=sL</code>（附加源 <code>−L i(0₋)</code>），电容 <code>Z_C=1/sC</code>（附加源 <code>u_C(0₋)/s</code>）；零状态时 <code>Z(s)=U(s)/I(s)</code> 称广义阻抗。<strong>零初始条件下，把相量模型里的 jω 换成 s 就得到 s 域运算电路</strong>，所以相量法的节点/网孔/叠加/戴维南可原样搬到 s 域；非零初始须另加初值电源。<br/><strong>符号式</strong>：<code>Z_R=R</code>、<code>Z_L=sL</code>、<code>Z_C=1/(sC)</code>；<code>s=σ+jω</code>，σ=0 时退化为相量阻抗。〔邱 §14-4 印刷 p.331–334；李下 §12-3 / PDF 215–216〕</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 B（jω→s 迁移台）已解锁，见第 4 节；例12-8 读根卡还要等下一个预测揭晓。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3：反变换与分母根 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 解出来之后怎么读回时域（陈述时刻 4 · 揭晓预测 4）</div>
+        <div class="speak teacher">师：现在能照搬整套电阻电路办法列代数方程了。板书写到前两步就停：① 画运算电路（含初值电源）→ ② 用节点/网孔/叠加/戴维南解出 <code>F(s)</code>（s 的有理分式）。解出来是一堆分式——第三步怎么读回时域？它的分母里藏着什么？</div>
+
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>例14-6 的 <code>F(s)=(2s+1)/(s³+7s²+10s)</code> 分母根是 0、−2、−5；例12-8 的 <code>I(s)=60/((s²+9)(s+4))</code> 分母含 −4 与 ±j3。这些分母根，和上一课的特征根 p、和响应里的常数项 / e^(−2t) / 衰减振荡是什么关系？<strong>此刻黑板上只写了前两步，第三步还没上板。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred4')">每个分母根给一个指数成分；其中电路自身的根才等于特征根 p，激励带来的根只管稳态</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred4')">分母根只是计算中间量，与时域响应形式无关</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred4')">所有分母根都等于特征根 p，都决定瞬态</button>
+          </div>
+          <p class="gate-note">题干给分母根只作提问素材，不给"哪些是特征根、哪些是稳态"的结论；选定后才板书第三步。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4：分母根读模态 + 两类根的区别（陈述④） →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>板书第三步：</strong>部分分式展开 + 查表反变换得 f(t)（给常用对；复杂展开 P3「了解即可」，只要求看得懂"根↔成分"的对应，不要求手算）。</p>
+          <p><strong>选第一项。</strong>若分母有单根 s_i，部分分式里就有一项 <code>K_i/(s−s_i)</code>，反变换是 <code>K_i e^(s_i t)</code> 这样一个<strong>模态</strong>；共轭复根 <code>α±jω</code> 两项合成 <code>e^(αt)(A cos ωt+B sin ωt)</code> 衰减振荡；根 0 对应常数项（不衰减）。所以<strong>分母根 s_i 就是响应成分 e^(s_i t) 的指数</strong>：实部定衰减率（s=−4 → e^(−4t)，τ=1/4），虚部定振荡频率。</p>
+          <p><strong>但要分清两类根</strong>：只有来自网络自身 <code>Z(s)=0</code>（齐次/无源方程）的根才是上一课的特征根 p，决定<strong>瞬态</strong>；激励引入的极点不是电路特征根，对应<strong>稳态强迫分量</strong>。例12-8 的 <code>I(s)=60/((s²+9)(s+4))</code>：<code>s=−4</code> 来自 <code>Z(s)=2s+8=0</code>，给瞬态 <code>2.4e^(−4t)</code>；<code>s=±j3</code> 来自激励 <code>U(s)=120/(s²+9)</code>，给稳态 <code>4sin(3t−37°)</code>（相量法可核对幅值 4A）。全响应 = 瞬态 + 稳态。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑤：例12-8 的全响应拆成两块。</strong>左边是按 e^(−4t) 衰减的瞬态（时间常数 τ=0.25s，根 s=−4）；右边是正弦稳态 4sin(3t−37°)（由激励的 ±j3 带来）；两块相加才是真实的 i(t)。记住这个对照，就不会把激励极点误认成电路特征根。</p>
+            </div>
+            <div class="fig-box lg" aria-label="例12-8全响应分解示意图：左图标注瞬态2.4乘e的负4t次方衰减到零，根s等于负4时间常数0.25秒；右图标注稳态4sin3t减37度等幅正弦来自激励极点正负j3；底部写全响应等于瞬态加稳态">
+              <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+                <line class="guide" x1="230" y1="12" x2="230" y2="184"/>
+                <text class="ylb" x="12" y="22">瞬态（电路自身的根）</text>
+                <line class="guide" x1="32" y1="150" x2="216" y2="150"/>
+                <line class="guide" x1="32" y1="30" x2="32" y2="166"/>
+                <path d="M34 56 C60 110 96 136 132 146 C164 150 190 150 214 150" fill="none" stroke="var(--chalk-pink)" stroke-width="2.4"/>
+                <text class="plb" x="44" y="52">2.4</text>
+                <text class="dim" x="120" y="132">i_tr = 2.4e^(−4t)</text>
+                <text class="glb" x="70" y="178">s = −4，τ = 0.25 s</text>
+                <text class="plb" x="244" y="22">稳态（激励带来的极点）</text>
+                <line class="guide" x1="260" y1="100" x2="444" y2="100"/>
+                <line class="guide" x1="260" y1="30" x2="260" y2="166"/>
+                <path d="M262 100 Q278 44 296 100 T332 100 T368 100 T404 100 T440 100" fill="none" stroke="var(--chalk-blue)" stroke-width="2.4"/>
+                <text class="lbl" x="290" y="132">i_ss = 4sin(3t−37°)</text>
+                <text class="dim" x="264" y="178">极点 ±j3，幅值 4 A</text>
+                <text class="ylb" x="12" y="196">全响应 i(t) = 瞬态 + 稳态（解析展开 P3 了解即可）</text>
+              </svg>
+              <div class="fig-cap">图⑤ · 例12-8 全响应分解（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def4" data-stage="4" onclick="revealBlock(this)">继续：给"分母根读模态"命名 + 定义（陈述时刻 4） →</button>
+          <div class="reveal" id="rev-def4">
+            <div class="ok-box"><strong>陈述时刻 4 · 反变换、分母根=模态（其中 Z(s)=0 的根=特征根 p）、全响应</strong><br/><strong>全称/命名</strong>：部分分式展开（partial fraction expansion）、反变换（inverse transform）、模态（mode）、全响应（complete response）= 瞬态响应 + 稳态响应。<br/><strong>一句定义</strong>：运算法解 s 域代数方程得象函数 F(s)（s 的有理分式）后，用部分分式展开 + 查表反变换得时域解；F(s) 分母的每个根 s_i 对应一项 <code>K_i e^(s_i t)</code>（共轭复根合成为衰减振荡），即一个响应模态——实部决定衰减率、虚部决定振荡频率。<strong>注意适用条件</strong>：只有来自网络自身 <code>Z(s)=0</code>（齐次/无源方程）的根才是 L3-03 的特征根 p，决定瞬态（固有）响应；激励引入的极点不是电路特征根，对应稳态（强迫）响应。以例12-8 的 <code>I(s)=60/((s²+9)(s+4))</code> 为例：<code>s=−4</code> 来自 <code>Z(s)=2s+8=0</code>，是特征根、给瞬态 <code>2.4e^(−4t)</code>；<code>s=±j3</code> 来自激励 <code>U(s)=120/(s²+9)</code>，不是特征根、给稳态 <code>4sin(3t−37°)</code>。电路的全响应 = 瞬态（固有）响应 + 稳态（强迫）响应。<br/><strong>符号式</strong>：<code>K_i/(s−s_i) ↔ K_i e^(s_i t)</code>；<code>s=−4 → e^(−4t)</code>、<code>τ=1/4</code>；<code>i(t)=2.4e^(−4t)+4sin(3t−37°)</code>（例12-8）。复杂部分分式展开 P3 了解即可。〔邱 §14-3 印刷 p.327–330、§14-5 p.334–336；李下 §12-2~§12-3 例12-8 / PDF 208–217〕</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 A（s 域翻译台）和例12-8 读根卡已解锁，见第 4 节；四个预测都揭晓后可以开始独立练习。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4：双实验台 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 两个实验台（s 域翻译台 / jω→s 迁移台）</div>
+        <p class="muted">拖动滑块看同一组公式怎样联动：面板 A 把 RLC 翻译成 s 域方程并读根（与 L3-03 的特征根对上号）；面板 B 并排比较相量域与 s 域的元件阻抗，σ=0 时两者数值相等。</p>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · jω→s 迁移台（预测 3 揭晓后启用）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 3 揭晓后解锁（此刻显示会提前泄露运算阻抗）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>R（Ω）<span id="B-R-v">2 Ω</span></label>
+                <input type="range" id="B-R" min="0" max="8" step="0.1" value="2" />
+                <label>L（H）<span id="B-L-v">1 H</span></label>
+                <input type="range" id="B-L" min="0.2" max="4" step="0.1" value="1" />
+                <label>C（F）<span id="B-C-v">0.5 F</span></label>
+                <input type="range" id="B-C" min="0.1" max="2" step="0.05" value="0.5" />
+                <label>σ（实部）<span id="B-sig-v">−1</span></label>
+                <input type="range" id="B-sig" min="-3" max="3" step="0.1" value="-1" />
+                <label>ω（rad/s）<span id="B-w-v">2</span></label>
+                <input type="range" id="B-w" min="0.5" max="5" step="0.1" value="2" />
+              </div>
+              <div class="th-panel">
+                <h5>相量域 vs s 域（同一元件、两种看法）</h5>
+                <table class="cmp-tbl">
+                  <tr><th>元件</th><th>相量域（jω）</th><th>s 域（s=σ+jω）</th></tr>
+                  <tr><td>电阻 R</td><td class="mono" id="B-zrp">—</td><td class="mono" id="B-zrs">—</td></tr>
+                  <tr><td>电感 L</td><td class="mono" id="B-zlp">—</td><td class="mono" id="B-zls">—</td></tr>
+                  <tr><td>电容 C</td><td class="mono" id="B-zcp">—</td><td class="mono" id="B-zcs">—</td></tr>
+                </table>
+                <div class="res-line" id="B-s" style="margin-top:6px;">—</div>
+                <div class="res-line" id="B-eq">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认 <code>R=2, L=1, C=0.5, ω=2, σ=−1</code>：相量域 <code>Z_L=j2=2∠90°</code>、<code>Z_C=−j1=1∠−90°</code>；s 域 <code>s=−1+j2</code> → <code>Z_L=−1+j2=√5∠116.57°</code>、<code>Z_C=−0.4−j0.8=0.894∠−116.57°</code>。把 σ 拖到 0，两域数值会完全相等——这就是"零初始时把 jω 换成 s"。</p>
+            <div id="r8-card" style="display:none;margin-top:10px;padding:8px 10px;border:1px dashed rgba(255,140,150,.45);border-radius:6px;">
+              <div class="warn-note" style="margin:0;color:var(--chalk-yellow);">例12-8 读根卡（预测 4 揭晓后解锁）</div>
+              <div class="res-line">Z(s)=2s+8=0 → s=−4 → 瞬态 e^(−4t)，τ=1/4=0.25 s</div>
+              <div class="res-line">稳态 4∠−36.87°（来自激励极点 ±j3，不是电路特征根）</div>
+              <div class="res-line">i(t)=[2.4e^(−4t)+4sin(3t−37°)]ε(t) A</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · s 域翻译台（预测 4 揭晓后启用）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 4 揭晓后解锁（此刻显示会提前泄露分母根的读法）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="mode-btns">
+              <button class="mode-btn active" data-preset="3" onclick="setPreset(3)">R=3 过阻尼</button>
+              <button class="mode-btn" data-preset="2" onclick="setPreset(2)">R=2 临界</button>
+              <button class="mode-btn" data-preset="1" onclick="setPreset(1)">R=1 欠阻尼</button>
+              <button class="mode-btn" data-preset="0" onclick="setPreset(0)">R=0 等幅</button>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>R（Ω）<span id="A-R-v">3 Ω</span></label>
+                <input type="range" id="A-R" min="0" max="5" step="0.1" value="3" />
+                <label>L（H）<span id="A-L-v">1 H</span></label>
+                <input type="range" id="A-L" min="0.5" max="3" step="0.1" value="1" />
+                <label>C（F）<span id="A-C-v">1 F</span></label>
+                <input type="range" id="A-C" min="0.25" max="3" step="0.05" value="1" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（同一批根，换成 s 域写法）</h5>
+                <div class="res-line" id="A-eq-t">—</div>
+                <div class="res-line" id="A-eq-s">—</div>
+                <div class="th-row"><span class="k">归一化分母</span><span class="v" id="A-poly">—</span></div>
+                <div class="th-row"><span class="k">根 s₁</span><span class="v" id="A-p1">—</span></div>
+                <div class="th-row"><span class="k">根 s₂</span><span class="v" id="A-p2">—</span></div>
+                <div class="th-row"><span class="k">形态判定</span><span class="v" id="A-shape">—</span></div>
+                <div class="res-line" id="A-form">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认 <code>L=1, C=1, R=3</code> → <code>s²+3s+1=0</code> → <code>s≈−0.382 / −2.618</code> → 模态 <code>e^(−0.382t)</code>、<code>e^(−2.618t)</code> → <strong>过阻尼</strong>（与 L3-03 同一批根）。四个预设固定 <code>L=C=1</code> 只改 R：2 → 临界、1 → 欠阻尼、0 → 等幅；拖 L/C 按同一公式联动。</p>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：独立练习 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习（8 题，先作答再判定）与过关</div>
+        <div class="lock-note" id="ex-lock">🔒 独立练习在四个预测全部揭晓后出现（题干会用到前面刚揭晓的结论）。</div>
+        <div id="ex-body" style="display:none;">
+          <p class="muted">形态一 · 翻译成 s 域 + 读根/模态（1–4）；形态二 · 概念辨析、迁移与边界（5–8）。都不是前面例题的近邻复制。</p>
+
+          <div class="qrow">
+            <div class="qt">练习 1（形态一）· 已知 <code>f(t)=e^(−2t)</code>（t≥0，定义域从 0₋ 起，故 f(0₋)=1）、<code>F(s)=1/(s+2)</code>。求 <code>L[f′]</code> 化简后 <code>___/(s+2)</code> 的系数。</div>
+            <div class="numcheck" id="q-1" data-qid="q-1"><label>系数 <input type="text" placeholder="如：−2" /></label><button class="btn-sm" onclick="checkNum1()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 2（形态一）· 例14-6 的 <code>F(s)=(2s+1)/(s³+7s²+10s)</code> 分母根 0、−2、−5，已知 <code>f(t)=0.1+0.5e^(−2t)−0.6e^(−5t)</code>。填根 0 对应项的系数、根 −5 对应项的系数。</div>
+            <div class="numcheck" id="q-2" data-qid="q-2"><label>根 0 项系数 <input type="text" placeholder="如：0.1" />，根 −5 项系数 <input type="text" placeholder="如：−0.6" /></label><button class="btn-sm" onclick="checkNum2()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 3（形态一）· RLC 串联 <code>L=1H, C=1F, R=2Ω</code>。写归一化 s 域特征方程并求根：重根 s = ___，判形态（填"临界/过阻尼/欠阻尼/等幅"）。</div>
+            <div class="numcheck" id="q-3" data-qid="q-3"><label>重根 s <input type="text" placeholder="如：−1" />，形态 <input class="txtin" type="text" placeholder="如：临界" /></label><button class="btn-sm" onclick="checkNum3()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 4（形态一）· 例12-8 的 <code>i(t)=[2.4e^(−4t)+4sin(3t−37°)]ε(t)</code>。填瞬态项的特征根 s、时间常数 τ（s）、稳态幅值（A）。</div>
+            <div class="numcheck" id="q-4" data-qid="q-4"><label>s <input type="text" placeholder="如：−4" />，τ <input type="text" placeholder="s" />，稳态幅值 <input type="text" placeholder="A" /></label><button class="btn-sm" onclick="checkNum4()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 5（形态二）· 拉氏变换与相量法的关系，正确的是？<br/>①完全无关；②相量法是 s=jω、零状态、正弦稳态情形下的同族特例（换域思想相同）；③拉氏只能算正弦稳态；④s 的实部必须为 0。</div>
+            <div class="choicebox" id="q-5" data-qid="q-5" data-hint="两者同属换域简化；拉氏更一般，s 的实部可任意（正是它能描述暂态的原因）。" data-explain="选②：相量法是 s=jω、零状态、正弦稳态的特例。"><label><input type="radio" name="q-5" value="a"/> ①</label><label><input type="radio" name="q-5" value="b"/> ②</label><label><input type="radio" name="q-5" value="c"/> ③</label><label><input type="radio" name="q-5" value="d"/> ④</label><button class="btn-sm" onclick="checkChoice('q-5','b')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 6（形态二）· 填空：相量域 <code>Z_L=jωL</code> → s 域 ___；<code>Z_C=1/(jωC)</code> → s 域 ___；这种直接替换只在 ___ 条件下成立。</div>
+            <div class="numcheck" id="q-6" data-qid="q-6"><label>电感 <input class="txtin" type="text" placeholder="如：sL" />，电容 <input class="txtin" type="text" placeholder="如：1/sC" />，条件 <input class="txtin" type="text" placeholder="如：零初始" /></label><button class="btn-sm" onclick="checkTextAny('q-6',[['sL'],['1/sC','1/(sC)'],['零初始','零状态','初始状态为零']],'答案是 sL、1/sC，且只在零初始（零状态）时成立；非零初始还要加附加电源。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 7（形态二）· 非零初始状态时，s 域运算电路除了运算阻抗，还必须怎样处理？<br/>①什么都不用加；②把初值折算成附加电源；③把 s 改成 jω；④去掉电感。</div>
+            <div class="choicebox" id="q-7" data-qid="q-7" data-hint="电感串 −L i(0₋)、电容串 u_C(0₋)/s，初值就是这样自动带进去的。" data-explain="选②：初值折算为附加电压源，运算阻抗部分仍是 sL、1/sC。"><label><input type="radio" name="q-7" value="a"/> ①</label><label><input type="radio" name="q-7" value="b"/> ②</label><label><input type="radio" name="q-7" value="c"/> ③</label><label><input type="radio" name="q-7" value="d"/> ④</label><button class="btn-sm" onclick="checkChoice('q-7','b')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 8（形态二 · 辨析三空）· "'F(s) 分母的每个根都是上一课的特征根 p，决定响应里的指数衰减成分'这句话对吗？给一条理由；再说清 s=σ+jω 比 jω 强在哪。"</div>
+            <div class="numcheck" id="q-8" data-qid="q-8"><label>对吗 <input class="txtin" type="text" placeholder="如：不对" />，理由 <input class="txtin" type="text" placeholder="含 Z(s)=0 / 激励极点" />，强在 <input class="txtin" type="text" placeholder="如：多了实部 σ" /></label><button class="btn-sm" onclick="checkTextAny('q-8',[['不对','错','只对一半'],['Z(s)=0','激励极点','特征根'],['实部','σ','衰减']],'不对（只对一半）：只有 Z(s)=0 的根才是特征根 p、定瞬态；激励极点（例12-8 的 ±j3）对应稳态。s 多一个实部 σ，能表达衰减/增长/暂态。')">判定</button><div class="fb"></div></div>
+          </div>
+
+          <div class="ok-box" style="margin-top:14px;">
+            <strong>过关自检（合上笔记能说出）</strong>：① 为什么微分性质只需要 f 自己在 0₋ 的值？② 为什么零初始时才能"把 jω 换成 s"、非零初始要加什么？③ 为什么 F(s) 分母的根会变成时域的指数成分（实部/虚部各管什么）？④ 什么时候分母根才等于 L3-03 的特征根 p（例12-8 的两类根各是什么）？⑤ 为什么全响应 = 瞬态 + 稳态？
+          </div>
+          <div class="warn-note">下一课钩子（若排 L3-05）：今天立住了"域变换 + 运算阻抗 + 分母根读模态"，下一课用 s 域的系统视角看传递函数/网络函数，把"分母根"升级成"零极点 → 频率响应"，与 L2-08 呼应。</div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：收尾 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 收尾与钩子</div>
+        <div class="speak teacher">师：回扣核心问题——换域把微分变代数、初值自动进；电感 sL、电容 1/sC，零初始就是把 jω 换成 s；F(s) 分母根 = 模态，其中 Z(s)=0 的根 = 上一课的特征根 p（定瞬态），激励极点是稳态分量。<strong>复杂的展开技巧是"了解即可"（P3），真正要带走的是这套迁移链和"分母里读脾气"的眼光。</strong></div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏、来源台账与答案区（页尾资料）</summary>
+          <h4>学习目标（学完应能自己说出）</h4>
+          <p class="muted">"这节课解决的是——用拉氏变换把微分方程变成代数方程、初值自动带进去；电感变 sL、电容变 1/sC，零初始时就是把相量法的 jω 换成 s，所以电阻电路那套方法照搬；解出来的 F(s) 分母里来自 Z(s)=0 的根就是 L3-03 的特征根 p，决定瞬态里 e^(−at) 或衰减振荡的模态（激励另带来的极点只对应稳态分量）。"</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 7′ · 定义与微分性质（预测2）10′ · 运算电路与 jω→s（预测3）10′ · 反变换与分母根（预测4）10′ · 两实验台与练习 6′ · 收尾钩子 2′。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>经典法困难（要各阶导数初值）、积分变换思路</td><td>〔书 p.319–320〕邱 第14章导读、§14-1</td></tr>
+            <tr><td>拉氏变换定义、复频率 s、象/原函数、常用对</td><td>〔书 p.320–321〕邱 §14-1；〔书·李下 §12-1〕PDF 202–204</td></tr>
+            <tr><td>与相量法类比（变换域方法）</td><td>〔书·李下 §12-1〕PDF 203</td></tr>
+            <tr><td>线性性质、微分性质 sF−f(0₋)、KCL/KVL 运算形式</td><td>〔书 p.322–324〕邱 §14-2；〔书·李下 §12-1〕PDF 204–205</td></tr>
+            <tr><td>运算电路 sL / 1/sC / 附加电源、广义阻抗、jω→s</td><td>〔书 p.331–334〕邱 §14-4；〔书·李下 §12-3〕PDF 215–216</td></tr>
+            <tr><td>部分分式展开、例14-6 <code>0.1+0.5e^(−2t)−0.6e^(−5t)</code>（分母校为 <code>s³+7s²+10s</code>）</td><td>〔书 p.327–330〕邱 §14-3 例14-6</td></tr>
+            <tr><td>运算法求解流程、全响应=瞬态+稳态</td><td>〔书 p.334–336〕邱 §14-5；〔书·李下 §12-3〕PDF 216–217</td></tr>
+            <tr><td>例12-8 <code>Z(s)=2s+8</code>、<code>s=−4</code>、<code>i=2.4e^(−4t)+4sin(3t−37°)</code></td><td>〔书·李下 §12-3〕PDF 216–217（相量法核对幅值 4A、K₁=2.4）</td></tr>
+            <tr><td>分母根=模态、Z(s)=0 的根=特征根 p（激励极点=稳态）、s 比 jω 多实部</td><td>〔通识〕由上述定义 + L3-03 特征根理论推导</td></tr>
+            <tr><td>4 预测 + 8 练习 + 两实验台全部数值、5 张 SVG</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽）/〔通识〕</td></tr>
+          </table>
+          <p class="muted">邱 PDF=印刷+24（§14-1 p.320→PDF 344、§14-2 p.322→346、§14-3 p.327→351、§14-4 p.331→355、§14-5 p.334→358）；李下印刷页码以原书为准、目录无页码，故用章节号 + PDF 页；H&amp;H 未摘正文，不引章节号；邱 §14-6~§14-9（网络函数零极点/频响）本课未摘、不引章节号。记号全课统一：象函数 <code>F(s)</code>、原函数 <code>f(t)</code>、<code>s=σ+jω</code>、<code>Z(s)=U(s)/I(s)</code>、<code>Z_L=sL</code>、<code>Z_C=1/(sC)</code>。正文见 <code>书籍/摘录/L3-04.md</code>，教案见 <code>lessons/drafts/L3-04-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：②同族换域方法、s=σ+jω 多实部；预测 2：微分变乘 s 减 f(0₋)、只需最低阶初值、ΣI(s)=0/ΣU(s)=0；预测 3：sL / 1/sC，零初始时把 jω 换成 s；预测 4：分母根给指数成分，只有 Z(s)=0 的根=特征根 p（定瞬态）、激励极点=稳态。练习：1 −2；2 0.1 / −0.6；3 s=−1 重根、临界；4 −4 / 0.25 / 4A；5 ②；6 sL / 1/sC / 零初始；7 ②；8 不对（只对一半）——Z(s)=0 的根才是特征根 p，激励极点（±j3）管稳态，s 多实部 σ 能表达暂态。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-04-laplace-s-domain';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-04 增量脚本：四预测门禁 + 陈述卡 gating + 双面板 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(!isFinite(v)) return '—';
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+    function cmplx(re,im){
+      var r=num(re,3), i=num(im,3);
+      if(Math.abs(im)<1e-9) return r;
+      if(Math.abs(re)<1e-9) return (Math.abs(im-1)<1e-9?'j':(Math.abs(im+1)<1e-9?'−j':i+'j'));
+      return r+(im<0?' − ':' + ')+num(Math.abs(im),3)+'j';
+    }
+    function polar(re,im){
+      var m=Math.hypot(re,im), a=Math.atan2(im,re)*180/Math.PI;
+      return num(m,3)+'∠'+num(a,2)+'°';
+    }
+    function both(re,im){ return cmplx(re,im)+' = '+polar(re,im); }
+
+    /* ---------- 严格顺序：前一个预测揭晓后才解锁下一预测的选项 ---------- */
+    function unlockPred(n){
+      var wrap=document.querySelector('[data-pred="q-p'+n+'"]');
+      if(!wrap) return;
+      wrap.querySelectorAll('.pred-opt').forEach(function(b){ b.disabled=false; });
+    }
+    var bUnlocked=false, aUnlocked=false, cheatUnlocked=false, r8Unlocked=false, exUnlocked=false;
+    function unlockB(){ if(bUnlocked) return; bUnlocked=true; el('B-lock').style.display='none'; el('B-body').style.display=''; solveB(); }
+    function unlockA(){ if(aUnlocked) return; aUnlocked=true; el('A-lock').style.display='none'; el('A-body').style.display=''; solveA(); }
+    function unlockCheat(){ if(cheatUnlocked) return; cheatUnlocked=true; document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display=''; }); }
+    function unlockR8(){ if(r8Unlocked) return; r8Unlocked=true; el('r8-card').style.display=''; }
+    function unlockEx(){ if(exUnlocked) return; exUnlocked=true; el('ex-lock').style.display='none'; el('ex-body').style.display=''; }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred1') unlockPred(2);
+      if(btn.id==='gate-pred2') unlockPred(3);
+      if(btn.id==='gate-pred3'){ unlockPred(4); unlockB(); }
+      if(btn.id==='gate-pred4'){ unlockA(); unlockR8(); unlockCheat(); unlockEx(); }
+    };
+
+    /* ---------- 面板 A：s 域翻译台（归一化 s²+(R/L)s+1/(LC)） ---------- */
+    window.setPreset=function(r){
+      if(!aUnlocked) return;
+      el('A-R').value=r; el('A-L').value=1; el('A-C').value=1;
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===parseFloat(r)); });
+      solveA();
+    };
+    function solveA(){
+      if(!aUnlocked) return;
+      var R=parseFloat(el('A-R').value), L=parseFloat(el('A-L').value), C=parseFloat(el('A-C').value);
+      set('A-R-v',num(R,1)+' Ω'); set('A-L-v',num(L,1)+' H'); set('A-C-v',num(C,2)+' F');
+      var a=R/L, b=1/(L*C), D=a*a-4*b;
+      set('A-eq-t',num(L,1)+'·i″ + '+num(R,1)+'·i′ + '+num(1/C,3)+'·i = 0');
+      set('A-eq-s','('+num(L,1)+'s² + '+num(R,1)+'s + '+num(1/C,3)+') I(s) = 0');
+      set('A-poly','s² + '+num(a,3)+'s + '+num(b,3));
+      var p1,p2,shape,form;
+      if(D>1e-9){
+        var sq=Math.sqrt(D); p1=num((-a+sq)/2,3); p2=num((-a-sq)/2,3);
+        shape='过阻尼'; form='模态：e^('+p1+'t)、e^('+p2+'t)（单调不振荡）';
+      } else if(Math.abs(D)<=1e-9){
+        p1=num(-a/2,3)+'（重根）'; p2='同上';
+        shape='临界阻尼'; form='模态：e^('+num(-a/2,3)+'t)、t·e^('+num(-a/2,3)+'t)';
+      } else {
+        var wd=Math.sqrt(-D)/2, sg=-a/2;
+        p1=num(sg,3)+' + j'+num(wd,3); p2=num(sg,3)+' − j'+num(wd,3);
+        if(Math.abs(sg)<1e-9){ shape='等幅振荡'; form='模态：sin('+num(wd,3)+'t)、cos('+num(wd,3)+'t)（无衰减）'; }
+        else { shape='欠阻尼'; form='模态：e^('+num(sg,3)+'t)·sin/cos('+num(wd,3)+'t)（衰减振荡）'; }
+      }
+      set('A-p1',p1); set('A-p2',p2); set('A-shape',shape); set('A-form',form);
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===R && L===1 && C===1); });
+    }
+    ['A-R','A-L','A-C'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：相量域 vs s 域元件阻抗 ---------- */
+    function solveB(){
+      if(!bUnlocked) return;
+      var R=parseFloat(el('B-R').value), L=parseFloat(el('B-L').value), C=parseFloat(el('B-C').value);
+      var sg=parseFloat(el('B-sig').value), w=parseFloat(el('B-w').value);
+      set('B-R-v',num(R,1)+' Ω'); set('B-L-v',num(L,1)+' H'); set('B-C-v',num(C,2)+' F');
+      set('B-sig-v',num(sg,1)); set('B-w-v',num(w,1));
+      var den=C*(sg*sg+w*w);
+      var zcS={re:sg/den, im:-w/den};
+      set('B-zrp',num(R,1)+' Ω');
+      set('B-zrs',num(R,1)+' Ω');
+      set('B-zlp',both(0,w*L));
+      set('B-zls',both(sg*L,w*L));
+      set('B-zcp',both(0,-1/(w*C)));
+      set('B-zcs',both(zcS.re,zcS.im));
+      set('B-s','s = '+(sg<0?'−'+num(-sg,1):num(sg,1))+' + j'+num(w,1));
+      set('B-eq', Math.abs(sg)<1e-9 ? 'σ=0 → s=jω，两域数值完全相等 ✓' : 'σ≠0 → s 含实部，两域数值不同（实部正是暂态信息）');
+    }
+    ['B-R','B-L','B-C','B-sig','B-w'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-04');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    function numOk(v,exp,tol){ var x=parseFloat(v); return !isNaN(x) && Math.abs(x-exp)<=(tol||0.02); }
+    window.checkNum1=function(){
+      var b=el('q-1'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,-2,0.02);
+      if(fb) fb.dataset.hint='s/(s+2)−1 = −2/(s+2)；直接验算 f′=−2e^(−2t) 的变换也是 −2/(s+2)。';
+      mark('q-1',ok,fb);
+    };
+    window.checkNum2=function(){
+      var b=el('q-2'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,0.1,0.01) && numOk(ins[1].value,-0.6,0.01);
+      if(fb) fb.dataset.hint='根 0 → 常数项 0.1；根 −5 → −0.6e^(−5t)（衰减最快的模态）。';
+      mark('q-2',ok,fb);
+    };
+    window.checkNum3=function(){
+      var b=el('q-3'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,-1,0.02) && /临界/.test(ins[1].value);
+      if(fb) fb.dataset.hint='s²+2s+1=(s+1)²=0 → s=−1 重根 → 临界阻尼（与 L3-03 一致）。';
+      mark('q-3',ok,fb);
+    };
+    window.checkNum4=function(){
+      var b=el('q-4'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,-4,0.02) && numOk(ins[1].value,0.25,0.01) && numOk(ins[2].value,4,0.02);
+      if(fb) fb.dataset.hint='s=−4 → τ=1/4=0.25 s；稳态幅值 4A（Z=8+j6=10∠36.87°、I=40/10=4∠−36.87°）。';
+      mark('q-4',ok,fb);
+    };
+    window.checkTextAny=function(id,keys,hint){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<keys.length;i++){
+        var raw=(((ins[i]||{}).value)||'').toLowerCase().replace(/\s/g,'');
+        var hit=false;
+        for(var j=0;j<keys[i].length;j++){ if(raw.indexOf(keys[i][j].toLowerCase().replace(/\s/g,''))>=0){ hit=true; break; } }
+        if(!hit){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint=hint||'再想想：按顺序核对每个空。';
+      mark(id,ok,fb);
+    };
+    refresh();
+
+    /* ---------- 重来：重锁四门与下一预测选项，清空反馈/输入/选项/面板/读根卡/练习 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('[data-pred="q-p2"] .pred-opt, [data-pred="q-p3"] .pred-opt, [data-pred="q-p4"] .pred-opt').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display='none'; });
+      /* 面板 B */
+      bUnlocked=false; r8Unlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none'; el('r8-card').style.display='none';
+      ['B-zrp','B-zrs','B-zlp','B-zls','B-zcp','B-zcs','B-s','B-eq'].forEach(function(id){ set(id,'—'); });
+      el('B-R').value=2; el('B-L').value=1; el('B-C').value=0.5; el('B-sig').value=-1; el('B-w').value=2;
+      /* 面板 A */
+      aUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ['A-eq-t','A-eq-s','A-poly','A-p1','A-p2','A-shape','A-form'].forEach(function(id){ set(id,'—'); });
+      el('A-R').value=3; el('A-L').value=1; el('A-C').value=1;
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===3); });
+      /* 练习 */
+      exUnlocked=false; el('ex-lock').style.display=''; el('ex-body').style.display='none';
+      cheatUnlocked=false;
+      refresh();
+    };
+  })();
+  </script>
+</body>
+</html>
