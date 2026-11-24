@@ -21,6 +21,7 @@
   let hideL, hideR;
   function show(side){ clearTimeout(side==='left'?hideL:hideR); body.classList.add('show-'+side); }
   function scheduleHide(side){
+    if (body.classList.contains('touch-mode')) return; // 触屏由按钮显式开合，不自动收回
     const ref = side==='left' ? (t)=>hideL=t : (t)=>hideR=t;
     clearTimeout(side==='left'?hideL:hideR);
     ref(setTimeout(()=>body.classList.remove('show-'+side), 220));
@@ -204,4 +205,37 @@
   };
   document.querySelectorAll('.reveal-btn').forEach(function(b){ if(!b.dataset.label) b.dataset.label = b.textContent; });
   window.markChain(0);
+
+  /* ===== 手机 / 触屏侧栏开关（新增，桌面行为不变） ===== */
+  try {
+    var touchMode = (window.matchMedia && (matchMedia('(hover: none)').matches || matchMedia('(pointer: coarse)').matches)) || window.innerWidth <= 860;
+    if (touchMode) {
+      body.classList.add('touch-mode');
+      function makeToggle(side, label, aria){
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'nav-toggle ' + side;
+        b.textContent = label;
+        b.setAttribute('aria-label', aria);
+        b.addEventListener('click', function(e){
+          e.stopPropagation();
+          var cls = 'show-' + side;
+          var wasOpen = body.classList.contains(cls);
+          body.classList.remove('show-left', 'show-right');
+          if (!wasOpen) body.classList.add(cls);
+        });
+        document.body.appendChild(b);
+      }
+      makeToggle('left', '☰ 目录', '打开或关闭课程目录');
+      if (rightbar) makeToggle('right', 'ⓘ 速查', '打开或关闭速查栏');
+      document.addEventListener('click', function(e){
+        if (!e.target.closest('.nav-toggle, .sidebar, .anchor, [data-qa-link]')) {
+          body.classList.remove('show-left', 'show-right');
+        }
+      });
+      document.querySelectorAll('.sidebar a').forEach(function(a){
+        a.addEventListener('click', function(){ body.classList.remove('show-left','show-right'); });
+      });
+    }
+  } catch(e) {}
 })();

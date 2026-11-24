@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第八课 · 直流电路综合：读图、建模与求解 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .flowar{stroke:var(--chalk-pink);stroke-width:2;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .box{stroke:var(--chalk-blue);stroke-width:2;fill:rgba(159,211,255,.06)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .toolbox{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+    .toolbox span{padding:3px 9px;border:1px solid var(--line);border-radius:20px;font-size:.82rem;color:var(--chalk-dim)}
+    .toolbox span b{color:var(--chalk-yellow)}
+    /* 实验台 */
+    .solve-lab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .solve-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .solve-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .solve-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:3px 0 1px}
+    .solve-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;font-size:.82rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim)}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.45}
+    .th-agree{font-family:var(--mono);font-size:.8rem;font-weight:700;margin-top:6px;color:var(--chalk-pink)}
+    .th-agree.ok{color:var(--chalk-green)}
+    .fig-mini{margin:6px 0;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.22);padding:4px}
+    .fig-mini svg{display:block;width:100%;height:auto;max-width:320px;margin:0 auto}
+    @media(max-width:1100px){.solve-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第八课 · 直流电路综合：读图、建模与求解</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题：两类约束总纲</a></li>
+        <li><a href="#stage-1">1 · 读图与建模</a></li>
+        <li><a href="#stage-2">2 · 选法：系统求解法</a></li>
+        <li><a href="#stage-3">3 · 独立方程数判据</a></li>
+        <li><a href="#stage-4">4 · 求解与校验（五步流程例题）</a></li>
+        <li><a href="#stage-5">5 · 独立练习（打包匹配）</a></li>
+        <li><a href="#stage-6">6 · 实验台（两种形态演示）</a></li>
+        <li><a href="#stage-7">7 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">这是<strong>综合课</strong>，不引入新定理：把前七课的工具串成<strong>读图→建模→选法→求解→校验</strong>一套可复用流程。</div>
+      <div class="mini">两种任务形态：<strong>形态一</strong>纯求解（求支路响应）、<strong>形态二</strong>工程优化（可变负载求最大功率）。</div>
+      <div class="mini">前置：L1-01~07 全部工具；本课只作引用，不再重摘。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-08.md</code>（邱 §1-1/§1-8/§3-1/§3-2；李上 §4-1，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-08-教案.md</code>（初审退 4 项、复审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>五步流程 + 校验清单（随时查）</h4>
+      <div class="mini"><strong>读图</strong>→圈节点标支路、定口径、数 <code>n</code>/<code>b</code>；<strong>建模</strong>→器件对应直流模型、标参考方向；<strong>选法</strong>→按结构挑工具；<strong>求解</strong>→列独立方程解线性方程组；<strong>校验</strong>→四项。</div>
+      <div class="mini"><strong>独立方程数</strong>：KCL <code>n−1</code>、KVL <code>b−n+1</code>，合计 <code>b</code>（支路电流口径）。节点法只列 n−1（KVL 自动满足），网孔法只列 b−n+1（KCL 自动满足）。</div>
+      <div class="mini"><strong>校验四项</strong>：① KCL 进出相等 ② KVL 回路和为零 ③ 功率守恒（发=吸，用<strong>原电路</strong>）④ 量级/符号/方程数封闭。</div>
+      <div class="mini"><strong>两条红线</strong>：功率校验用原电路（戴维南对内不等效）；“匹配效率 50%”<strong>只对单电压源串内阻模型</strong>成立。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第八课（L1-08）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §1-1/§1-8/§3-1/§3-2、李瀚荪 5e 上 §4-1（已摘录校对）</span>
+      </div>
+      <h1>直流电路综合：读图、建模与求解</h1>
+      <p class="muted">前七课我们攒齐了整套直流工具（参考方向、KCL/KVL、功率、等效、戴维南、节点网孔、叠加）。这一课不教新定理，只解决一个问题：<strong>面对一张陌生电路图，按什么顺序把这些工具串起来，并在解完时确认答案可靠</strong>。先认流程词：<code>读图</code>＝读成节点/支路/回路结构；<code>建模</code>＝器件对应理想模型并标参考方向；<code>选法</code>＝按结构挑工具；<code>求解</code>＝列独立方程组；<code>校验</code>＝代回原电路核对。现在只认词，后面现场讲实。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题·总纲</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">读图建模</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">选法</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">方程判据</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">求解校验</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">独立练习</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="7">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>（正是五步流程 + 练习与自检），不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 核心问题与总纲：一切解法的根是"两类约束"（5′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">工具箱已经满了：参考方向、KCL/KVL、功率、等效、戴维南、节点网孔、叠加……<br>可拿到一张<strong>元件杂、标注乱、有多个电源、还带可变负载</strong>的真实电路图——先干什么？用哪招？招之间什么顺序？算完怎么知道对不对？</p>
+            <p class="speak teacher">“今天不学新定理。我们把这些零散工具串成一套有固定顺序、每步都有理由、解完还能自查的通用流程——从‘会做一道题’变成‘会解一类题’。”</p>
+            <p class="muted">五步流程：<strong>读图 → 建模 → 选法 → 求解 → 校验</strong>。先看它的根：邱关源第一章导读一句话把所有解法统一了起来。</p>
+          </div>
+          <div class="fig-box md" aria-label="两类约束构成电路分析总纲的示意图">
+            <svg class="svg-diag" viewBox="0 0 380 180" role="img">
+              <title>元件约束VCR与连接约束KCL/KVL共同决定电路定解与校验</title>
+              <rect class="box" x="18" y="22" width="150" height="70" rx="6"/>
+              <text class="lbl" x="40" y="46">元件约束（VCR）</text>
+              <text class="dim" x="40" y="66">每个元件本身的 u-i 关系</text>
+              <text class="ylb" x="40" y="84">如 u = R i</text>
+              <rect class="box" x="212" y="22" width="150" height="70" rx="6"/>
+              <text class="lbl" x="232" y="46">连接约束（KCL/KVL）</text>
+              <text class="dim" x="232" y="66">元件互连的几何/拓扑关系</text>
+              <text class="ylb" x="232" y="84">∑i=0，∑u=0</text>
+              <path class="accent" d="M93,92 L160,128" marker-end="url(#arA)"/>
+              <path class="accent" d="M287,92 L220,128" marker-end="url(#arA)"/>
+              <rect class="box" x="115" y="132" width="150" height="38" rx="6"/>
+              <text class="plb" x="143" y="156">给定电路 → 定解 / 校验</text>
+              <defs><marker id="arA" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：一切解法都只是这两类约束的不同组织方式。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">两类约束：全课总纲 →</button>
+        <div class="reveal" id="rev-0a">
+          <p>邱关源第一章导读：电路中变量受到<strong>两类约束</strong>——一类是元件特性方程形成的<strong>元件约束</strong>（VCR），一类是元件互连构成的<strong>几何/拓扑约束</strong>（基尔霍夫定律）。给定电路，靠这两类约束就能得到定解；反过来，正确的解答也一定满足这两类约束〔邱 p.10 导读；§1-8 p.22〕。</p>
+          <div class="ok-box"><strong>陈述时刻 1 · 两类约束：电路分析的总纲</strong>（可抄笔记）：一切直流电路解法，本质都只是<strong>两类约束的不同组织形式</strong>——<strong>元件约束</strong>（各元件 VCR，如 <code>u=Ri</code>）＋<strong>连接约束</strong>（KCL、KVL）。等效、戴维南、节点法、网孔法、叠加只是把它们"重新排列以更好求解"的包装。选法是在选"怎样组织两类约束最省事"，校验是在查"解是否回到了两类约束"。〔邱 第一章导读 p.10；§1-8 p.22〕</div>
+          <p class="muted">把这句话落成可操作顺序，就是黑板上的五步流程。下面逐段讲透，并用两道题各走一遍。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 读图与建模（8′）〔邱 §1-8 / §3-1 / §1-1〕</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">读图：先把图读成"节点 / 支路 / 回路" →</button>
+        <div class="reveal" id="rev-1a">
+          <p>邱先把每个二端元件叫一条<strong>支路</strong>，支路的连接点叫<strong>节点</strong>，支路构成的闭合路径叫<strong>回路</strong>〔邱 §1-8 p.22〕。</p>
+          <p class="warn"><strong>关键坑：支路口径</strong>。支路数 <code>b</code>、节点数 <code>n</code> 取决于你怎样定义"一条支路"——单个元件算一条？串联组合算一条？同一电路口径不同，<code>n</code>、<code>b</code> 就不同。<strong>所以数方程个数前必须先约定口径</strong>，否则 <code>n−1</code>、<code>b−n+1</code> 无从谈起〔邱 §3-1 p.55〕。</p>
+          <p class="muted">通识做法〔通识〕：读图先圈节点、标支路、认回路；默认把"电压源＋串联电阻"看成一个实际电源支路（对应第 5 课模型），这样节点法变量最少。本课所有例题开头都先申明口径。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1（先猜后揭，建模）：</strong>同一个实际线圈（电感），在恒定直流下和高频交流下，它的电路模型一样吗？① 一样，都是导线/电阻；② 不一样，工作条件不同，模型可能要加电感甚至电容；③ 说不准。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'same');enableGate('gate-pred0')">① 一样</button>
+            <button class="pred-opt" onclick="pickPred(this,'diff');enableGate('gate-pred0')">② 不一样，看工作条件</button>
+            <button class="pred-opt" onclick="pickPred(this,'idk');enableGate('gate-pred0')">③ 说不准</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-1b" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：建模原则 →</button>
+        <div class="reveal" id="rev-1b">
+          <p><strong>② 才对。</strong>邱举线圈为例：<strong>恒定电流</strong>下只表现为导线电阻（耗能）→ 模型是一个<strong>电阻</strong>；<strong>电流变化</strong>时磁场产生感应电压 → 再加一个<strong>串联电感</strong>；<strong>高频</strong>时还要计及表面电荷的电容效应 → 再加<strong>电容</strong>〔邱 §1-1 p.11〕。预测答案：②。</p>
+          <div class="ok-box"><strong>陈述时刻 2 · 建模原则</strong>（可抄笔记）：建模＝用理想元件（或其组合）模拟实际器件；<strong>同一器件在不同工作条件下模型可能不同</strong>。要抓给定条件下的主要物理现象：太复杂难分析，太简单会失真。建模后<strong>必须标好电压电流参考方向</strong>——后续所有符号、KCL/KVL 正负、功率吸收/发出都建在它上面。〔邱 §1-1 p.10–11；第 1 课〕<br><strong>边界</strong>：本课直流稳态，元件按直流模型处理（电感短路、电容开路属后续动态课，此处只点到）。</div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 选法：系统求解法（10′）〔邱 §3-1〕</div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:4px;">
+          <p class="ask"><strong>预测 2（先猜后揭，选法的核心动机）：</strong>电路一旦复杂（多个电源、元件杂），最有效的做法是什么？① 坚持一步步串并联等效化简；② 选一组变量、按 KCL/KVL/VCR 列独立方程组系统求解；③ 只能用叠加一个个源算。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'reduce');enableGate('gate-pred1')">① 一步步等效化简</button>
+            <button class="pred-opt" onclick="pickPred(this,'system');enableGate('gate-pred1')">② 选变量列独立方程组</button>
+            <button class="pred-opt" onclick="pickPred(this,'super');enableGate('gate-pred1')">③ 只能叠加</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-2a" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2：系统求解法 →</button>
+        <div class="reveal" id="rev-2a">
+          <p>邱：结构简单时直接用基尔霍夫＋等效变换有效；但<strong>结构较复杂（如多个独立电源）时，等效法不太有效，有时反而使问题复杂化</strong>。系统求解法<strong>不改变电路结构</strong>，选一组合适变量（电流和/或电压），据 KCL、KVL、VCR 建立<strong>独立方程组</strong>，解线性方程组得响应〔邱 §3-1 p.54〕。预测答案：②。这就是第 6 课的节点电压法 / 网孔电流法——系统求解法的两种"选变量"方式（第 6 课已详讲，本课只作前置工具引用）。</p>
+          <div class="ok-box"><strong>陈述时刻 3 · 系统求解法</strong>（可抄笔记）：不改变电路结构，选一组独立变量，据 KCL、KVL、元件 VCR 列出该组变量的<strong>独立方程组</strong>，解方程组得全部响应；线性电阻电路得到一组<strong>线性代数方程</strong>。第 6 课节点法（变量＝节点电压）、网孔法（变量＝网孔电流）都是它的实例。〔邱 §3-1 p.54〕<br><strong>适用/取舍</strong>：电路简单→等效化简更快捷；电路复杂（多电源、多支路）→系统求解法更可靠，不必穷于化简。</div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 独立方程数判据：方程够不够、独不独立（含在选法 10′ 内）〔邱 §3-2〕</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">n−1 与 b−n+1：推出来，不是背下来 →</button>
+        <div class="reveal" id="rev-3a">
+          <p><strong>KCL 独立方程 = n−1</strong>：对 <code>n</code> 个节点都列 KCL，每条支路电流恰连两个节点、必一次为正一次为负，所有方程相加恒为零 → 说明它们不独立，任取 <code>n−1</code> 个即独立。<strong>这是推出来的，不是背的</strong>〔邱 §3-2 p.56〕。</p>
+          <p><strong>KVL 独立方程 = b−n+1</strong>：借"树"（含全部节点、不含回路的连通子图）找独立回路。<strong>树支数直觉</strong>：把 <code>n</code> 个节点连成不形成回路的网，恰好需 <code>n−1</code> 条支路——从 1 个节点出发，每加 1 条最多接入 1 个新节点，接齐正好加 <code>n−1</code> 次；多一条成回路，少一条连不通〔邱 §3-2 p.57〕。故<strong>树支数 = n−1</strong>、<strong>连支数 = b−n+1</strong>；每加一条连支形成一个"基本回路"，只含这一条连支，故其 KVL 方程必独立〔邱 §3-2 p.56–58〕。平面图网孔数 = 独立回路数 = <code>b−n+1</code>〔邱 §3-2 p.58〕。</p>
+          <p class="muted"><strong>合计封闭</strong>：<code>(n−1)+(b−n+1)=b</code>，正好等于 <code>b</code> 条支路的未知支路电流数；若把支路电压也当未知量，再加 <code>b</code> 个 VCR，共 <code>2b</code> 个方程解 <code>2b</code> 个量〔邱 §3-2；第 6 课〕。</p>
+          <div class="ok-box"><strong>陈述时刻 4 · 独立方程数判据</strong>（公式 + 来源 + 用途，可抄笔记）：对 <code>n</code> 节点、<code>b</code> 支路的连通电路，独立 KCL <code>n−1</code> 个、独立 KVL <code>b−n+1</code> 个，合计 <code>b</code>，恰与 <code>b</code> 条支路电流未知量数相等、方程组封闭〔邱 §3-2 p.56–58〕。<br>- <strong>来源</strong>：n−1 由"全节点 KCL 相加恒为零"推出；b−n+1 由"树的连支数＝基本回路数"推出——都是推出来的。<br>- <strong>用途</strong>：选法时判断"该列几个方程才够、有没有多列重复"；校验时检查"方程是否封闭、是否独立"。<br>- <strong>前提</strong>：连通图；<code>n</code>、<code>b</code> 依赖支路定义口径（环节 1）。</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3b" data-stage="3" onclick="revealBlock(this)">别误解：合计 b ≠ 要硬列 b 个方程 →</button>
+        <div class="reveal" id="rev-3b">
+          <p class="warn"><strong>最容易被学错的地方</strong>：<code>b</code> 个是<strong>以支路电流为变量</strong>时"两类约束总共需要多少方程"的总账。但<strong>换了变量，KCL 或 KVL 会自动满足，就不必再列</strong>〔通识〕：</p>
+          <ul>
+            <li><strong>节点法</strong>：变量取 <code>n−1</code> 个节点电压，各支路电流由节点电压经 Ohm 表出，于是 <strong>KVL 天然满足</strong>（沿回路电位差绕一圈必为零），只需列 <code>n−1</code> 个 KCL。下一环节例题 <code>n=2</code>，故只列 <strong>1 个</strong> KCL——正是合计里 KCL 那 1 个，KVL 那 2 个被节点电压变量"免费"吸收了。</li>
+            <li><strong>网孔法</strong>：变量取 <code>b−n+1</code> 个网孔电流，各支路电流由网孔电流叠加表出，于是 <strong>KCL 天然满足</strong>，只需列 <code>b−n+1</code> 个 KVL。</li>
+          </ul>
+          <p><strong>一句话</strong>：<code>b</code> 是"用支路电流当变量"的账；选节点电压就把 KVL 那部分免费了，选网孔电流就把 KCL 那部分免费了。判据不是让你硬列 <code>b</code> 个方程，而是保证<strong>无论选哪种变量，方程都恰好封闭且独立</strong>（第 6 课已用两法分别求解验证）。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3c" data-stage="3" onclick="revealBlock(this)">按症状选工具 + 工具可组合 →</button>
+        <div class="reveal" id="rev-3c">
+          <table class="mini-t">
+            <tr><th>电路特征（读图得到）</th><th>首选工具</th><th>理由</th></tr>
+            <tr><td>纯串并联、无桥接</td><td>串并联化简 + 分压分流</td><td>最省，L1-04</td></tr>
+            <tr><td>多电源、结构复杂、求某支路</td><td>节点法 / 网孔法</td><td>不改结构、列独立方程，L1-06</td></tr>
+            <tr><td>多独立源、只想看一条支路</td><td>叠加（拆激励）</td><td>线性电路分而治之，L1-07</td></tr>
+            <tr><td>只关心某负载、其余可打包</td><td>戴维南/诺顿（结构分治）</td><td>压成 <code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code>，L1-05</td></tr>
+            <tr><td>可变负载求最大功率</td><td>戴维南 + 匹配</td><td><code>R<sub>L</sub>=R<sub>eq</sub></code>，<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>，L1-07</td></tr>
+            <tr><td>已知端口 <code>u,i</code>、想局部化简</td><td>替代（换结构）</td><td>对外等效，L1-07</td></tr>
+          </table>
+          <p><strong>工具可组合，不是只能选一个</strong>〔通识〕：形态二先戴维南打包（结构分治），求打包所需的 <code>u<sub>oc</sub></code> 时内部若有多个电源，又要用节点法或叠加。规则：<strong>先按"最终要什么"定主工具</strong>（求某支路响应→系统法/叠加；求负载最大功率→戴维南+匹配）；<strong>主工具内部要算某个中间量时，再挑最省的子工具</strong>。</p>
+          <p class="muted">李瀚荪"分解四步骤"正是这套结构分治的书证：① 划单口、定端口 <code>u,i</code> 参考方向；② 分别求两单口 VCR；③ 联立 VCR 求端口量；④ 回代求内部各支路〔李 §4-1〕。戴维南就是它的特例。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 求解与校验：五步流程走一遍（塔桥例题·形态一，12′）</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>搭桥例题（形态一：给定电路求支路响应，〔我编的题〕）</strong>：节点 A 对参考地有三条支路——电压源 <code>u<sub>s</sub>=10 V</code>（正极朝 A）串 <code>R<sub>1</sub>=2 Ω</code>；电阻 <code>R<sub>2</sub>=4 Ω</code>；电流源 <code>i<sub>s</sub>=1 A</code> 由地指向 A。求节点电压 <code>V</code> 与各支路电流，并校验。</p>
+            <p class="muted">右边这张图后面<strong>实验台左面板会复用</strong>（拖动参数看结果怎么变）。先混个眼熟，答案先不公布。</p>
+          </div>
+          <div class="fig-box md" aria-label="搭桥例题三支路电路示意图">
+            <svg class="svg-diag" viewBox="0 0 380 220" role="img">
+              <title>节点A对地三条支路：10V电压源串2欧电阻、4欧电阻、1A电流源由地指向A</title>
+              <line class="wire" x1="30" y1="40" x2="345" y2="40"/>
+              <line class="wire" x1="30" y1="185" x2="345" y2="185"/>
+              <text class="ylb" x="30" y="30">A（节点电压 V = ?）</text>
+              <circle class="nodept" cx="80" cy="40" r="4"/>
+              <!-- 支路1：10V + 2Ω -->
+              <line class="wire" x1="80" y1="40" x2="80" y2="62"/>
+              <circle class="elem" cx="80" cy="78" r="16" fill="none"/>
+              <text class="lbl" x="52" y="76">10V</text><text class="dim" x="74" y="74">+</text><text class="dim" x="74" y="90">−</text>
+              <line class="wire" x1="80" y1="94" x2="80" y2="108"/>
+              <rect class="elem" x="70" y="108" width="20" height="28" rx="2" fill="none"/><text class="lbl" x="94" y="126">R₁=2Ω</text>
+              <line class="wire" x1="80" y1="136" x2="80" y2="185"/>
+              <!-- 支路2：4Ω -->
+              <line class="wire" x1="190" y1="40" x2="190" y2="88"/>
+              <rect class="elem" x="180" y="88" width="20" height="34" rx="2" fill="none"/><text class="lbl" x="204" y="108">R₂=4Ω</text>
+              <line class="wire" x1="190" y1="122" x2="190" y2="185"/>
+              <!-- 支路3：1A 电流源，向上 -->
+              <line class="wire" x1="300" y1="40" x2="300" y2="70"/>
+              <circle class="elem" cx="300" cy="90" r="19" fill="none"/><text class="lbl" x="324" y="88">1A</text>
+              <path class="flowar" d="M300,102 L300,78" marker-end="url(#arB)"/>
+              <line class="wire" x1="300" y1="109" x2="300" y2="185"/>
+              <text class="dim" x="30" y="208">口径：电压源+串阻算一条支路 → n=2，b=3</text>
+              <defs><marker id="arB" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffb3c7"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：三支路并联，节点法只列 1 个 KCL 即可解。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">五步流程：读图 → 建模 → 选法 → 求解 → 校验 →</button>
+        <div class="reveal" id="rev-4a">
+          <ol>
+            <li><strong>读图</strong>：把"电压源＋串 R₁"看成一条实际电源支路（口径已定），则 <code>n=2</code>（A 与地）、<code>b=3</code>。独立方程数 KCL=<code>n−1=1</code>、KVL=<code>b−n+1=2</code>、合计 3=<code>b</code>〔邱 §3-2〕。（若按"每元件一条支路"：<code>n=3,b=4</code>，2+2=4=b——口径变、数变，判据不变。）</li>
+            <li><strong>建模</strong>：确认 <code>u<sub>s</sub></code>、<code>R<sub>1</sub></code>、<code>R<sub>2</sub></code>、<code>i<sub>s</sub></code> 的直流理想模型；标 <code>V=v<sub>A</sub></code>（A 对地），支路电流取从 A 流出〔邱 §1-1；第 1 课〕。</li>
+            <li><strong>选法</strong>：只有一个独立节点 → <strong>节点法最省</strong>（只列 1 个 KCL）；网孔法要 2 个，不作首选。正是工具表第二行。</li>
+            <li><strong>求解</strong>：支路 1 从 A 流出电流 <code>(V−10)/2</code>，支路 2 为 <code>V/4</code>，电流源向 A 注入 1 A（即从 A 流出 −1 A）。节点 A 的 KCL：<code>(V−10)/2 + V/4 − 1 = 0</code> → 乘 4：<code>2(V−10)+V−4=0</code> → <code>3V=24</code> → <strong><code>V=8 V</code></strong>。回代 <code>i₁=(8−10)/2=<strong>−1 A</strong></code>（实际 1 A 由电源支路流入 A），<code>i₂=8/4=<strong>2 A</strong></code>。</li>
+          </ol>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>预测 3（先猜后揭，校验）：</strong>算完 <code>V=8 V</code>、<code>i₁=−1 A</code>、<code>i₂=2 A</code>，下面哪个才是可靠的"答案对不对"的检查？① 数值看着顺眼、最好是整数；② 代回原电路核对 KCL/KVL、功率守恒与量级；③ 和同学对一下答案。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'looks');enableGate('gate-pred2')">① 数值顺眼就好</button>
+            <button class="pred-opt" onclick="pickPred(this,'check');enableGate('gate-pred2')">② 代回原电路核对</button>
+            <button class="pred-opt" onclick="pickPred(this,'ask');enableGate('gate-pred2')">③ 和同学对答案</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 3：四项校验 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>② 才对。</strong>把答案代回，四项都查：</p>
+          <ul>
+            <li><strong>KCL</strong>：节点 A 流入 = 电流源 1 A + 电源支路 1 A = 2 A，流出 = <code>i₂=2 A</code>，进出相等 ✓〔邱 §1-8 p.23：∑i=0、电流连续性〕。</li>
+            <li><strong>KVL</strong>：取电源支路与 <code>R₂</code> 构成的回路，沿 <code>R₂</code> 降 8 V，经电源回升 10 V 再在 <code>R₁</code> 降 <code>1×2=2 V</code>，<code>8+2−10=0</code> ✓。</li>
+            <li><strong>功率守恒</strong>：<code>R₁</code> 耗 <code>1²×2=2 W</code>、<code>R₂</code> 耗 <code>2²×4=16 W</code>，共 18 W；电压源发 <code>10×1=10 W</code>、电流源发 <code>8×1=8 W</code>，共 18 W，发=吸 ✓（第 3 课功率符号；电流源两端电压即 <code>V=8 V</code>，电流由低电位流向高电位→发出）。</li>
+            <li><strong>量级/符号</strong>：<code>V=8 V</code> 介于 0 与电源 10 V 之间，合理；<code>i₁</code> 为负说明实际方向与参考相反，已在 KCL 中按方向处理 ✓。预测答案：②。</li>
+          </ul>
+          <div class="ok-box"><strong>陈述时刻 5 · 直流电路综合五步流程</strong>（本课核心，可抄笔记）：<br><strong>读图</strong>（圈节点标支路、定口径、数 <code>n</code>/<code>b</code>）→ <strong>建模</strong>（器件→直流模型、标参考方向）→ <strong>选法</strong>（简单串并联就化简；复杂多电源列独立方程组；只看一支路可叠加；只看负载可戴维南；可变负载求最大功率用戴维南+匹配）→ <strong>求解</strong>（据两类约束列独立方程、解线性方程组）→ <strong>校验</strong>（代回 KCL/KVL、功率守恒、量级符号、方程数封闭）。<br><strong>为什么这个顺序</strong>：每步输出是下一步输入；跳过读图/建模会选错法，跳过校验则发现不了符号或方程错误。〔依据邱 §1-1/§1-8/§3-1/§3-2、李 §4-1 整合；通识编排〕</div>
+          <div class="ok-box"><strong>陈述时刻 6 · 校验清单</strong>（可抄笔记）：解完必查四项——① <strong>KCL</strong> 任一节点/闭合面流入=流出（∑i=0）；② <strong>KVL</strong> 任一回路电压降代数和=0；③ <strong>功率守恒</strong> 全部电源发出 = 全部元件吸收；④ <strong>量级/符号/方程数</strong> 结果合理、负号按参考方向解读、方程数 <code>b</code>（或 <code>2b</code>）封闭且独立。〔邱 §1-8 p.23、§3-2 p.56–58；第 3 课功率〕<br><strong>边界</strong>：戴维南等效只对<strong>端口外特性</strong>等效，<strong>对内功率不等效</strong>——校验"功率守恒"要用<strong>原电路</strong>真实功率，别拿等效电阻上的功率当原网络内部损耗（第 7 课"50% 效率"陷阱）。</div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习：形态二「先打包再匹配」+ 回原电路校验（7′）</div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:4px;">
+          <p class="ask"><strong>预测 4（先猜后揭，选法迁移）：</strong>若负载可变、要求它的最大功率，是对原电路每次都列一堆方程硬算，还是先把含源网络打包？① 负载一变就对整个电路重新硬算；② 先把含源网络打包成戴维南等效（<code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code>），再按匹配条件算；③ 只能用叠加。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'hard');enableGate('gate-pred3')">① 每次重新硬算</button>
+            <button class="pred-opt" onclick="pickPred(this,'pack');enableGate('gate-pred3')">② 先打包再匹配</button>
+            <button class="pred-opt" onclick="pickPred(this,'super2');enableGate('gate-pred3')">③ 只能用叠加</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-5a" data-stage="5" onclick="revealBlock(this)" disabled>公布预测 4：形态二选法 →</button>
+        <div class="reveal" id="rev-5a">
+          <p><strong>② 才对。</strong><code>R<sub>L</sub></code> 可变时，含源网络那部分对任何 <code>R<sub>L</sub></code> 都不变，先打包成 <code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code>（第 5 课），之后 <code>R<sub>L</sub></code> 怎么变都只需改一个负载、代入 <code>R<sub>L</sub>=R<sub>eq</sub></code> 匹配即可，不必每次重列方程（第 7 课）。预测答案：②。这就是形态二的选法结论——下面按此思路动笔。</p>
+        </div>
+
+        <div class="side-fig-row" style="margin-top:10px;">
+          <div class="side-text">
+            <div class="exercise" style="margin-top:0;">
+              <h4>该你了（双电源含源单口，〔我编的题〕）</h4>
+              <p>电压源 <code>u<sub>s</sub>=6 V</code>（正极朝输出节点）串 <code>R<sub>1</sub>=3 Ω</code>，输出节点对地另有 <code>R<sub>2</sub>=6 Ω</code>，以及一个由地指向输出节点的电流源 <code>i<sub>s</sub>=2 A</code>；端口取在输出节点与地之间，负载 <code>R<sub>L</sub></code> 将并在端口上（右图 a-b）。</p>
+              <ol>
+                <li>读图：数出 <code>n</code>、<code>b</code> 与独立方程总数。</li>
+                <li>求端口开路电压 <code>u<sub>oc</sub></code> 与等效电阻 <code>R<sub>eq</sub></code>（求 <code>R<sub>eq</sub></code> 时独立源置零）。</li>
+                <li><code>R<sub>L</sub></code> 取多大功率最大？最大功率是多少？</li>
+                <li>校验：接上匹配负载后，用<strong>原电路</strong>算各电源发出与负载功率，求实际效率；它是 50% 吗？</li>
+              </ol>
+            </div>
+          </div>
+          <div class="fig-box md" aria-label="独立练习双电源含源单口电路示意图">
+            <svg class="svg-diag" viewBox="0 0 380 220" role="img">
+              <title>双电源含源单口：6V电压源串3欧、6欧电阻、2A电流源由地指向输出节点，端口a-b接负载</title>
+              <line class="wire" x1="30" y1="45" x2="300" y2="45"/>
+              <line class="wire" x1="30" y1="180" x2="300" y2="180"/>
+              <circle class="nodept" cx="70" cy="45" r="4"/>
+              <text class="ylb" x="30" y="35">a（输出节点）</text>
+              <!-- 6V + 3Ω -->
+              <line class="wire" x1="70" y1="45" x2="70" y2="66"/>
+              <circle class="elem" cx="70" cy="82" r="16" fill="none"/><text class="lbl" x="42" y="80">6V</text><text class="dim" x="64" y="78">+</text><text class="dim" x="64" y="94">−</text>
+              <line class="wire" x1="70" y1="98" x2="70" y2="112"/>
+              <rect class="elem" x="60" y="112" width="20" height="28" rx="2" fill="none"/><text class="lbl" x="84" y="130">R₁=3Ω</text>
+              <line class="wire" x1="70" y1="140" x2="70" y2="180"/>
+              <!-- 6Ω -->
+              <line class="wire" x1="170" y1="45" x2="170" y2="90"/>
+              <rect class="elem" x="160" y="90" width="20" height="34" rx="2" fill="none"/><text class="lbl" x="184" y="110">R₂=6Ω</text>
+              <line class="wire" x1="170" y1="124" x2="170" y2="180"/>
+              <!-- 2A 电流源 -->
+              <line class="wire" x1="270" y1="45" x2="270" y2="70"/>
+              <circle class="elem" cx="270" cy="90" r="19" fill="none"/><text class="lbl" x="294" y="88">2A</text>
+              <path class="flowar" d="M270,102 L270,78" marker-end="url(#arC)"/>
+              <line class="wire" x1="270" y1="109" x2="270" y2="180"/>
+              <!-- 端口 a-b + RL -->
+              <line class="wire" x1="300" y1="45" x2="335" y2="45"/>
+              <line class="wire" x1="300" y1="180" x2="335" y2="180"/>
+              <text class="ylb" x="330" y="38">a</text><text class="ylb" x="330" y="196">b</text>
+              <defs><marker id="arC" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffb3c7"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：双电源网络，求 u_oc 需节点法（内部多工具组合）。</div>
+          </div>
+        </div>
+
+        <div style="margin-top:10px;">
+          <div class="numcheck" id="ex-n" data-qid="ex-n"><label>① 节点数 n = <input type="text" placeholder="例如 2" /> 个</label><button class="btn-sm" onclick="checkNum('ex-n',2,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-neq" data-qid="ex-neq"><label>① 独立方程总数 = <input type="text" placeholder="例如 3" /> 个</label><button class="btn-sm" onclick="checkNum('ex-neq',3,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-uoc" data-qid="ex-uoc"><label>② 开路电压 u<sub>oc</sub> = <input type="text" placeholder="例如 8" /> V</label><button class="btn-sm" onclick="checkNum('ex-uoc',8,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-req" data-qid="ex-req"><label>② 等效电阻 R<sub>eq</sub> = <input type="text" placeholder="例如 2" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-req',2,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-rl" data-qid="ex-rl"><label>③ 匹配负载 R<sub>L</sub> = <input type="text" placeholder="例如 2" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-rl',2,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-pmax" data-qid="ex-pmax"><label>③ 最大功率 P<sub>max</sub> = <input type="text" placeholder="例如 8" /> W</label><button class="btn-sm" onclick="checkNum('ex-pmax',8,0.01)">检查</button><div class="fb"></div></div>
+          <div class="choicebox" data-qid="ex-eff" data-hint="50% 只对'单个理想电压源串内阻'模型成立。这个网络有两个电源，要回原电路算：负载得 8W，电源共发出 12W。" data-explain="不对。回原电路算：接 RL=2Ω 时 V′=4V，负载功率 8W；电压源发 4W、电流源发 8W，共 12W；效率=8/12=66.7%，不是 50%。戴维南等效只对端口外特性等效，对内功率不等效。">
+            <p><strong>④ 匹配时效率就是 50% 吗？</strong></p>
+            <label><input type="radio" name="q-eff8" value="yes" /> 对，匹配时效率就是 50%</label>
+            <label><input type="radio" name="q-eff8" value="no" /> 不对，实际约 66.7%</label>
+            <label><input type="radio" name="q-eff8" value="idk" /> 说不准</label>
+            <button class="btn-sm" onclick="checkChoice('ex-eff','no')">检查</button><div class="fb"></div>
+          </div>
+
+          <button class="reveal-btn" data-target="rev-5b" data-stage="5" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-5b">
+            <p><strong>①</strong> 口径"电压源＋串 R₁ 算一条支路"：<code>n=2</code>（输出节点 a 与地 b）、<code>b=3</code>（三条），KCL=<code>n−1=1</code>、KVL=<code>b−n+1=2</code>，合计 <strong>3=b</strong>。</p>
+            <p><strong>②</strong> 开路（不接 <code>R<sub>L</sub></code>）：设输出节点电压 <code>V</code>，KCL <code>(V−6)/3 + V/6 − 2 = 0</code> → 乘 6：<code>2(V−6)+V−12=0</code> → <code>3V=24</code> → <code><strong>u<sub>oc</sub>=V=8 V</strong></code>。求 <code>R<sub>eq</sub></code>：电压源置零→短路、电流源置零→开路，从端口看是 <code>R₁∥R₂=3∥6=18/9=<strong>2 Ω</strong></code>。</p>
+            <p><strong>③</strong> 匹配 <code>R<sub>L</sub>=R<sub>eq</sub>=<strong>2 Ω</strong></code>；<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)=8²/(4×2)=64/8=<strong>8 W</strong></code>。</p>
+            <p><strong>④ 校验（用原电路，接 R<sub>L</sub>=2 Ω）</strong>：节点 KCL <code>(V′−6)/3 + V′/6 + V′/2 − 2 = 0</code> → 乘 6：<code>2(V′−6)+V′+3V′−12=0</code> → <code>6V′=24</code> → <code>V′=4 V</code>，负载功率 <code>4²/2=<strong>8 W</strong></code>＝<code>P<sub>max</sub></code> ✓。电源发出：电压源电流 <code>(4−6)/3=−2/3 A</code>（即 2/3 A 流入节点，发 <code>6×2/3=4 W</code>），电流源两端 4 V、发 <code>4×2=8 W</code>，共 12 W；电阻吸收 <code>R₁:(2/3)²×3=4/3 W</code>、<code>R₂:4²/6=8/3 W</code>、<code>R<sub>L</sub>:8 W</code>，共 12 W，发=吸 ✓。实际效率 <code>=8/12=<strong>66.7%</strong></code>，<strong>不是 50%</strong>——电路里有两个电源，并非"单个理想电压源串内阻"模型；等效对内不等效，50% 只对那一种模型成立（第 7 课辨析）。</p>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 实验台：拖动参数，看两种形态的流程怎么走</div>
+
+        <div class="solve-lab">
+          <h4>同一套五步流程，参数变了结果跟着变</h4>
+          <p class="muted" style="margin:0 0 8px;">左面板是<strong>形态一</strong>（搭桥例题拓扑：Us 串 R₁、R₂、电流源三支路并联，节点法求解 + 校验）；右面板是<strong>形态二</strong>（先把含源网络打包成 <code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code> 再看负载匹配）。两栏默认值正是教案两道题的数值。</p>
+          <div class="solve-grid">
+            <div>
+              <div class="th-panel">
+                <h5>形态一 · 节点法求解器（默认＝搭桥例题）</h5>
+                <div class="solve-ctrl"><label>电压源 u<sub>s</sub> <span id="s-us-val">10 V</span></label><input type="range" id="s-us" min="1" max="24" step="1" value="10"/></div>
+                <div class="solve-ctrl"><label>电阻 R<sub>1</sub> <span id="s-r1-val">2 Ω</span></label><input type="range" id="s-r1" min="1" max="12" step="1" value="2"/></div>
+                <div class="solve-ctrl"><label>电阻 R<sub>2</sub> <span id="s-r2-val">4 Ω</span></label><input type="range" id="s-r2" min="1" max="12" step="1" value="4"/></div>
+                <div class="solve-ctrl"><label>电流源 i<sub>s</sub>（向节点 A） <span id="s-is-val">1 A</span></label><input type="range" id="s-is" min="0" max="8" step="1" value="1"/></div>
+                <div class="th-eq">读图口径：n=2，b=3 → KCL n−1=1，KVL b−n+1=2，合计 3=b；节点法只列 1 个 KCL</div>
+                <div class="th-row"><span class="k">节点电压 V=(u<sub>s</sub>/R₁+i<sub>s</sub>)/(1/R₁+1/R₂)</span><span class="v" id="s-v">—</span></div>
+                <div class="th-row"><span class="k">i₁=(V−u<sub>s</sub>)/R₁（从 A 流出）</span><span class="v" id="s-i1">—</span></div>
+                <div class="th-row"><span class="k">i₂=V/R₂（从 A 流出）</span><span class="v" id="s-i2">—</span></div>
+                <div class="th-row"><span class="k">KCL 校验：i₁+i₂−i<sub>s</sub></span><span class="v" id="s-kcl">—</span></div>
+                <div class="th-row"><span class="k">电阻吸收 P<sub>R</sub>=R₁i₁²+R₂i₂²</span><span class="v" id="s-pr">—</span></div>
+                <div class="th-row"><span class="k">电源发出 P<sub>S</sub>=−u<sub>s</sub>i₁+V·i<sub>s</sub></span><span class="v" id="s-ps">—</span></div>
+                <div class="th-agree ok" id="s-note">—</div>
+              </div>
+            </div>
+            <div>
+              <div class="th-panel">
+                <h5>形态二 · 打包匹配器（默认＝独立练习等效参数）</h5>
+                <div class="fig-mini">
+                  <svg viewBox="0 0 320 120" role="img" aria-label="戴维南等效uoc串Req接可变负载RL">
+                    <title>把含源网络打包成uoc电压源串Req，接可变负载RL</title>
+                    <line class="wire" x1="20" y1="40" x2="90" y2="40"/>
+                    <circle class="elem" cx="55" cy="40" r="14" fill="none"/><text class="lbl" x="30" y="46">u<sub>oc</sub></text>
+                    <line class="wire" x1="90" y1="40" x2="130" y2="40"/>
+                    <rect class="elem" x="130" y="30" width="34" height="20" rx="2" fill="none"/><text class="lbl" x="136" y="45">R<sub>eq</sub></text>
+                    <line class="wire" x1="164" y1="40" x2="240" y2="40"/>
+                    <line class="wire" x1="240" y1="40" x2="240" y2="70"/>
+                    <rect class="elem" x="230" y="70" width="20" height="30" rx="2" fill="none"/><text class="lbl" x="254" y="88">R<sub>L</sub></text>
+                    <line class="wire" x1="240" y1="100" x2="240" y2="115"/>
+                    <line class="wire" x1="240" y1="115" x2="20" y2="115"/>
+                    <line class="wire" x1="20" y1="115" x2="20" y2="40"/>
+                  </svg>
+                </div>
+                <div class="solve-ctrl"><label>打包开路电压 u<sub>oc</sub> <span id="m-uoc-val">8 V</span></label><input type="range" id="m-uoc" min="1" max="20" step="1" value="8"/></div>
+                <div class="solve-ctrl"><label>打包等效电阻 R<sub>eq</sub> <span id="m-req-val">2 Ω</span></label><input type="range" id="m-req" min="0.5" max="8" step="0.5" value="2"/></div>
+                <div class="solve-ctrl"><label>负载 R<sub>L</sub> <span id="m-rl-val">2 Ω</span></label><input type="range" id="m-rl" min="0.5" max="10" step="0.5" value="2"/></div>
+                <div class="th-row"><span class="k">当前电流 i=u<sub>oc</sub>/(R<sub>eq</sub>+R<sub>L</sub>)</span><span class="v" id="m-i">—</span></div>
+                <div class="th-row"><span class="k">负载功率 P<sub>L</sub>=i²R<sub>L</sub></span><span class="v" id="m-pl">—</span></div>
+                <div class="th-row"><span class="k">匹配功率 P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</span><span class="v" id="m-pmax">—</span></div>
+                <div class="th-row"><span class="k">R<sub>L</sub>/R<sub>eq</sub>（=1 时匹配）</span><span class="v" id="m-ratio">—</span></div>
+                <div class="th-row"><span class="k">打包模型视角效率 R<sub>L</sub>/(R<sub>eq</sub>+R<sub>L</sub>)</span><span class="v" id="m-eta">—</span></div>
+                <div class="th-agree" id="m-note">—</div>
+              </div>
+            </div>
+          </div>
+          <div class="th-eq" id="lab-note">默认：形态一正是搭桥例题（V=8V、i₁=−1A、i₂=2A，电阻吸 18W＝电源发 18W）；形态二正是独立练习打包参数（u_oc=8V、R_eq=2Ω、R_L=2Ω→P_max=8W，打包模型视角效率 50%，但真实网络效率 66.7%）。</div>
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 环节 7 ============ -->
+      <section class="stage" id="stage-7">
+        <div class="stage-h">7 · 迁移自检 + 两种任务形态小结</div>
+
+        <div class="exercise">
+          <h4>过关自检（不看笔记能说出才算会）</h4>
+          <ul>
+            <li>两类约束为什么是一切解法的根？选法与校验各怎么用好它？</li>
+            <li>建模为什么要看工作条件、为什么先标参考方向？</li>
+            <li>独立方程数 <code>n−1</code>、<code>b−n+1</code> 各怎么推出来、合计为什么是 <code>b</code>？为什么节点法只列 n−1 个还"够"？</li>
+            <li>五步流程每步做什么、为什么是这个顺序？</li>
+            <li>校验查哪四项？为什么功率校验要用原电路？</li>
+            <li>两种任务形态各怎么走流程？"工具可组合"是什么意思？</li>
+          </ul>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">一个核心问题：把零散工具串成可复用流程——<br>读图（n、b 口径）→ 建模（直流模型 + 参考方向）→ 选法（按症状挑工具，可组合）→ 求解（列独立方程、解线性方程组）→ 校验（KCL/KVL、功率守恒、量级符号、方程数）。</div>
+        <p><strong>两种任务形态</strong>：<strong>形态一（纯求解）</strong>——求某支路响应，主工具是节点/网孔或叠加，最后四项校验（环节 4）；<strong>形态二（工程优化）</strong>——可变负载求最大功率，先戴维南打包（内部可能还要节点/叠加），再匹配 <code>R<sub>L</sub>=R<sub>eq</sub></code>，最后回原电路校验功率与效率（环节 5）。</p>
+        <p class="muted">下一课钩子：直流电路到这里收官——七课工具加一套流程，静态电阻电路你已经能系统拿下。可电容、电感一登场，电压电流不再恒定，元件约束从 <code>u=Ri</code> 变成微分关系，KCL/KVL 依旧成立却要解微分方程。下一阶段进入<strong>动态电路</strong>：带着今天这套五步骨架，看看当约束里多了"记忆"，流程该怎么扩展。</p>
+        <!-- QA:stage-7:BEGIN -->
+        <!-- QA:stage-7:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：两类约束总纲；读图（支路/节点/回路、支路口径与 n/b）；建模（工作条件定模型、标参考方向）；系统求解法与独立方程数判据（n−1、b−n+1、合计 b，含推导与"合计 b ≠ 硬列 b 个"的桥接）；工具选择表与组合规则；分解四步骤（书证）；五步流程；校验四项 + 戴维南对内不等效的功率校验边界；两种任务形态各走一遍。</p>
+          <p class="mini"><strong>不讲</strong>：任何新定理/新公式（本课是综合课）；电感电容直流模型背后的动态机理（只点到）；非线性电路、含受控源电路的复杂系统求解细节（P2/P3 延后，两道例题均不含受控源）；矩阵形式与计算机辅助分析（邱 §3 提及，仅认知）；图论严密证明（树/连支只讲直觉与用途）；特勒根/互易/对偶（第 7 课已列 P3，不重复）。</p>
+          <p class="mini"><strong>记号约定</strong>：支路口径每题开头申明（默认"电压源＋串联电阻算一条支路"）；独立方程数一律 <code>(n−1)+(b−n+1)=b</code>；最大功率一律戴维南形式 <code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>；功率校验一律回<strong>原电路</strong>算。教案与页面统一采用这套。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出两类约束为什么是一切解法的根，并用它解释选法与校验。</li>
+            <li>会读图建模：定支路口径、数 n/b、按工作条件定模型、标参考方向。</li>
+            <li>会推并会用独立方程数 n−1 与 b−n+1，解释"合计 b"与节点/网孔实际方程数的关系。</li>
+            <li>面对陌生电路能按结构选主工具、需要时组合子工具，并说出理由。</li>
+            <li>能独立走完两种任务形态（形态一纯求解、形态二打包匹配），并用四项校验确认答案。</li>
+            <li>知道边界：功率校验用原电路、"50% 效率"只对单电压源模型成立。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与总纲 5′ / 读图与建模 8′ / 选法与独立方程数 10′ / 五步流程搭桥例题（含预测 3 与校验）12′ / 独立练习（形态二）7′ / 实验台与迁移自检 3′（课后延伸为主）。45 分钟是预算：因果链完整前提下压缩低增益重复；两个推导各讲一遍直觉即可，工具表点到即止，不为凑时长加料。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>两类约束（元件约束 VCR + 几何/拓扑约束 KCL/KVL）是总纲、定解依据</td><td>邱 第一章导读 p.10；§1-8 p.22 原文</td></tr>
+            <tr><td>支路/节点/回路概念；KCL ∑i=0、闭合面、电荷守恒</td><td>邱 §1-8 p.22–23 原文</td></tr>
+            <tr><td>建模：实际电路→理想元件模型、工作条件决定模型（线圈例）、繁简取舍</td><td>邱 §1-1 p.10–11 原文</td></tr>
+            <tr><td>系统求解法：不改结构、选变量、列独立线性方程组；复杂电路等效法失效</td><td>邱 §3-1 p.54 原文</td></tr>
+            <tr><td>同一电路支路/节点数随支路定义口径而变</td><td>邱 §3-1 p.55 原文</td></tr>
+            <tr><td>KCL 独立方程数 n−1（全节点相加恒为零的推导）</td><td>邱 §3-2 p.56 原文</td></tr>
+            <tr><td>KVL 独立方程数 b−n+1（树支 n−1、连支、基本回路、网孔数）的推导</td><td>邱 §3-2 p.56–58 原文</td></tr>
+            <tr><td>分解四步骤（划单口定方向→求 VCR→联立求端口量→回代求内部）</td><td>李 §4-1 原文</td></tr>
+            <tr><td>戴维南是分解法特例、按症状选工具表、组合规则、五步流程编排、预测 1–4</td><td>通识 / 我整理的教法（依据邱、李原文）</td></tr>
+            <tr><td>搭桥例题（Us=10V/R1=2Ω/R2=4Ω/Is=1A→V=8V、功率守恒18W=18W）</td><td>我编的题（数值已自洽验算）</td></tr>
+            <tr><td>独立练习（双电源含源单口，u_oc=8V/R_eq=2Ω/R_L=2Ω/P_max=8W/效率66.7%）</td><td>我编的题（数值已自洽验算；效率辨析依第 7 课）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。第 2–7 课工具只作前置引用，依据见各自摘录。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '008-dc-synthesis';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-08 增量脚本：预测 gating + resetFlow 修补 + 双面板实验台 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 共享 resetFlow 会解锁所有 .reveal-btn（含预测门），这里覆盖：重来后重新锁上预测门
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+    };
+
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function f2(a){ return (Math.round(a*100)/100).toFixed(2); }
+
+    // ---- 面板1：形态一 节点法求解器 ----
+    // KCL: (V-Us)/R1 + V/R2 - Is = 0  => V = (Us/R1 + Is)/(1/R1 + 1/R2)
+    var sUs=document.getElementById('s-us'), sR1=document.getElementById('s-r1'), sR2=document.getElementById('s-r2'), sIs=document.getElementById('s-is');
+    function updSolve(){
+      if(!sUs||!sR1||!sR2||!sIs) return;
+      var Us=+sUs.value, R1=+sR1.value, R2=+sR2.value, Is=+sIs.value;
+      set('s-us-val', Us+' V'); set('s-r1-val', R1+' Ω'); set('s-r2-val', R2+' Ω'); set('s-is-val', Is+' A');
+      var V = (Us/R1 + Is)/(1/R1 + 1/R2);
+      var i1 = (V - Us)/R1;
+      var i2 = V/R2;
+      var kcl = i1 + i2 - Is;
+      var P_R = R1*i1*i1 + R2*i2*i2;
+      var P_S = -Us*i1 + V*Is;
+      set('s-v', f2(V)+' V'); set('s-i1', f2(i1)+' A'); set('s-i2', f2(i2)+' A');
+      set('s-kcl', f2(kcl)+' A'); set('s-pr', f2(P_R)+' W'); set('s-ps', f2(P_S)+' W');
+      set('s-note', 'KCL≈0 且 电阻吸收 '+f2(P_R)+' W ＝ 电源发出 '+f2(P_S)+' W → 功率守恒，答案可靠');
+    }
+    [sUs,sR1,sR2,sIs].forEach(function(e){ if(e) e.addEventListener('input', updSolve); });
+    updSolve();
+
+    // ---- 面板2：形态二 打包匹配器 ----
+    var mUoc=document.getElementById('m-uoc'), mReq=document.getElementById('m-req'), mRL=document.getElementById('m-rl');
+    function updPack(){
+      if(!mUoc||!mReq||!mRL) return;
+      var Uoc=+mUoc.value, Req=+mReq.value, RL=+mRL.value;
+      set('m-uoc-val', Uoc+' V'); set('m-req-val', Req+' Ω'); set('m-rl-val', RL+' Ω');
+      var i = Uoc/(Req+RL);
+      var PL = i*i*RL;
+      var Pmax = Uoc*Uoc/(4*Req);
+      var ratio = RL/Req;
+      var eta = RL/(Req+RL);
+      set('m-i', f2(i)+' A'); set('m-pl', f2(PL)+' W'); set('m-pmax', f2(Pmax)+' W');
+      set('m-ratio', f2(ratio)); set('m-eta', f2(eta*100)+'%');
+      var matched = Math.abs(ratio-1) < 0.01;
+      set('m-note', matched
+        ? '已匹配：R_L=R_eq='+Req+' Ω → P_L=P_max='+f2(Pmax)+' W（打包模型视角效率 50%；真实网络需回原电路算）'
+        : '未匹配：R_L/R_eq='+f2(ratio)+'，拖动 R_L 到 '+Req+' Ω 可获最大功率');
+    }
+    [mUoc,mReq,mRL].forEach(function(e){ if(e) e.addEventListener('input', updPack); });
+    updPack();
+  })();
+  </script>
+</body>
+</html>

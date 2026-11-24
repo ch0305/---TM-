@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第三课 · 功率、能量与器件额定值直觉 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:380px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .pol{fill:var(--chalk-yellow);font-size:16px;font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .heat{fill:none;stroke:var(--danger);stroke-width:2;stroke-linecap:round}
+    .svg-diag .burn{fill:var(--danger);font-weight:700;font-size:13px}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    /* 可调功率实验台 */
+    .plab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .plab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .plab-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:14px}
+    .plab .ctrl label{display:flex;justify-content:space-between;font-size:.86rem;color:var(--chalk-dim);margin-bottom:2px}
+    .plab .ctrl input[type=range]{width:100%}
+    .plab .rd{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px}
+    .plab .metric{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:6px;padding:5px 7px}
+    .plab .metric .k{font-size:.74rem;color:var(--chalk-dim)}
+    .plab .metric .v{font-size:1rem;font-weight:700;color:var(--chalk-yellow);font-family:var(--mono)}
+    .plab-eq{font-family:var(--mono);font-size:.84rem;color:var(--chalk-dim);padding:4px 7px;margin:3px 0;border-radius:4px;background:rgba(0,0,0,.2)}
+    .plab-eq b{color:var(--chalk-green)}
+    .plab-eq.same{border-left:3px solid var(--chalk-green)}
+    .rate-wrap{margin-top:8px}
+    .rate-track{height:16px;border-radius:8px;background:rgba(0,0,0,.35);border:1px solid var(--line);position:relative;overflow:hidden}
+    .rate-fill{height:100%;width:0;background:linear-gradient(90deg,var(--chalk-green),var(--chalk-yellow));transition:width .2s}
+    .rate-fill.over{background:linear-gradient(90deg,var(--chalk-yellow),var(--danger))}
+    .rate-line{position:absolute;top:-2px;bottom:-2px;left:50%;width:2px;background:var(--danger)}
+    .rate-cap{font-size:.76rem;color:var(--chalk-faint);margin-top:2px;display:flex;justify-content:space-between}
+    .rate-status{font-size:.88rem;margin-top:5px;font-weight:700}
+    @media(max-width:1100px){.plab-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第三课 · 功率、能量与器件额定值直觉</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 一个烧掉的电阻</a></li>
+        <li><a href="#stage-1">1 · 功率从哪来：推出来</a></li>
+        <li><a href="#stage-2">2 · 正负号：谁供能谁耗能</a></li>
+        <li><a href="#stage-3">3 · 电阻功率：三式与恒非负</a></li>
+        <li><a href="#stage-4">4 · 从耗能到扛得住</a></li>
+        <li><a href="#stage-5">5 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">用第一、二课的 <code>i=dq/dt</code>、<code>u=dw/dq</code> 与参考方向，推出 <code>p=ui</code>，再判谁供能谁耗能、器件扛不扛得住。</div>
+      <div class="mini">前置：L1-01（关联/非关联、<code>u=Ri</code>）、L1-02（代数和里正负来自参考方向）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-03.md</code>（邱 §1-3/§1-5 及脚注、李上 §1-2 原文，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-03-教案.md</code>（已过独立审核）。学习目标、节奏与来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>随时查</h4>
+      <div class="mini"><strong>关联</strong>：<code>p = ui</code>，<code>p&gt;0</code> 吸收（耗能），<code>p&lt;0</code> 发出（供能）</div>
+      <div class="mini"><strong>非关联</strong>：<code>p = −ui</code>，仍按 <code>p&gt;0</code> 吸收判</div>
+      <div class="mini"><strong>吸收 10 W ≡ 发出 −10 W</strong>：同一事实的正负两面</div>
+      <div class="mini"><strong>电阻功率</strong>：<code>P_R = ui = i²R = u²/R</code>（关联方向）</div>
+      <div class="mini"><code>R&gt;0 ⇒ P≥0</code>：电阻只吸收、把电能转成热，不发电</div>
+      <div class="mini"><strong>额定值是工程限制，不是电路定律</strong>：1/4 W=0.25 W，留裕量（用到 ≤2/3）</div>
+      <div class="mini">词头：<code>μ=10⁻⁶</code>、<code>m=10⁻³</code>、<code>k=10³</code></div>
+      <div class="mini">大小写：<code>p</code>（瞬时）/ <code>P</code>（直流）同指功率；<code>W</code> 作符号是能量、作单位是瓦</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第三课（L1-03）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §1-3/§1-5 及脚注、李瀚荪 5e 上 §1-2（已摘录校对）</span>
+      </div>
+      <h1>功率、能量与器件额定值直觉</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先遇到“烧电阻”这个问号，再要公式；点“继续/公布”才会出现下一段。先把记号认下来——<code>W</code> 读作“瓦”（功率单位），<code>J</code> 读作“焦”（能量单位），<code>μ</code> 读“微”是百万分之一，<code>p</code> 是功率符号（大写 <code>P</code> 同指功率，只是书写惯例）。现在只认得，不要求会用。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">烧电阻</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">推功率</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">符号/供耗能</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">电阻功率</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">额定值</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 一个烧掉的电阻（3′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">前两课我们能算出这个电阻的电压、电流。<br>可它接着接着就<strong>发烫、甚至烧掉</strong>——为什么？<br>还有，同一个元件，教材一会儿说它“<strong>吸收 10 W</strong>”、一会儿说它“<strong>发出 −10 W</strong>”，到底是吸收还是发出？</p>
+            <p class="speak">“我们少算了什么？我怎么从一个算出来的数，判断它是在耗电、在供电，以及它扛不扛得住？”</p>
+          </div>
+          <div class="fig-box md" aria-label="未给数值的电阻发烫示意图">
+            <svg class="svg-diag" viewBox="0 0 360 160" role="img">
+              <title>标称 1/4 W 的电阻接上后发烫，但未给电压电流数值</title>
+              <line class="wire" x1="28" y1="82" x2="112" y2="82"/>
+              <line class="wire" x1="188" y1="82" x2="332" y2="82"/>
+              <rect class="elem" x="112" y="62" width="76" height="40" rx="3" fill="none"/>
+              <text x="134" y="88">R</text>
+              <text class="pol" x="78" y="66">+</text>
+              <text class="pol" x="205" y="66">−</text>
+              <text class="lbl" x="128" y="50">U = ?</text>
+              <line class="accent" x1="42" y1="82" x2="96" y2="82" marker-end="url(#p3arr)"/>
+              <text class="lbl" x="36" y="106">I = ?</text>
+              <path class="heat" d="M126,58 q8,-11 0,-20"/>
+              <path class="heat" d="M150,58 q8,-11 0,-20"/>
+              <path class="heat" d="M174,58 q8,-11 0,-20"/>
+              <text class="burn" x="122" y="26">发烫 / 烧</text>
+              <text class="dim" x="28" y="140">标称 “1/4 W”（= 0.25 W）：什么情况下会超？</text>
+              <defs>
+                <marker id="p3arr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                  <path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-blue)"/>
+                </marker>
+              </defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：先不给 U、I 数值。问题就是“少算了什么，为什么会烫、会烧”。</div>
+          </div>
+        </div>
+        <p class="muted">回扣记号：<code>W</code>（瓦）是功率单位、<code>J</code>（焦）是能量单位；大写 <code>W</code> 作<strong>能量符号</strong>时是代数量，作<strong>单位</strong>时写 W（瓦）——靠上下文区分。现在先记怎么读，不要求会用。</p>
+        <button class="reveal-btn" data-target="rev-0" data-stage="0" onclick="revealBlock(this)">写下你的第一反应，然后继续 →</button>
+        <div class="reveal" id="rev-0">
+          <p>这两个问号，就是今天要找的东西。先别惦记公式名——想想：电流、电压都定下来了，还差一个什么量，才能解释“发烫”“烧掉”？还有，“吸收”和“发出”会不会本来就是同一件事的正反说法？</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 功率从哪来：把它推出来（12′）〔邱 p.14 / 李 p.7–8〕</div>
+
+        <p class="speak teacher">“第一课我们用过两句话，都不是新东西：<code>i = dq/dt</code>——单位时间流过多少电荷；<code>u = dw/dq</code>〔李 p.7〕——单位正电荷经过元件得失多少能量。”</p>
+        <p class="ask">“把这两句乘起来，会怎样？”</p>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">第 1 步：两块基石 →</button>
+        <div class="reveal" id="rev-1a">
+          <p><code>dq/dt</code> 读作“电荷随时间的变化率”，就是电流 <code>i</code>；<code>dw/dq</code> 读作“每单位电荷的能量变化”，就是电压 <code>u</code>。这两块都是前两课已有、今天直接拿来用。</p>
+          <p>邱关源开篇就说〔邱 p.14〕：电路工作总伴随电能的转移或与其他形式能量的交换；电气设备、部件本身都有功率限制，过载会损坏。<strong>所以我们确实需要一个“转移有多快”的量。</strong></p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1b" data-stage="1" onclick="revealBlock(this)">第 2 步：可见地推一遍 →</button>
+        <div class="reveal" id="rev-1b">
+          <p>把两块基石乘起来（〔李 p.8 式(1-3)、邱 p.14 式(1-1)〕，三步不跳）：</p>
+          <div class="formula sm">dw = (dw/dq)·(dq/dt)·dt = u·i·dt</div>
+          <div class="formula sm">两边除以 dt：　dw/dt = u i</div>
+          <p><code>dw/dt</code> 就是“能量随时间变化的快慢”。给它一个名字——<strong>功率 p</strong>。所以：</p>
+          <div class="formula">p = dw/dt = u i</div>
+          <p class="muted">点破因果：功率不是新规定，是“单位时间做多少功”顺着已有的电压、电流定义长出来的。书上说“功率是吸收能量的速率”〔李 p.8〕，就是这句话。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1c" data-stage="1" onclick="revealBlock(this)">第 3 步：命名与定义（抄进笔记） →</button>
+        <div class="reveal" id="rev-1c">
+          <div class="ok-box"><strong>功率（power）</strong>是能量转移（做功）的速率，记作 <code>p = dw/dt</code>；在关联参考方向下 <code>p = u i</code>。单位 <strong>W（瓦，即 J/s）</strong>：1 W 表示每秒转移 1 J。</div>
+          <div class="ok-box"><strong>能量（energy）</strong>是功率对时间的累积：<code>W = ∫ p dt = ∫ u i dt</code>。单位 <strong>J（焦）</strong>。〔邱 p.14 式(1-1)(1-2)、李 p.9 式(1-5)〕</div>
+          <p class="muted">陈述时刻：推导解释了“为什么 <code>p=ui</code>”，这两块定义说明“功率、能量<strong>是什么</strong>”——两者都要记。大小写再确认一次：<code>p</code> 是瞬时功率，直流/恒定情形也写 <code>P</code>（如 <code>P=VI</code>），同指功率。</p>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 正负号：到底谁供能、谁耗能（11′）〔邱 p.15 / 李 p.9〕</div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>预测 1（先猜，别算）：</strong>一个电阻元件，关联参考方向——电流 <code>I</code> 流进电压 <code>+</code> 端，<code>U=+5 V</code>、<code>I=+2 A</code>。它是吸收还是发出功率？功率是多少？<br>现在<strong>只把电压的参考极性翻过来</strong>（电流箭头不动）变成非关联：原来的 <code>+</code> 端改成 <code>−</code> 端。同一个物理事实写成 <code>u=−5 V</code>、<code>i=+2 A</code>。它又是吸收还是发出？数值写 <code>+10 W</code> 还是 <code>−10 W</code>？</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'still');enableGate('gate-pred1')">还是吸收 10 W</button>
+            <button class="pred-opt" onclick="pickPred(this,'emit');enableGate('gate-pred1')">变成发出 10 W</button>
+          </div>
+          <p class="muted">先说理由，先别下结论。选完才解锁“公布”。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">第 1 步：统一一套判据 →</button>
+        <div class="reveal" id="rev-2a">
+          <p>功率也是代数量，正负取决于参考方向。我们<strong>统一采用关联参考方向下 p=ui 这一套</strong>（〔李 p.9〕）：</p>
+          <div class="ok-box"><strong>关联</strong>：<code>p = ui</code>；<code>p&gt;0</code> → 元件<strong>吸收</strong>功率（耗能）；<code>p&lt;0</code> → <strong>发出</strong>功率（供能）。<br><strong>非关联</strong>：改用 <code>p = −ui</code>〔李式(1-4)〕，再按 <code>p&gt;0</code> 吸收、<code>p&lt;0</code> 发出判。</div>
+          <p class="muted">这跟上一课统一“流出为正”是一个道理：只选一套，从头到尾别混。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2b" data-stage="2" onclick="revealBlock(this)">第 2 步：“吸收 = 发出负值” →</button>
+        <div class="reveal" id="rev-2b">
+          <p>书上说得很清楚〔邱 p.15〕：“一个元件若吸收功率 100 W，也可以认为它发出功率 −100 W。这两种说法是一致的。”<strong>吸收和发出是同一件事的正负两面</strong>，不是两种物理。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>对照图（自包含，不引用书内图号）：同一个元件实际在吸收 5 V×2 A=10 W。左图按关联标、右图只翻电压极性变非关联，电流箭头不动。</p>
+              <p class="muted"><strong>标的符号变了，物理没变</strong>——跟第二课翻方向只改符号、方程仍成立，一模一样。</p>
+            </div>
+            <div class="fig-box lg" aria-label="关联与非关联参考方向对照图">
+              <svg class="svg-diag" viewBox="0 0 460 255" role="img">
+                <title>同一元件：关联标法与非关联标法下都算出吸收 10 W</title>
+                <text class="dim" x="12" y="18">(a) 关联：电流箭头进 + 端</text>
+                <text class="lbl" x="104" y="38">u = +5 V</text>
+                <line class="accent" x1="30" y1="60" x2="95" y2="60" marker-end="url(#p3arr2)"/>
+                <rect class="elem" x="95" y="48" width="40" height="24" rx="3" fill="none"/>
+                <line class="wire" x1="135" y1="60" x2="200" y2="60"/>
+                <text class="pol" x="58" y="84">+</text>
+                <text class="pol" x="180" y="84">−</text>
+                <text class="dim" x="28" y="52">i = +2 A</text>
+                <text x="12" y="110" fill="var(--chalk-yellow)">p = ui = (+5)(+2) = +10 W → 吸收 10 W</text>
+
+                <text class="dim" x="12" y="144">(b) 非关联：只翻电压极性 +↔−，电流箭头不动</text>
+                <text class="lbl" x="104" y="164">u = −5 V</text>
+                <line class="accent" x1="30" y1="186" x2="95" y2="186" marker-end="url(#p3arr2)"/>
+                <rect class="elem" x="95" y="174" width="40" height="24" rx="3" fill="none"/>
+                <line class="wire" x1="135" y1="186" x2="200" y2="186"/>
+                <text class="pol" x="58" y="210">−</text>
+                <text class="pol" x="180" y="210">+</text>
+                <text class="dim" x="28" y="178">i = +2 A</text>
+                <text x="12" y="236" fill="var(--chalk-yellow)">p = −ui = −(−5)(+2) = +10 W → 仍吸收 10 W</text>
+                <defs>
+                  <marker id="p3arr2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                    <path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-blue)"/>
+                  </marker>
+                </defs>
+              </svg>
+              <div class="fig-cap">自包含示意图：翻电压极性后 <code>u</code> 变号、公式前多一个负号，两者成对抵消，仍是吸收 10 W。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-target="rev-2c" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 1 →</button>
+        <div class="reveal" id="rev-2c">
+          <p><strong>还是吸收 10 W。</strong>第一次（关联）<code>p=ui=5×2=+10 W</code>，正号→吸收。第二次（非关联）按统一判据 <code>p=−ui</code>：题给 <code>u=−5 V</code>、<code>i=+2 A</code>，<code>p=−(−5)(2)=+10 W</code>→<strong>还是吸收 10 W</strong>。翻电压极性只改了 <code>u</code> 的符号和公式前的负号，成对抵消，物理不变。答“发出 −10 W”也不算错——发出 −10 W ≡ 吸收 +10 W，不是真在发电。</p>
+        </div>
+
+        <div class="exercise" style="margin-top:10px;">
+          <h4>即时检查（口头）：关联方向，u=−3 V、i=−2 A</h4>
+          <p>一个元件，关联参考方向，<code>u=−3 V</code>、<code>i=−2 A</code>。吸收还是发出？功率多少？<span class="muted">（提示：负电压、负电流相乘为正。）</span></p>
+          <div class="numcheck" id="ex-inst1" data-qid="ex-inst1"><label>功率数值（代数值）= <input type="text" placeholder="例如 6" /> W</label><button class="btn-sm" onclick="checkNum('ex-inst1',6,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-2d" data-stage="2" onclick="revealBlock(this)">看答案 →</button>
+          <div class="reveal" id="rev-2d"><p><code>p = ui = (−3)(−2) = +6 W</code> → <strong>吸收 6 W</strong>。负电压、负电流相乘为正，仍在耗能。</p></div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 电阻的功率：三式与“只吸收不发出”（9′）〔邱 p.17 / 李 p.6〕</div>
+
+        <p class="speak teacher">“电阻是我们最熟悉的元件。<code>u=Ri</code>〔第一课〕。把它代进刚推出的 <code>p=ui</code>，会怎样？”</p>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">第 1 步：代入推导 →</button>
+        <div class="reveal" id="rev-3a">
+          <p><code>p = ui = (Ri)·i = i²R</code>；反过来用 <code>i=u/R</code>，得 <code>p = u·(u/R) = u²/R</code>〔邱 p.17 式(1-5)〕。</p>
+          <div class="formula">P_R = u i = i² R = u² / R</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3b" data-stage="3" onclick="revealBlock(this)">第 2 步：陈述时刻（抄进笔记） →</button>
+        <div class="reveal" id="rev-3b">
+          <div class="ok-box"><strong>电阻的功率</strong>：在关联参考方向下 <code>P_R = ui = i²R = u²/R</code>。三式用哪个看题目给了什么——给 <code>u、i</code> 用第一式，给 <code>i、R</code> 用第二式，给 <code>u、R</code> 用第三式。</div>
+          <p class="warn"><strong>适用条件</strong>：线性电阻、<code>R&gt;0</code>、关联参考方向（非关联要加负号再判）。不是无条件成立。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3c" data-stage="3" onclick="revealBlock(this)">第 3 步：为什么电阻恒耗能 →</button>
+        <div class="reveal" id="rev-3c">
+          <p>注意第二式 <code>i²R</code>：<code>R</code> 是正数（第一课：正实常数），<code>i²</code> 永远非负，所以 <code>P_R</code> 永远 <strong>≥ 0</strong>。书上说〔邱 p.17〕：“线性电阻元件只能吸收能量而不能发出能量，是一种<strong>无源元件</strong>。”</p>
+          <p><strong>电阻不可能发电</strong>——哪怕把电压、电流都标成负的，<code>i²R</code> 还是正，还是在耗能。发电的是电源〔李 p.6：电源供能、电阻耗能〕。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>预测 2（先猜，别算）：</strong>一个电阻，把它的电压极性翻过来，算出 <code>u = −6 V</code>。有同学说“电压为负，它在发电”。你同意吗？先说理由。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'no');enableGate('gate-pred2')">不同意</button>
+            <button class="pred-opt" onclick="pickPred(this,'yes');enableGate('gate-pred2')">同意（在发电）</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred2" data-target="rev-3d" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-3d">
+          <p><strong>不同意。</strong><code>u=−6 V</code> 只说明参考极性与实际相反（第一课）；用 <code>u²/R=(−6)²/R=36/R&gt;0</code>，电阻照样吸收、照样发热。电阻恒耗能，因为 <code>i²R</code> 恒非负；电压为负不等于在发电。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3e" data-stage="3" onclick="revealBlock(this)">能量去哪了 →</button>
+        <div class="reveal" id="rev-3e">
+          <p>电阻把吸收的电能<strong>转成热能</strong>——这就是发烫的来源〔邱 p.17〕。书里小电珠的脚注写着：额定 2.5 V / 0.3 A 时热到 3000 ℃、电阻比室温高近十倍〔邱 p.18〕。热，就是功率持续累积成能量 <code>W=∫p dt</code> 的结果。</p>
+          <p class="muted">顺带练选式：</p>
+          <div class="numcheck" id="ex-inst2" data-qid="ex-inst2"><label>给 R=10 Ω、i=2 A，功率 = <input type="text" placeholder="例如 40" /> W</label><button class="btn-sm" onclick="checkNum('ex-inst2',40,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-3f" data-stage="3" onclick="revealBlock(this)">三式核对 →</button>
+          <div class="reveal" id="rev-3f"><p><code>i²R=4×10=40 W</code>；若给 <code>u=20 V、R=10 Ω</code>，<code>u²/R=400/10=40 W</code>；若给 <code>u=20 V、i=2 A</code>，<code>ui=40 W</code>。三式一致。</p></div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 从“能吸收”到“扛得住”：额定值与裕量（7′）〔邱 p.14 引入 / 通识工程经验〕</div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">第 1 步：算得出 ≠ 扛得住 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>到这里我们会算功率了。但“算出来能吸收”不等于“能用”。邱关源开篇就提醒〔邱 p.14〕：“电气设备、电路部件本身都有功率的限制……过载会使设备或部件损坏，或是不能正常工作。”</p>
+          <div class="warn"><strong>关键区分〔通识，工程经验，不是电路定律〕</strong>：你算出一个电阻要吸收 0.4 W，可它是标着“1/4 W”（=0.25 W）的电阻——<code>0.4 &gt; 0.25</code>，会过热烧掉。工程上要选额定功率<strong>大于</strong>实际耗散的，还要留<strong>裕量</strong>（比如只用到额定的一半到三分之二），这叫降额使用。<br>电路定律决定“算出多少”，额定值决定“这个器件行不行”。</div>
+          <p class="muted">单位换算（服务读题，〔李 p.10–11〕）：<code>1 mA=10⁻³ A</code>、<code>1 μA=10⁻⁶ A</code>、<code>1 kW=10³ W</code>。看到电阻标 1/4 W 就是 0.25 W；看到 mA 先换成 A 再算功率。</p>
+        </div>
+
+        <div class="plab" style="margin-top:12px;">
+          <h4>动手拖一拖：功率怎么随电压、电阻变？什么时候烧？</h4>
+          <p class="muted" style="margin:0 0 6px;">拖动下面两个滑块，看三个功率式子<strong>算出同一个数</strong>（因为电阻满足 <code>V=IR</code>），再看实际功率有没有越过 0.25 W 这条“额定线”。</p>
+          <div class="plab-grid">
+            <div>
+              <div class="ctrl">
+                <label>电阻两端电压 V <span id="pw-v-val">6.0 V</span></label>
+                <input type="range" id="pw-v" min="0" max="12" step="0.5" value="6" />
+              </div>
+              <div class="ctrl" style="margin-top:8px;">
+                <label>电阻值 R <span id="pw-r-val">100 Ω</span></label>
+                <input type="range" id="pw-r" min="10" max="1000" step="10" value="100" />
+              </div>
+              <div class="rd">
+                <div class="metric"><div class="k">电流 I = V/R</div><div class="v" id="pw-i-val">—</div></div>
+                <div class="metric"><div class="k">P = V·I</div><div class="v" id="pw-p1">—</div></div>
+                <div class="metric"><div class="k">额定线</div><div class="v" style="color:var(--danger)">0.25 W</div></div>
+              </div>
+            </div>
+            <div>
+              <div class="plab-eq same" id="pw-eq1">P = V·I = —</div>
+              <div class="plab-eq same" id="pw-eq2">P = I²R = —</div>
+              <div class="plab-eq same" id="pw-eq3">P = V²/R = —</div>
+              <div class="rate-wrap">
+                <div class="rate-track">
+                  <div class="rate-fill" id="pw-fill"></div>
+                  <div class="rate-line" title="0.25 W 额定线"></div>
+                </div>
+                <div class="rate-cap"><span>0 W</span><span>红线 = 0.25 W（1/4 W 额定）</span><span>0.5 W</span></div>
+                <div class="rate-status" id="pw-status">—</div>
+              </div>
+            </div>
+          </div>
+          <p class="muted" style="margin:6px 0 0;">三个式子恒相等，是因为电阻遵守 <code>V=IR</code>：把 <code>I=V/R</code> 代进 <code>P=VI</code> 就得到 <code>V²/R</code>；把 <code>V=IR</code> 代进去就得到 <code>I²R</code>。<strong>不是碰巧，是同一件事的三种写法。</strong></p>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 迁移自检：照着别人标好的方向做题（3′ 练习 + 收尾）</div>
+
+        <div class="exercise">
+          <h4>该你了（本课唯一独立计算题）：先读方向，再算功率，最后查额定</h4>
+          <p>下面是<strong>别人已经标好方向</strong>的电路，照着它做题。<br>
+          ① 一个二端元件，电流参考箭头<strong>流出</strong>电压 <code>+</code> 端（即<strong>非关联</strong>），标注 <code>U=+12 V</code>、<code>I=+3 A</code>。<br>
+          ② 另有一个电阻 <code>R=6 Ω</code>，关联参考方向下两端电压 <code>U_R=+12 V</code>。</p>
+          <p class="ask">(1) 对①：关联还是非关联？用哪套公式？算功率并判吸收/发出。&nbsp; (2) 把①的电流箭头翻成流进 <code>+</code> 端（<code>U、I</code> 数值不变），重算、重判，物理变了吗？&nbsp; (3) 对②用 <code>u²/R</code> 算耗散功率。&nbsp; (4) 若②额定是 1/4 W（0.25 W），超额定了吗？按“用到额定 2/3 以内”估，该换多大额定值？</p>
+          <div class="numcheck" id="ex-p1" data-qid="ex-p1"><label>(1) ① 功率代数值 = <input type="text" placeholder="带符号，如 −36" /> W</label><button class="btn-sm" onclick="checkNum('ex-p1',-36,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-p2" data-qid="ex-p2"><label>(2) 翻箭头后功率代数值 = <input type="text" placeholder="带符号" /> W</label><button class="btn-sm" onclick="checkNum('ex-p2',36,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-p3" data-qid="ex-p3"><label>(3) ② 耗散功率 = <input type="text" placeholder="例如 24" /> W</label><button class="btn-sm" onclick="checkNum('ex-p3',24,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-p4" data-qid="ex-p4"><label>(4) 至少需要的额定功率 ≈ <input type="text" placeholder="例如 36" /> W</label><button class="btn-sm" onclick="checkNum('ex-p4',36,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-5a">
+            <p><strong>(1)</strong> ①非关联（电流流出 <code>+</code> 端），用 <code>p=−ui=−(12)(3)=−36 W</code>，负号→<strong>发出 36 W</strong>（在供能，像电源）。</p>
+            <p><strong>(2)</strong> 翻成关联后 <code>p=ui=(12)(3)=+36 W</code>→<strong>吸收 36 W</strong>。绝对值都是 36 W，但角色变了。<strong>这里是全课最易错处</strong>：题目让 <code>U、I</code> 的<strong>数值不变</strong>、只翻参考箭头，等于在描述<strong>另一个物理状态</strong>；若保持同一物理状态，数值符号本应跟着翻（见预测 1）。判据随参考方向走，符号必须和参考方向配套读。</p>
+            <p><strong>(3)</strong> ② <code>p=u²/R=12²/6=144/6=24 W</code>。</p>
+            <p><strong>(4)</strong> <code>24 W &gt; 0.25 W</code>，严重超过，会烧。按“用到额定 2/3 以内”估，需额定 <code>≥ 24÷(2/3)=36 W</code>；这已超出单个贴片电阻常见额定，工程上要么换功率电阻、要么重新设计（如分压）。<span class="muted">裕量规则是工程经验，不是电路定律。</span></p>
+          </div>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">算功率 = 把 <code>u=dw/dq</code>、<code>i=dq/dt</code> 相乘得 <code>p=ui</code>（能量变化率）；<br>用参考方向定正负判吸收/发出；电阻 <code>i²R</code> 恒正、只耗能转热；<br>最后拿功率去对额定值留裕量，才知道器件扛不扛得住。</div>
+        <p><strong>你随手怎么标，物理不变、符号成对变；别人标的方向，照着它的参考方向翻译成代数即可。</strong></p>
+        <p class="muted">下一课钩子：功率知道了。下次问——两个电阻串起来、并起来，电压电流怎么分、谁功率大？第四课：串并联与等效、分压分流。</p>
+        <button class="reveal-btn" data-target="rev-5b" data-stage="5" onclick="revealBlock(this)">展开：过关自检 →</button>
+        <div class="reveal" id="rev-5b">
+          <ul>
+            <li>不看书，我能从 <code>i=dq/dt</code>、<code>u=dw/dq</code> 推出 <code>p=ui</code>，并说出它不是新背的公式吗？</li>
+            <li>给一个元件的极性和电流方向，我能判关联/非关联、选对公式、判出吸收还是发出吗？</li>
+            <li>我能解释“吸收 10 W = 发出 −10 W”，以及它和第二课“翻方向只改符号”的关系吗？</li>
+            <li>我知道 <code>P_R=i²R≥0</code>：电阻只耗能转热，电压为负也不是在发电吗？</li>
+            <li>算出一个功率，我能拿它对额定值、留裕量，说出“算得出不等于扛得住”吗？</li>
+          </ul>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：为什么算功率（能量转移+额定限制）；<code>p=ui</code> 从 <code>u=dw/dq</code>、<code>i=dq/dt</code> 推出；功率/能量定义与单位；关联/非关联判据、“吸收=发出负值”；<code>P_R=ui=i²R=u²/R</code> 与恒非负、电能转热；额定值/过载/裕量；μ/m/k 换算。</p>
+          <p class="mini"><strong>不讲</strong>：电源模型/等效变换/戴维南（L1-05）；串并联分压分流（L1-04）；储能元件 <code>W=½CV²、½LI²</code>（L2-01/02）；正弦稳态有功/无功/视在功率与功率因数（L2-07）；完整热模型/结温/降额设计（L7-03）；受控源与最大功率传输（L1-07）。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>从第一、二课已有的 <code>u=dw/dq</code>、<code>i=dq/dt</code> 推出 <code>p=ui</code>，并说出它不是新背的公式。</li>
+            <li>推导后明确写出：功率是能量变化率 <code>p=dw/dt=ui</code>，能量是 <code>W=∫p dt</code>。</li>
+            <li>用关联 <code>p=ui</code>、非关联 <code>p=−ui</code>、<code>p&gt;0</code> 吸收的统一判据判断供能/耗能，并解释“吸收 10 W = 发出 −10 W”。</li>
+            <li>推出 <code>P_R=i²R=u²/R</code>，说明 <code>R&gt;0 ⇒ P≥0</code>，电阻只吸收、把电能转成热。</li>
+            <li>给定 V/I/R 算功率并作额定值与裕量判断，说出“算得出不等于扛得住”。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">开场 3′ / 功率为何而来与推导 12′ / 符号与供能耗能 11′ / 电阻功率与三式 9′ / 发热与额定值 7′ / 练习与收尾 3′。45 分钟是预算：在因果链完整前提下压缩低增益重复，不为凑时长加料。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>“电路工作总伴随能量转移；器件有额定功率限制、过载损坏”</td><td>邱 p.14 原文</td></tr>
+            <tr><td><code>u=dw/dq</code> 能量定义、正负与电位高低；功率推导 <code>p=(dw/dq)(dq/dt)=ui</code>；<code>W=∫pdt</code>；SI 词头、例 1-1 的 300 μJ</td><td>李 p.7、p.8、p.9、p.11 原文（式 1-2/1-3/1-5、表 1-2）</td></tr>
+            <tr><td>关联 <code>p=ui</code>/非关联 <code>p=−ui</code> 判据；“吸收 100 W = 发出 −100 W”；同元件关联/非关联得 ±10 W；“电源供能、电阻耗能”</td><td>邱 p.15；李 p.6、p.9（例 1-2）原文（页面画自包含图，不引用书内图号）</td></tr>
+            <tr><td><code>P_R=ui=i²R=u²/R</code>、<code>R&gt;0</code> 恒非负、电阻无源、电能转热；小电珠 2.5 V/0.3 A 额定点</td><td>邱 p.17 式(1-5)、p.18 脚注原文</td></tr>
+            <tr><td>额定值/降额/裕量（用到额定 2/3）、1/4 W=0.25 W；大小写 <code>p/P</code>、<code>W</code> 同形区分；负电压负电流等陷阱</td><td>通识（工程经验/教学补充；正文依据见邱 p.14，具体降额规则非书中原话）</td></tr>
+            <tr><td>预测 1/2、即时检查、独立练习的电路与数值</td><td>我编的题</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '003-power-rating';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-03 增量脚本：预测 gating + 可调功率实验台 ===== */
+  (function(){
+    // 预测按钮在 .pred 外，pickPred 够不到，这里补一个解锁函数（与第二课同法）
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // ---- 可调功率实验台（自定义 id，不占用共享欧姆实验的 lab-* id）----
+    var vEl = document.getElementById('pw-v'), rEl = document.getElementById('pw-r');
+    if(!vEl || !rEl) return;
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function fmtI(a){
+      var ma = a*1000;
+      if(Math.abs(ma) >= 1) return ma.toFixed(1)+' mA';
+      return (ma*1000).toFixed(0)+' μA';
+    }
+    function fmtP(w){
+      if(w >= 1) return w.toFixed(3)+' W';
+      if(w >= 0.001) return (w*1000).toFixed(1)+' mW';
+      return (w*1e6).toFixed(0)+' μW';
+    }
+    function n4(x){ return x.toFixed(4); }
+    function upd(){
+      var V = parseFloat(vEl.value), R = parseFloat(rEl.value);
+      var I = R>0 ? V/R : 0;
+      var p1 = V*I, p2 = I*I*R, p3 = (R>0 ? V*V/R : 0);
+      set('pw-v-val', V.toFixed(1)+' V');
+      set('pw-r-val', R.toFixed(0)+' Ω');
+      set('pw-i-val', fmtI(I));
+      set('pw-p1', fmtP(p1));
+      set('pw-eq1', 'P = V·I = '+V.toFixed(1)+' × '+n4(I)+' = '+fmtP(p1));
+      set('pw-eq2', 'P = I²R = ('+n4(I)+')² × '+R.toFixed(0)+' = '+fmtP(p2));
+      set('pw-eq3', 'P = V²/R = '+V.toFixed(1)+'² / '+R.toFixed(0)+' = '+fmtP(p3));
+      var fill = document.getElementById('pw-fill'), st = document.getElementById('pw-status');
+      var pct = Math.min(100, Math.max(0, p1/0.5*100));
+      fill.style.width = pct+'%';
+      if(p1 > 0.25){
+        fill.classList.add('over'); st.style.color = 'var(--danger)';
+        st.textContent = '超过 0.25 W：1/4 W 电阻会过热烧毁 —— 算得出，但扛不住';
+      } else if(p1 > 0.25*(2/3)){
+        fill.classList.remove('over'); st.style.color = 'var(--chalk-yellow)';
+        st.textContent = '接近额定（>2/3 × 0.25 W）：工程上要留裕量，建议换更大额定';
+      } else {
+        fill.classList.remove('over'); st.style.color = 'var(--chalk-green)';
+        st.textContent = '在 0.25 W 以内且留有裕量：1/4 W 电阻可用';
+      }
+    }
+    vEl.addEventListener('input', upd);
+    rEl.addEventListener('input', upd);
+    upd();
+  })();
+  </script>
+</body>
+</html>

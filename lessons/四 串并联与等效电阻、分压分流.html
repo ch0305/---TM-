@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第四课 · 串并联与等效电阻、分压分流 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:380px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .boxdash{fill:none;stroke:var(--chalk-faint);stroke-width:1.4;stroke-dasharray:5 4}
+    .svg-diag .grp{fill:none;stroke:var(--chalk-green);stroke-width:1.6;stroke-dasharray:4 3}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    /* 串并联实验台 */
+    .splab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .splab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .sp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .sp-ctrl label{display:flex;justify-content:space-between;font-size:.86rem;color:var(--chalk-dim);margin-bottom:2px}
+    .sp-ctrl input[type=range]{width:100%}
+    .sp-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .sp-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .sp-row{display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .sp-row .k{color:var(--chalk-dim)}
+    .sp-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .sp-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.4}
+    .sp-check{font-size:.82rem;font-weight:700;margin-top:6px;color:var(--chalk-green)}
+    .sp-check.bad{color:var(--danger)}
+    @media(max-width:1100px){.sp-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第四课 · 串并联与等效电阻、分压分流</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与等效</a></li>
+        <li><a href="#stage-1">1 · 串联与分压</a></li>
+        <li><a href="#stage-2">2 · 并联与分流</a></li>
+        <li><a href="#stage-3">3 · 两电阻特例与混联</a></li>
+        <li><a href="#stage-4">4 · 功率回扣：谁发热多</a></li>
+        <li><a href="#stage-5">5 · 串并联实验台</a></li>
+        <li><a href="#stage-6">6 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">用前两课的 KCL/KVL + 欧姆定律，把一串电阻“看成一个”：立等效判据 → 推串、并的等效与分压分流 → 混联化简 → 比功耗。</div>
+      <div class="mini">前置：L1-01（<code>u=Ri</code>、参考方向）、L1-02（KCL/KVL）、L1-03（<code>P=i²R=u²/R</code>、恒非负）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-04.md</code>（邱 §2-1/§2-2、李上 §1-8 原文，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-04-教案.md</code>（初审退 4 项、复审通过）。学习目标、节奏与来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>随时查</h4>
+      <div class="mini"><strong>等效</strong>：对外伏安相同；<strong>对外等效、内部不等效</strong></div>
+      <div class="mini"><strong>串联</strong>：同电流；<code>R_eq=ΣR</code>（大于任一）；分压 <code>u_k=(R_k/ΣR)·u</code></div>
+      <div class="mini"><strong>并联</strong>：同电压；<code>G_eq=ΣG</code>、<code>1/R_eq=Σ1/R</code>（小于任一）；分流 <code>i_k=(G_k/ΣG)·i</code></div>
+      <div class="mini"><strong>电导</strong>：<code>G=1/R</code>（单位 S）；换记号是为与串联对称</div>
+      <div class="mini"><strong>两电阻并联</strong>：<code>R_eq=R₁R₂/(R₁+R₂)</code>；<code>i₁=R₂/(R₁+R₂)·i</code>（交叉！）</div>
+      <div class="mini"><strong>判串并靠</strong>：同电流（串）/ 同电压（并），不看图上是否首尾相接</div>
+      <div class="mini"><strong>功耗</strong>：串联同电流→<code>i²R</code> 大电阻热；并联同电压→<code>u²/R</code> 小电阻热</div>
+      <div class="mini"><strong>失效</strong>：桥形不平衡时串并联化简失效（需 Y-Δ，后面学）</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第四课（L1-04）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §2-1/§2-2、李瀚荪 5e 上 §1-8（已摘录校对）</span>
+      </div>
+      <h1>串并联与等效电阻、分压分流</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先遇到“能不能把一串电阻看成一个”的问号，再要公式；点“继续/公布”才会出现下一段。先把记号认下来——<code>R_eq</code> 读作“等效电阻”（eq 是 equivalent 的缩写），<code>G</code> 是电导、<code>G=1/R</code>（单位西门子 S），<code>Σ</code> 读“求和”。现在只认得，不要求会用。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">等效判据</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">串联分压</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">并联分流</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">特例/混联</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">功率回扣</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 一个问号：能不能“看成一个”（8′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">12 V 电源接两个电阻：1 kΩ 和 2 kΩ。<br>前两课能列 KVL、KCL 方程组解出每个电阻的电压电流。<br>但能不能把这俩<strong>“看成一个”电阻</strong>，让电路一眼就变简单？</p>
+            <p class="speak">“这个‘看成’<strong>凭什么成立</strong>？又<strong>什么时候不成立</strong>？这才是今天要做的事。”</p>
+          </div>
+          <div class="fig-box md" aria-label="等效概念示意图">
+            <svg class="svg-diag" viewBox="0 0 460 180" role="img">
+              <title>左：虚线框内两个电阻接在 a、b 两端；右：一个等效电阻接在同样两端</title>
+              <text class="dim" x="18" y="18">原网络（虚线框内两电阻）</text>
+              <rect class="boxdash" x="20" y="30" width="180" height="90" rx="6"/>
+              <circle class="nodept" cx="34" cy="75" r="3.5"/>
+              <text x="24" y="100">a</text>
+              <line class="wire" x1="34" y1="75" x2="66" y2="75"/>
+              <rect class="elem" x="66" y="65" width="40" height="20" rx="2" fill="none"/>
+              <text x="78" y="80">R₁</text>
+              <line class="wire" x1="106" y1="75" x2="130" y2="75"/>
+              <rect class="elem" x="130" y="65" width="40" height="20" rx="2" fill="none"/>
+              <text x="142" y="80">R₂</text>
+              <line class="wire" x1="170" y1="75" x2="186" y2="75"/>
+              <circle class="nodept" cx="186" cy="75" r="3.5"/>
+              <text x="180" y="100">b</text>
+              <text class="ylb" x="224" y="70">对外伏安相同</text>
+              <text class="ylb" x="232" y="90">⇔ 可替换</text>
+              <text class="dim" x="300" y="18">等效模型（一个电阻）</text>
+              <circle class="nodept" cx="306" cy="75" r="3.5"/>
+              <text x="296" y="100">a</text>
+              <line class="wire" x1="306" y1="75" x2="336" y2="75"/>
+              <rect class="elem" x="336" y="65" width="56" height="20" rx="2" fill="none"/>
+              <text x="346" y="80">R_eq</text>
+              <line class="wire" x1="392" y1="75" x2="420" y2="75"/>
+              <circle class="nodept" cx="420" cy="75" r="3.5"/>
+              <text x="414" y="100">b</text>
+              <text class="dim" x="20" y="150">框内各电阻的电流 —— 在这个“一个电阻”模型里看不到（内部不等效）</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：对外接同样的 a、b 两端，流入同样电流就“等效”；但被代替的框内各电阻电流看不到。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p0">
+          <p class="ask"><strong>先预测（别算）：</strong>把 1 kΩ 和 2 kΩ“看成一个”电阻，这个电阻应该比 1 kΩ 大、比 2 kΩ 大，还是在中间？凭直觉说说理由。（选完才解锁“公布”。）</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'between');enableGate('gate-pred0')">在 1 kΩ 和 2 kΩ 之间</button>
+            <button class="pred-opt" onclick="pickPred(this,'bigger');enableGate('gate-pred0')">比 2 kΩ 还大</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">等效到底是什么意思 →</button>
+        <div class="reveal" id="rev-0a">
+          <p>邱关源说〔邱 p.34〕：用一个电阻 <code>R_eq</code> 代替虚线框里的一串电阻，条件是“端子以右的部分有<strong>相同的伏安特性</strong>”。翻译成人话：<strong>接同样的电压，流入同样的电流</strong>——从外面两个接线端看，分不出差别。</p>
+          <p>紧接着〔邱 p.35〕一句最关键：“电压和电流保持不变的部分<strong>仅限于等效电路以外</strong>……<strong>内部并不等效</strong>。”外面（电源、别的支路）看到的电压电流不变；但框里每个电阻的电流，你得回到原电路另算。</p>
+          <div class="ok-box"><strong>等效电阻（equivalent resistance）R_eq</strong>：若一个电阻接在原网络两端时，与原网络在其两端具有<strong>相同的伏安特性</strong>（外加同样电压则流入同样电流），则称为原网络的等效电阻。<strong>对外等效、内部不等效</strong>：只保证网络以外各处电压、电流不变；内部须回原电路另算。〔邱 p.34–35〕</div>
+          <p class="muted">陈述时刻：这一段就是今天的“是什么”——等效不是“看起来像”，而是对外伏安相同。下面的公式都在回答“怎么找这个 R_eq”。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred0" data-target="rev-0b" data-stage="0" onclick="revealBlock(this)" disabled>公布预测 →</button>
+        <div class="reveal" id="rev-0b">
+          <p><strong>比 2 kΩ 还大。</strong>因为串联时电流相同、总电压是两者之和，要对外“等效”，这个电阻必须比每个都大（等下公式会算出 3 kΩ）。<strong>这个直觉待会儿会被公式证实。</strong></p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 串联与分压：从 KVL 推出来（10′）〔邱 p.35–36 / 李 p.41〕</div>
+
+        <p class="speak teacher">“先看结构事实：串联只有一条路，电流无处可分——<strong>每个电阻里是同一电流</strong> *i*〔邱 p.35〕。”</p>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p>电路：12 V 电源，串 <code>R₁=1 kΩ</code>、<code>R₂=2 kΩ</code>。整条回路电流相同（<code>i</code>），总电压 <code>u</code> 拆成两段 <code>u₁</code>、<code>u₂</code>。</p>
+            <p class="muted">三步推（全用前两课工具）：① KVL 得分电压和；② 每段 <code>uₖ=Rₖ·i</code>；③ 和 <code>u=R_eq·i</code> 对照，读出 <code>R_eq</code>。</p>
+          </div>
+          <div class="fig-box md" aria-label="串联分压示意图">
+            <svg class="svg-diag" viewBox="0 0 360 175" role="img">
+              <title>12伏电源串联1千欧与2千欧电阻，电流相同，分为u1与u2</title>
+              <line class="wire" x1="20" y1="30" x2="20" y2="140"/>
+              <line class="wire" x1="20" y1="30" x2="250" y2="30"/>
+              <line class="wire" x1="20" y1="140" x2="250" y2="140"/>
+              <text class="ylb" x="26" y="92">u = 12 V</text>
+              <rect class="elem" x="90" y="20" width="56" height="20" rx="2" fill="none"/>
+              <text x="98" y="35">R₁=1k</text>
+              <rect class="elem" x="190" y="20" width="56" height="20" rx="2" fill="none"/>
+              <text x="196" y="35">R₂=2k</text>
+              <line class="accent" x1="120" y1="52" x2="180" y2="52" marker-end="url(#s4a1)"/>
+              <text class="lbl" x="128" y="70">i（全回路相同）</text>
+              <text class="ylb" x="96" y="62">u₁</text>
+              <text class="ylb" x="196" y="62">u₂</text>
+              <text class="dim" x="20" y="165">R_eq = R₁ + R₂ = 3 kΩ ； 分压比 u₁:u₂ = R₁:R₂ = 1:2</text>
+              <defs><marker id="s4a1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-blue)"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：串联同电流，电压按电阻比例分配。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">第 1 步：KVL 得分电压和 →</button>
+        <div class="reveal" id="rev-1a">
+          <p>应用 KVL：总电压等于各串联电阻分电压之和〔邱 p.35〕。</p>
+          <div class="formula sm">u = u₁ + u₂ + … + uₙ</div>
+          <p>每个电阻服从欧姆定律 <code>uₖ = Rₖ·i</code>，代入：<code>u = (R₁+R₂+…+Rₙ)·i</code>。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1b" data-stage="1" onclick="revealBlock(this)">第 2 步：读出等效电阻 + 陈述时刻 →</button>
+        <div class="reveal" id="rev-1b">
+          <p>要和“等效”的定义式 <code>u = R_eq·i</code> 对上，括号里只能是各电阻之和：</p>
+          <div class="formula">R_eq = R₁ + R₂ + … + Rₙ = ΣRₖ</div>
+          <p>由 <code>uₖ = Rₖ·i</code> 与 <code>i = u/ΣRᵢ</code>，得分压公式〔邱 p.36 式(2-2)〕：</p>
+          <div class="formula">uₖ = ( Rₖ / ΣRᵢ ) · u</div>
+          <div class="ok-box"><strong>串联等效与分压</strong>：<code>R_eq = ΣRₖ</code>；<code>uₖ=(Rₖ/ΣRᵢ)·u</code>（两电阻：<code>u₁=R₁/(R₁+R₂)·u</code>）。口头版〔邱 p.36〕：“各个串联电阻的电压与电阻值<strong>成正比</strong>——阻值大的分到电压大。”<br><strong>条件/自检</strong>：线性正电阻；<code>R_eq</code> <strong>大于</strong>任一个串联电阻。</div>
+          <p class="warn"><strong>空载条件（当场讲清）</strong>：分压公式要求抽头<strong>不接别的元件（空载）</strong>〔李 p.42 例 1-16“空载直流分压电路”〕——公式假设流过每个电阻的是同一个电流 <code>i</code>。一旦抽头接上负载，电流被分走一路，各电阻不再同电流，分压比就变了，不能再用此式。带负载分压留到 L1-05。**本课分压题都默认空载。**</p>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>预测 1（先猜，别算）：</strong>12 V 串 1 kΩ、2 kΩ。凭“阻值大的分压大”猜：<code>u₁</code>、<code>u₂</code> 大约各多少？总电流大约多少？</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'u1big');enableGate('gate-pred1')">u₁ 更大（1 kΩ 分压多）</button>
+            <button class="pred-opt" onclick="pickPred(this,'u2big');enableGate('gate-pred1')">u₂ 更大（2 kΩ 分压多）</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-target="rev-1c" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1 →</button>
+        <div class="reveal" id="rev-1c">
+          <p><strong>u₂ 更大。</strong><code>R_eq=3 kΩ</code>，<code>i=12/3 k=4 mA</code>，<code>u₁=4 V</code>、<code>u₂=8 V</code>（分压比 1:2）。和直觉一致：阻值大的分压多。</p>
+        </div>
+
+        <div class="exercise" style="margin-top:10px;">
+          <h4>即时检查</h4>
+          <p>给 <code>u=10 V</code> 串 <code>R₁=2 Ω</code>、<code>R₂=3 Ω</code>，求 <code>u₂</code>。</p>
+          <div class="numcheck" id="ex-s1" data-qid="ex-s1"><label>u₂ = <input type="text" placeholder="例如 6" /> V</label><button class="btn-sm" onclick="checkNum('ex-s1',6,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-1d" data-stage="1" onclick="revealBlock(this)">看答案 →</button>
+          <div class="reveal" id="rev-1d"><p><code>u₂ = R₂/(R₁+R₂)·u = 3/5 × 10 = 6 V</code>。（<code>u₁=4 V</code>，和为 10 V 校验。）</p></div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 并联与分流：为什么要引入电导（11′）〔邱 p.36–37 / 李 p.44〕</div>
+
+        <p class="speak teacher">“结构事实：并联接在同一对节点上，<strong>各电阻电压是同一电压</strong> *u*〔邱 p.36〕。但并联是<strong>电流</strong>相加，怎么写成像串联那样干净的式子？”</p>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">第 0 步：为什么忽然冒出“电导” →</button>
+        <div class="reveal" id="rev-2a">
+          <p>串联我们写 <code>u=Ri</code>。并联想照抄，可并联是电流相加、电压相同，得写成 <code>i=(?)·u</code>。为了让这个 (?) 长得像“电阻”，书里换了个记号——<strong>电导 G=1/R</strong>（单位西门子 S），于是 <code>i=Gu</code>。</p>
+          <p class="muted">换记号不是为了变难，是为了<strong>对称</strong>：并联的“<code>G</code> 相加”就和串联的“<code>R</code> 相加”形式一样了。这是本课最需要讲清的一个“突然冒出的记号”。〔邱 p.36〕</p>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p>电路：1 kΩ 与 2 kΩ 并联接 12 V。两支路电压同为 <code>u</code>，电流分成 <code>i₁</code>、<code>i₂</code>，总电流 <code>i</code>。</p>
+            <p class="muted">推导：KCL → <code>i=Σiₖ</code>；每支路 <code>iₖ=Gₖ·u</code>；合起来 <code>i=(ΣGₖ)·u</code>。</p>
+          </div>
+          <div class="fig-box md" aria-label="并联分流示意图">
+            <svg class="svg-diag" viewBox="0 0 360 175" role="img">
+              <title>1千欧与2千欧并联接12伏，电压相同，电流分为i1与i2</title>
+              <line class="wire" x1="20" y1="40" x2="120" y2="40"/>
+              <line class="wire" x1="120" y1="40" x2="120" y2="60"/>
+              <line class="wire" x1="120" y1="60" x2="120" y2="130"/>
+              <line class="wire" x1="120" y1="90" x2="180" y2="90"/>
+              <line class="wire" x1="120" y1="130" x2="180" y2="130"/>
+              <rect class="elem" x="180" y="80" width="56" height="20" rx="2" fill="none"/>
+              <text x="188" y="95">R₁=1k</text>
+              <rect class="elem" x="180" y="120" width="56" height="20" rx="2" fill="none"/>
+              <text x="188" y="135">R₂=2k</text>
+              <line class="wire" x1="236" y1="90" x2="280" y2="90"/>
+              <line class="wire" x1="236" y1="130" x2="280" y2="130"/>
+              <line class="wire" x1="280" y1="90" x2="280" y2="130"/>
+              <circle class="nodept" cx="120" cy="90" r="3.5"/>
+              <circle class="nodept" cx="120" cy="130" r="3.5"/>
+              <line class="accent" x1="30" y1="40" x2="90" y2="40" marker-end="url(#s4a2)"/>
+              <text class="lbl" x="34" y="28">i（总）</text>
+              <text class="ylb" x="240" y="82">i₁</text>
+              <text class="ylb" x="240" y="122">i₂</text>
+              <text class="ylb" x="286" y="114">u</text>
+              <text class="dim" x="20" y="168">同电压 u；G=1/R；分流按电导（小电阻分大电流）</text>
+              <defs><marker id="s4a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-blue)"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：并联同电压，电流按电导（即电阻的反比）分配。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2b" data-stage="2" onclick="revealBlock(this)">第 1 步：KCL 推等效电导 + 陈述时刻 →</button>
+        <div class="reveal" id="rev-2b">
+          <p>KCL：总电流等于各分电流之和〔邱 p.36〕。每支路 <code>iₖ=Gₖ·u</code>，代入：</p>
+          <div class="formula sm">i = i₁ + i₂ + … + iₙ = (G₁+G₂+…+Gₙ)·u</div>
+          <p>对照 <code>i=G_eq·u</code>，读出 <code>G_eq=ΣGₖ=Σ1/Rₖ</code>〔邱式(2-3)〕，于是：</p>
+          <div class="formula">1 / R_eq = 1/R₁ + 1/R₂ + … + 1/Rₙ　（即 R_eq = 1/Σ(1/Rₖ)）</div>
+          <p>分流公式〔邱 p.37 式(2-4)；李 p.44 式(1-40)〕：</p>
+          <div class="formula">iₖ = ( Gₖ / G_eq ) · i</div>
+          <div class="ok-box"><strong>并联等效与分流</strong>：<code>G_eq=ΣGₖ</code>；<code>1/R_eq=Σ1/Rₖ</code>；<code>iₖ=(Gₖ/G_eq)·i</code>。口头版〔李 p.44〕：“电导值大的分配到的电流也大”——换成电阻说就是<strong>阻值小的那条路电流大</strong>。<br><strong>条件/自检</strong>：线性正电阻；<code>R_eq</code> <strong>小于</strong>任一个并联电阻（越并越小）。</div>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>预测 2（先猜，别算，带反直觉）：</strong>1 kΩ 与 2 kΩ 并联接 12 V。①哪条支路电流大？②保持这两条不动，再<strong>多并一条 100 kΩ 的大电阻</strong>，总电流会变大、变小还是基本不变？先说理由。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'smallbranch');enableGate('gate-pred2')">① 1 kΩ 支路大；② 总电流明显变大</button>
+            <button class="pred-opt" onclick="pickPred(this,'almost');enableGate('gate-pred2')">① 1 kΩ 支路大；② 总电流几乎不变</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-target="rev-2c" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-2c">
+          <p><strong>① 1 kΩ 支路电流大（<code>G</code> 大）</strong>。② <strong>总电流几乎不变</strong>。原来 <code>R_eq=1∥2 kΩ≈0.667 kΩ</code>、<code>i=12/0.667 k≈18 mA</code>；多并一条 100 kΩ 后 <code>1/R_eq=1/1000+1/2000+1/100000</code>，<code>R_eq≈0.662 kΩ</code>、<code>i≈18.12 mA</code>。<strong>总电阻确实又小了一点（符合“越并越小”），但新支路阻值很大、几乎不导电，总电流变化极小。</strong></p>
+          <p class="muted">同时纠正两种误解：既不是“并进任何东西总电流都明显变大”，也不是“并联支路多少不影响总电流”。</p>
+        </div>
+
+        <div class="exercise" style="margin-top:10px;">
+          <h4>即时检查</h4>
+          <p><code>R₁=2 Ω</code>、<code>R₂=3 Ω</code> 并联接 <code>u=10 V</code>，求 <code>i₁</code>（2 Ω 支路）和 <code>R_eq</code>。</p>
+          <div class="numcheck" id="ex-p1" data-qid="ex-p1"><label>i₁ = <input type="text" placeholder="例如 5" /> A</label><button class="btn-sm" onclick="checkNum('ex-p1',5,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-2d" data-stage="2" onclick="revealBlock(this)">看答案 →</button>
+          <div class="reveal" id="rev-2d"><p><code>i₁ = u/R₁ = 10/2 = 5 A</code>；<code>i₂=10/3≈3.33 A</code>；<code>R_eq=R₁R₂/(R₁+R₂)=6/5=1.2 Ω</code>（<code>&lt;2 Ω</code>，符合“并小于任一”）。</p></div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 两电阻特例、混联化简、边界（8′）〔邱 p.37–38〕</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">两电阻并联特例（高频） →</button>
+        <div class="reveal" id="rev-3a">
+          <p>两个电阻并联最常用，单独记〔邱 p.37〕：<code>R_eq = R₁R₂/(R₁+R₂)</code>，分流：</p>
+          <div class="formula">i₁ = [ R₂ / (R₁+R₂) ] · i　　i₂ = [ R₁ / (R₁+R₂) ] · i</div>
+          <div class="warn"><strong>全课最易错处：交叉！</strong><code>i₁</code> 的分子是<strong>对方的电阻 R₂</strong>，不是 R₁。这不是笔误——把 <code>G=1/R</code> 代进 <code>i₁=G₁/(G₁+G₂)·i</code>，通分后分子正好剩 R₂。物理上也对：R₁ 越小、<code>i₁</code> 越大（R₁ 在分母），电流走电阻小的那条路。</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3b" data-stage="3" onclick="revealBlock(this)">混联怎么化简 →</button>
+        <div class="reveal" id="rev-3b">
+          <p>既有串联又有并联叫<strong>混联</strong>〔邱 p.37–38〕。方法：<strong>从最里面一小块开始，能串就串、能并就并，一层层往外剥</strong>。下图中 (<code>R₁</code> 串 <code>R₂</code>) 先并 <code>R₃</code>，再整体串 <code>R₄</code>：</p>
+          <div class="formula sm">R_eq = R₄ + (R₁+R₂)·R₃ / (R₁+R₂+R₃)</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p class="muted">虚线绿框标出化简顺序：① R₁ 串 R₂ → R₁₂；② R₁₂ 并 R₃ → R₁₂₃；③ 再串 R₄ → R_eq。每剥一层，电路就少一个电阻。</p>
+            </div>
+            <div class="fig-box md" aria-label="混联逐层化简示意图">
+              <svg class="svg-diag" viewBox="0 0 380 200" role="img">
+                <title>混联电路：R1串R2后并R3，再串R4，虚线框标出逐层化简顺序</title>
+                <text class="dim" x="12" y="16">逐层化简（绿框 = 可合并的最小块）</text>
+                <line class="wire" x1="24" y1="100" x2="60" y2="100"/>
+                <rect class="elem" x="60" y="90" width="44" height="20" rx="2" fill="none"/>
+                <text x="74" y="105">R₄</text>
+                <rect class="grp" x="118" y="42" width="200" height="116" rx="8"/>
+                <text class="dim" x="126" y="38">② 并 R₃ → R₁₂₃</text>
+                <line class="wire" x1="104" y1="100" x2="140" y2="100"/>
+                <circle class="nodept" cx="140" cy="100" r="3.5"/>
+                <line class="wire" x1="140" y1="100" x2="140" y2="70"/>
+                <line class="wire" x1="140" y1="130" x2="140" y2="100"/>
+                <rect class="grp" x="152" y="52" width="116" height="36" rx="6"/>
+                <text class="dim" x="156" y="50">① R₁ 串 R₂</text>
+                <line class="wire" x1="140" y1="70" x2="162" y2="70"/>
+                <rect class="elem" x="162" y="60" width="40" height="20" rx="2" fill="none"/>
+                <text x="174" y="75">R₁</text>
+                <line class="wire" x1="202" y1="70" x2="218" y2="70"/>
+                <rect class="elem" x="218" y="60" width="40" height="20" rx="2" fill="none"/>
+                <text x="230" y="75">R₂</text>
+                <line class="wire" x1="258" y1="70" x2="290" y2="70"/>
+                <line class="wire" x1="140" y1="130" x2="162" y2="130"/>
+                <rect class="elem" x="162" y="120" width="96" height="20" rx="2" fill="none"/>
+                <text x="194" y="135">R₃</text>
+                <line class="wire" x1="258" y1="130" x2="290" y2="130"/>
+                <line class="wire" x1="290" y1="70" x2="290" y2="130"/>
+                <line class="wire" x1="290" y1="100" x2="318" y2="100"/>
+                <text class="ylb" x="322" y="104">→ R_eq</text>
+                <text class="dim" x="12" y="185">③ 最后 R₁₂₃ 与 R₄ 串联</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：绿框从小到大逐层合并；先把 R₁、R₂ 串，再并 R₃，最后串 R₄。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3c" data-stage="3" onclick="revealBlock(this)">边界：是不是所有电路都能化简？ →</button>
+        <div class="reveal" id="rev-3c">
+          <p>邱 §2-2 末尾〔邱 p.38〕讲<strong>桥形连接</strong>：四个电阻接成桥时，既不是串也不是并，串并联化简<strong>失效</strong>。只有当电桥<strong>平衡</strong>（<code>R₁R₄=R₂R₃</code>）时，对角线无电流，才能按串并算；不平衡时要用 Y-Δ 变换（留到后面）。</p>
+          <p class="muted">这条边界回答了开场“什么时候不成立”：桥形不平衡时，今天这套就不管用了。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 功率回扣：谁发热多（4′）〔L1-03 + 通识〕</div>
+
+        <p class="speak teacher">“第三课我们会算功率。现在串并联摆在这，正好用它——不列方程，直接说谁功耗大。”</p>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">串并联里谁热 →</button>
+        <div class="reveal" id="rev-4a">
+          <p><strong>串联</strong>（同电流 <code>i</code>）：用 <code>P=i²R</code>〔L1-03〕，<code>i</code> 相同 → <strong><code>R</code> 越大 <code>P</code> 越大</strong>。预测 1 里 2 kΩ 发热多：<code>P₂=(4 mA)²×2 kΩ=32 mW &gt; P₁=16 mW</code>。</p>
+          <p><strong>并联</strong>（同电压 <code>u</code>）：用 <code>P=u²/R</code>〔L1-03〕，<code>u</code> 相同 → <strong><code>R</code> 越小 <code>P</code> 越大</strong>。所以并联里 1 kΩ 那条发热多。</p>
+          <div class="ok-box">一句话：<strong>串联大电阻热、并联小电阻热</strong>——因为串联共同的是电流（<code>i²R</code>），并联共同的是电压（<code>u²/R</code>）。</div>
+          <p class="muted">来源说明：这段是〔通识〕——两本书都没有专设“串并联功耗比较”，是我们把 L1-03 的公式套进串并联结构推出来的，不是书中原话。它的价值：让第三课的功率直觉第一次真正用来“比较”。</p>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 串并联实验台：拖一拖，看公式是否自洽</div>
+
+        <div class="splab">
+          <h4>动手拖一拖：同一组 R₁、R₂，串起来 vs 并起来</h4>
+          <p class="muted" style="margin:0 0 8px;">拖动下面三个滑块，看串联、并联两栏的等效电阻、分压/分流、功耗实时更新，并核对“串大于任一、并小于任一”是否成立。</p>
+          <div class="sp-grid">
+            <div>
+              <div class="sp-ctrl"><label>电源电压 U <span id="sp-u-val">12.0 V</span></label><input type="range" id="sp-u" min="1" max="24" step="0.5" value="12" /></div>
+              <div class="sp-ctrl" style="margin-top:8px;"><label>电阻 R₁ <span id="sp-r1-val">1000 Ω</span></label><input type="range" id="sp-r1" min="100" max="5000" step="100" value="1000" /></div>
+              <div class="sp-ctrl" style="margin-top:8px;"><label>电阻 R₂ <span id="sp-r2-val">2000 Ω</span></label><input type="range" id="sp-r2" min="100" max="5000" step="100" value="2000" /></div>
+              <div style="margin-top:12px;font-size:.8rem;color:var(--chalk-faint);line-height:1.5;">默认 U=12 V、R₁=1 kΩ、R₂=2 kΩ，正是预测 1 的电路：串联分压 4 V / 8 V，功耗 16 / 32 mW（大电阻热）。切到并联看小电阻如何分走大电流。</div>
+            </div>
+            <div>
+              <div class="sp-panel">
+                <h5>串联（同电流）</h5>
+                <div class="sp-row"><span class="k">R_eq = R₁+R₂</span><span class="v" id="sp-s-req">—</span></div>
+                <div class="sp-row"><span class="k">总电流 i</span><span class="v" id="sp-s-i">—</span></div>
+                <div class="sp-row"><span class="k">分压 u₁ / u₂</span><span class="v" id="sp-s-u">—</span></div>
+                <div class="sp-row"><span class="k">功耗 P₁ / P₂</span><span class="v" id="sp-s-p">—</span></div>
+                <div class="sp-eq" id="sp-s-eq">—</div>
+                <div class="sp-check" id="sp-s-check">—</div>
+              </div>
+              <div class="sp-panel" style="margin-top:10px;">
+                <h5>并联（同电压）</h5>
+                <div class="sp-row"><span class="k">R_eq = R₁R₂/(R₁+R₂)</span><span class="v" id="sp-p-req">—</span></div>
+                <div class="sp-row"><span class="k">总电流 i</span><span class="v" id="sp-p-i">—</span></div>
+                <div class="sp-row"><span class="k">分流 i₁ / i₂</span><span class="v" id="sp-p-ij">—</span></div>
+                <div class="sp-row"><span class="k">功耗 P₁ / P₂</span><span class="v" id="sp-p-p">—</span></div>
+                <div class="sp-eq" id="sp-p-eq">—</div>
+                <div class="sp-check" id="sp-p-check">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 迁移自检：读别人标好的图（先判能不能化简，再算）</div>
+
+        <div class="exercise">
+          <h4>该你了（独立练习）：先识别伪串并，再化简、分流、比功耗</h4>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>电路：电源 <code>u=18 V</code> 接节点 <code>a</code> 与参考点；<code>R_C=2 Ω</code> 从 <code>a</code> 接到节点 <code>b</code>；在 <code>b</code> 点分出两条支路 <code>R_A=6 Ω</code>、<code>R_B=3 Ω</code>，都接回参考点。图上 <code>R_C</code> 与 <code>R_A</code> 首尾相接，<strong>看着像串联</strong>——这是陷阱。</p>
+              <p class="ask">⓪ <code>R_C</code> 与 <code>R_A</code> 真串联吗？<code>R_A</code> 与 <code>R_B</code> 真并联吗？依据什么判据？</p>
+              <p>① 求并联组等效 <code>R_AB</code> 与总等效 <code>R_eq</code>。② 求总电流 <code>i</code> 与 <code>i_A</code>、<code>i_B</code>。③ 求 <code>u_C</code> 与 <code>u_AB</code>。④ <code>R_A</code>、<code>R_B</code> 谁发热多？<code>R_A</code> 与 <code>R_C</code> 呢？</p>
+            </div>
+            <div class="fig-box md" aria-label="独立练习混联电路图">
+              <svg class="svg-diag" viewBox="0 0 380 210" role="img">
+                <title>电源18伏经Rc=2欧到节点b，b分出Ra=6欧与Rb=3欧并联回参考点</title>
+                <text class="dim" x="14" y="16">a 点接 +18 V，参考点为 0 V</text>
+                <circle class="nodept" cx="30" cy="60" r="3.5"/>
+                <text x="20" y="50">a</text>
+                <text class="ylb" x="10" y="90">+18V</text>
+                <line class="wire" x1="30" y1="60" x2="90" y2="60"/>
+                <rect class="elem" x="90" y="50" width="52" height="20" rx="2" fill="none"/>
+                <text x="102" y="65">R_C 2Ω</text>
+                <line class="wire" x1="142" y1="60" x2="180" y2="60"/>
+                <circle class="nodept" cx="180" cy="60" r="3.5"/>
+                <text x="176" y="50">b</text>
+                <line class="wire" x1="180" y1="60" x2="180" y2="95"/>
+                <line class="wire" x1="180" y1="95" x2="215" y2="95"/>
+                <line class="wire" x1="180" y1="150" x2="215" y2="150"/>
+                <rect class="elem" x="215" y="85" width="60" height="20" rx="2" fill="none"/>
+                <text x="226" y="100">R_A 6Ω</text>
+                <rect class="elem" x="215" y="140" width="60" height="20" rx="2" fill="none"/>
+                <text x="226" y="155">R_B 3Ω</text>
+                <line class="wire" x1="275" y1="95" x2="315" y2="95"/>
+                <line class="wire" x1="275" y1="150" x2="315" y2="150"/>
+                <line class="wire" x1="315" y1="95" x2="315" y2="150"/>
+                <text class="dim" x="318" y="128">参考点</text>
+                <text class="dim" x="14" y="195">R_C 与 R_A 首尾相接，但 b 点还接着 R_B → 不是串联！</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：判串并靠“同电流/同电压”，不靠图上是否首尾相接。</div>
+            </div>
+          </div>
+
+          <div class="choicebox" data-qid="ex-judge" data-hint="串联要求同一电流；b 点还接着 R_B，电流到 b 会分流。" data-explain="R_C 与 R_A 不是串联（b 点有分流）；R_A 与 R_B 同电压是真并联。">
+            <p><strong>⓪ 判断：</strong><code>R_C</code> 与 <code>R_A</code> 首尾相接，它们真串联吗？</p>
+            <label><input type="radio" name="qjudge" value="series" /> 真串联，可以直接和 R_C 相加</label>
+            <label><input type="radio" name="qjudge" value="not" /> 不是串联，b 点有 R_B 分流</label>
+            <button class="btn-sm" onclick="checkChoice('ex-judge','not')">检查</button><div class="fb"></div>
+          </div>
+          <div class="numcheck" id="ex-rab" data-qid="ex-rab"><label>① R_AB = <input type="text" placeholder="例如 2" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-rab',2,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-req" data-qid="ex-req"><label>① R_eq = <input type="text" placeholder="例如 4" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-req',4,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-ia" data-qid="ex-ia"><label>② i_A = <input type="text" placeholder="交叉分流" /> A</label><button class="btn-sm" onclick="checkNum('ex-ia',1.5,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-uab" data-qid="ex-uab"><label>③ u_AB = <input type="text" placeholder="例如 9" /> V</label><button class="btn-sm" onclick="checkNum('ex-uab',9,0.01)">检查</button><div class="fb"></div></div>
+          <div class="choicebox" data-qid="ex-power" data-hint="并联电压相同，用 P=u²/R，电阻小的功耗大。" data-explain="R_B=3Ω 比 R_A=6Ω 小，并联同电压下 P=u²/R，R_B 发热多。">
+            <p><strong>④ 功耗：</strong><code>R_A</code> 和 <code>R_B</code> 谁发热多？</p>
+            <label><input type="radio" name="qpower" value="ra" /> R_A（6 Ω）</label>
+            <label><input type="radio" name="qpower" value="rb" /> R_B（3 Ω）</label>
+            <button class="btn-sm" onclick="checkChoice('ex-power','rb')">检查</button><div class="fb"></div>
+          </div>
+
+          <button class="reveal-btn" data-target="rev-6a" data-stage="6" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-6a">
+            <p><strong>⓪</strong> <code>R_C</code> 与 <code>R_A</code> <strong>不是串联</strong>：串联要求“同一电流”，但它们中间的节点 <code>b</code> 还接着 <code>R_B</code>，电流到 <code>b</code> 会分流；“看着首尾相接”不等于串联。<code>R_A</code> 与 <code>R_B</code> 都接在 <code>b</code> 与参考点之间，是<strong>真并联</strong>。先把它们并成 <code>R_AB</code>，此后 <code>R_AB</code> 与 <code>R_C</code> 之间再无分支，才成为串联。<strong>判据是同电流（串）/ 同电压（并），不是图上是否首尾相接。</strong></p>
+            <p><strong>①</strong> <code>R_AB=6×3/(6+3)=2 Ω</code>；<code>R_eq=2+2=4 Ω</code>。</p>
+            <p><strong>②</strong> <code>i=18/4=4.5 A</code>（流过 <code>R_C</code> 与并联组的总电流）；分流 <code>i_A=R_B/(R_A+R_B)·i=3/9×4.5=1.5 A</code>，<code>i_B=6/9×4.5=3 A</code>（小的 <code>R_B</code> 电流大；<code>1.5+3=4.5</code> 校验）。</p>
+            <p><strong>③</strong> <code>u_C=i·R_C=4.5×2=9 V</code>；<code>u_AB=18−9=9 V</code>（也=<code>i·R_AB=4.5×2=9 V</code>）。</p>
+            <p><strong>④</strong> 并联同电压用 <code>u²/R</code>：<code>R_B=3 Ω</code> 小 → 发热多（<code>P_B=9²/3=27 W &gt; P_A=9²/6=13.5 W</code>）。<code>R_A</code>(6 Ω) 与 <code>R_C</code>(2 Ω) 电流、电压都不同，须分别算：<code>P_A=1.5²×6=13.5 W</code>、<code>P_C=4.5²×2=40.5 W</code>，<code>R_C</code> 最多。<strong>串并联功耗比较必须先看清“共同的是电流还是电压”，不能一概说“大电阻热/小电阻热”。</strong></p>
+          </div>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">等效判据：对外伏安相同、内部不等效；<br>串联同电流 → <code>R_eq=ΣR</code>、<code>uₖ=(Rₖ/ΣR)·u</code>（大电阻分压多、功耗多）；<br>并联同电压 → <code>1/R_eq=Σ1/R</code>、<code>iₖ=(Gₖ/ΣG)·i</code>（小电阻分流多、功耗多）。</div>
+        <p><strong>判串并靠“同电流/同电压”，不靠图上的样子；化简从最小块一层层往外剥。</strong></p>
+        <p class="muted">下一课钩子：等效、分压分流都会了。可如果电源有内阻，或要看“从这个端口往里看等效是多少、接上负载会怎样”，串并联化简就不够了。第五课：电源模型、等效变换与戴维南/诺顿。</p>
+        <button class="reveal-btn" data-target="rev-6b" data-stage="6" onclick="revealBlock(this)">展开：过关自检 →</button>
+        <div class="reveal" id="rev-6b">
+          <ul>
+            <li>不看笔记，我能说出等效的判据（对外伏安相同、内部不等效）吗？</li>
+            <li>我能从 KVL/KCL + 欧姆定律推出串、并的等效电阻与分压、分流公式吗？</li>
+            <li>我会用“串大于任一、并小于任一”给等效电阻做自检吗？</li>
+            <li>我知道分压按电阻正比、分流按电导（电阻反比）正比，两电阻分流分子是“对方电阻”吗？</li>
+            <li>给一张图，我能靠“同电流/同电压”判断真串并，识别“看着像串其实不是”吗？</li>
+            <li>我知道分压公式要求空载、桥形不平衡时串并联失效吗？</li>
+            <li>我能说清“串联大电阻热、并联小电阻热”及其前提吗？</li>
+          </ul>
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：等效判据（对外伏安相同、内部不等效）；串联同电流→<code>R_eq=ΣR</code>、分压按电阻正比（含空载条件）；并联同电压、电导 <code>G=1/R</code>→<code>G_eq=ΣG</code>、分流按电导正比；两电阻并联特例与“交叉”陷阱；混联逐层化简；桥形不平衡作为边界（点到）；串并联功耗比较（回扣 L1-03）。</p>
+          <p class="mini"><strong>不讲</strong>：Y-Δ 等效变换、不平衡电桥严格求解（邱 §2-3，L1-05 之后）；电源串并联与实际电源模型、戴维南/诺顿（L1-05）；含受控源等效、最大功率传输（L1-07）；带负载分压/输入电阻/负载效应（L1-05）；导线/接触电阻定量（只口头提醒“实际连接也有小电阻，本课理想化忽略”）。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出等效判据：对外伏安特性相同、内部不等效，并据此解释为何能用 R_eq 代替一串电阻。</li>
+            <li>从 KCL/KVL + 欧姆定律推出串、并联的等效电阻与分压、分流公式，而非背诵。</li>
+            <li>用 R_eq=ΣR（串）、1/R_eq=Σ1/R（并）算等效，用分压、分流公式算关键支路量，并用“串大任一个、并小任一个”自检。</li>
+            <li>说出适用条件（线性正电阻、空载分压、桥形不平衡失效），靠“同电流/同电压”识别真串并。</li>
+            <li>回扣功率：串联阻值大的功耗大（i²R）、并联阻值小的功耗大（u²/R）。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">开场与等效概念 8′ / 串联与分压 10′ / 并联与分流 11′ / 两电阻特例与混联 8′ / 功率回扣 4′ / 练习与收尾 4′。45 分钟是预算：在因果链完整前提下压缩低增益重复，不为凑时长加料。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>等效＝对外伏安特性相同、内部不等效；对外等效概念</td><td>邱 p.34–35 原文</td></tr>
+            <tr><td>串联同电流、R_eq=ΣR、分压式(2-2)、“电压与电阻成正比”、串等效大于任一</td><td>邱 p.35–36 原文（页面画自包含图，不引用书内图号）</td></tr>
+            <tr><td>并联同电压、电导、G_eq=ΣG 式(2-3)、R_eq 式、分流式(2-4)、“电导大的分电流大”、并等效小于任一</td><td>邱 p.36–37 原文</td></tr>
+            <tr><td>两电阻并联 R₁R₂/(R₁+R₂) 与分流交叉式、例 2-1、混联、桥形平衡条件</td><td>邱 p.37–38 原文</td></tr>
+            <tr><td>分压/分流公式与真实需求（音量控制）、节点电压、电位器、双电源分压、练习 1-12（分压分流对照）、空载分压</td><td>李 p.41–44 原文（§1-8）</td></tr>
+            <tr><td>串并联功耗比较（串大电阻热、并小电阻热）</td><td>通识（把 L1-03 的 i²R/u²R 套进串并联；书中无此专段）</td></tr>
+            <tr><td>换电导“为对称”的教学解释、预测 1/2、即时检查、独立练习与数值</td><td>我编的 / 教学补充</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算，以原书为准。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '004-series-parallel';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-04 增量脚本：预测 gating + 串并联实验台 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    var uEl = document.getElementById('sp-u');
+    var r1El = document.getElementById('sp-r1');
+    var r2El = document.getElementById('sp-r2');
+    if(!uEl || !r1El || !r2El) return;
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function fmtR(o){ if(o>=1e6) return (o/1e6).toFixed(2)+' MΩ'; if(o>=1000) return (o/1000).toFixed(2)+' kΩ'; return o.toFixed(0)+' Ω'; }
+    function fmtI(a){ var ma=a*1000; if(Math.abs(ma)>=1000) return a.toFixed(3)+' A'; if(Math.abs(ma)>=1) return ma.toFixed(2)+' mA'; return (ma*1000).toFixed(1)+' μA'; }
+    function fmtP(w){ if(w>=1) return w.toFixed(3)+' W'; if(w>=0.001) return (w*1000).toFixed(2)+' mW'; return (w*1e6).toFixed(1)+' μW'; }
+    function fmtU(v){ return v.toFixed(2)+' V'; }
+    function upd(){
+      var U = parseFloat(uEl.value), R1 = parseFloat(r1El.value), R2 = parseFloat(r2El.value);
+      set('sp-u-val', U.toFixed(1)+' V');
+      set('sp-r1-val', R1.toFixed(0)+' Ω');
+      set('sp-r2-val', R2.toFixed(0)+' Ω');
+
+      // 串联
+      var sReq = R1 + R2, sI = U/sReq;
+      var sU1 = sI*R1, sU2 = sI*R2, sP1 = sI*sI*R1, sP2 = sI*sI*R2;
+      set('sp-s-req', fmtR(sReq));
+      set('sp-s-i', fmtI(sI));
+      set('sp-s-u', fmtU(sU1)+' / '+fmtU(sU2));
+      set('sp-s-p', fmtP(sP1)+' / '+fmtP(sP2));
+      set('sp-s-eq', 'u₁=U·R₁/(R₁+R₂)='+fmtU(sU1)+'；P=i²R：'+(sP1>=sP2?'R₁(大)发热多':'R₂(大)发热多'));
+      var sOk = sReq > R1 && sReq > R2;
+      set('sp-s-check', (sOk?'✓ ':'✗ ')+'R_eq 应大于任一个：'+fmtR(sReq)+' > max('+fmtR(R1)+','+fmtR(R2)+')');
+      document.getElementById('sp-s-check').className = 'sp-check'+(sOk?'':' bad');
+
+      // 并联
+      var pReq = R1*R2/(R1+R2), pI = U/pReq;
+      var pI1 = U/R1, pI2 = U/R2, pP1 = U*U/R1, pP2 = U*U/R2;
+      set('sp-p-req', fmtR(pReq));
+      set('sp-p-i', fmtI(pI));
+      set('sp-p-ij', fmtI(pI1)+' / '+fmtI(pI2));
+      set('sp-p-p', fmtP(pP1)+' / '+fmtP(pP2));
+      set('sp-p-eq', 'i₁=U/R₁='+fmtI(pI1)+'；P=u²/R：'+(pP1>=pP2?'R₁(小)发热多':'R₂(小)发热多'));
+      var pOk = pReq < R1 && pReq < R2;
+      set('sp-p-check', (pOk?'✓ ':'✗ ')+'R_eq 应小于任一个：'+fmtR(pReq)+' < min('+fmtR(R1)+','+fmtR(R2)+')');
+      document.getElementById('sp-p-check').className = 'sp-check'+(pOk?'':' bad');
+    }
+    uEl.addEventListener('input', upd);
+    r1El.addEventListener('input', upd);
+    r2El.addEventListener('input', upd);
+    upd();
+  })();
+  </script>
+</body>
+</html>

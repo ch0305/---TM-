@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>电感：储能、V-I 关系与直觉 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:460px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .vcurve{stroke:var(--chalk-yellow);stroke-width:3;fill:none}
+    .svg-diag .icurve{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .flowar{stroke:var(--chalk-pink);stroke-width:2;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .box{stroke:var(--chalk-blue);stroke-width:2;fill:rgba(159,211,255,.06)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .duality-t td:nth-child(2),.duality-t td:nth-child(3){min-width:170px}
+    .duality-t tr:nth-child(1) td,.duality-t tr:nth-child(5) td{color:var(--chalk-yellow)}
+    /* 实验台 */
+    .cap-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .cap-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;font-size:.82rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim)}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.45}
+    .eq-line{font-family:var(--mono);font-size:1.1rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .step-list{counter-reset:stp;list-style:none;padding:0;margin:6px 0}
+    .step-list li{position:relative;padding:4px 0 4px 30px;font-size:.9rem;line-height:1.5}
+    .step-list li::before{counter-increment:stp;content:counter(stp);position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,224,138,.18);color:var(--chalk-yellow);text-align:center;line-height:20px;font-size:.78rem;font-weight:700}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">电感：储能、V-I 关系与直觉</span>
+    <span class="meta">教案先行 · 45 min · S2 储能元件对偶课</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（电容的对偶镜像）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题：对偶这把钥匙</a></li>
+        <li><a href="#stage-1">1 · 电感是什么：Ψ=Li</a></li>
+        <li><a href="#stage-2">2 · 核心推导：u=L·di/dt 与短路</a></li>
+        <li><a href="#stage-3">3 · 积分形式、记忆与连续性</a></li>
+        <li><a href="#stage-4">4 · 储能 W=½Li² 与对偶表</a></li>
+        <li><a href="#stage-5">5 · 独立练习（7 题）</a></li>
+        <li><a href="#stage-6">6 · 两种任务形态小结</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">对偶是<strong>迁移工具</strong>，不是背诵表：把电容 VCR 的 <code>u↔i</code>、<code>C↔L</code> 平移过来〔李 §5-7〕。每平移一条都要回到物理：<strong>电容存电场看电压，电感存磁场看电流</strong>。</div>
+      <div class="mini">最容易套反的两处：<strong>稳态</strong>（电容开路 / 电感短路）、<strong>突变条件</strong>（电容看电流有界 / 电感看电压有界）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-02.md</code>（邱 §6-2、李上 §5-5~5-7）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-02-教案.md</code>（独立审核通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>电感公式速查（先自己推一遍）</h4>
+      <div class="mini">定义：<code>Ψ=Li</code>（磁链与电流关联，右手螺旋）。</div>
+      <div class="mini">核心 VCR：<code>u=L·di/dt</code>（关联）；非关联 <code>u=−L·di/dt</code>。</div>
+      <div class="mini">积分式：<code>i=i₀+(1/L)∫u dξ</code>；初值 <code>i₀</code> 浓缩历史。</div>
+      <div class="mini">连续性：<code>i_L(t+)=i_L(t−)</code>——<strong>电压有界</strong>时才成立（电容是电流有界）。</div>
+      <div class="mini">功率 <code>p=L i·di/dt</code>（可正可负）；储能 <code>W=½Li²≥0</code>（无源）。</div>
+      <div class="mini">直流稳态：<code>di/dt=0→u=0→短路</code>（电容是开路）。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 储能元件对偶课（L2-02）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">电容的对偶镜像：看电流不看电压</span>
+      </div>
+      <h1>电感：储能、V-I 关系与直觉</h1>
+      <p class="muted">上一课立住了电容的规矩：<strong>电流看电压变化率、电压记着过去、电流有界时电压不能突变、直流稳态开路</strong>。现在换上电感——它像一面<strong>对偶镜子</strong>：电压看电流变化率、电流记着过去、<strong>电压有界时电流不能突变</strong>、直流稳态反而<strong>短路</strong>。最容易错的，是拿电容结论直接套电感（把条件和稳态套反）。这节课就解决这一个问题：<strong>用对偶这把钥匙，从电容因果链平移出电感的全套结论，同时把"变"与"不变"分清楚，并会做基本求解与判断。</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">对偶总纲</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">Ψ=Li</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">u=L·di/dt</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">记忆与连续性</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">储能与对偶表</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">练习</span>
+      </div>
+      <div class="flow-note">上方链条是推导的<strong>因果顺序</strong>：每条结论都要能看到它从电容对偶平移、或当场推出来。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题：对偶这把钥匙</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">电容的电压与电流关系 <code>i=C·du/dt</code>，电感是它的对偶 <code>u=L·di/dt</code>——结构一样，主角从电压换成电流。</p>
+            <p class="speak teacher">"对偶是迁移工具，不是背诵表。每平移一条都要回到物理：<strong>电容靠电场把能量存在电压里，电感靠磁场把能量存在电流里</strong>——记忆的载体从 *u* 换成 *i*，差异全由此而来。"〔李 §5-7〕</p>
+            <p class="muted">用<strong>飞轮比喻</strong>立直觉（〔通识〕）：电感像水管里有惯性的飞轮，<strong>转速＝电流</strong>。转速不变→不需要推力（电压为零＝短路）；想让转速升得越快（<code>di/dt</code> 越大）→推力越大（<code>u</code> 越大）；转速不能瞬间从慢变快（电流不能突变）。比喻只立直觉，每次回到公式。</p>
+          </div>
+          <div class="fig-box md" aria-label="电容与电感对偶关系示意图">
+            <svg class="svg-diag" viewBox="0 0 380 210" role="img">
+              <title>电容i=C·du/dt与电感u=L·di/dt的对偶</title>
+              <rect class="box" x="16" y="20" width="164" height="170" rx="6"/>
+              <text class="lbl" x="34" y="42">电容（L2-01）</text>
+              <text class="ylb" x="34" y="70">i = C·du/dt</text>
+              <text class="dim" x="34" y="92">电流由电压变化率定</text>
+              <text class="dim" x="34" y="112">电压有记忆 · 不突变</text>
+              <text class="dim" x="34" y="132">稳态开路（i=0）</text>
+              <text class="dim" x="34" y="158">储能 W=½Cu²</text>
+              <rect class="box" x="200" y="20" width="164" height="170" rx="6"/>
+              <text class="lbl" x="218" y="42">电感（本课）</text>
+              <text class="ylb" x="218" y="70">u = L·di/dt</text>
+              <text class="dim" x="218" y="92">电压由电流变化率定</text>
+              <text class="dim" x="218" y="112">电流有记忆 · 不突变</text>
+              <text class="dim" x="218" y="132">稳态短路（u=0）</text>
+              <text class="dim" x="218" y="158">储能 W=½Li²</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：主角 u↔i 互换，因果结构不变；条件对象与稳态结果跟着换。</div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 电感是什么：从线圈到 Ψ=Li（形态二铺垫）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p>导线绕成线圈，通电产生磁场；电流一变，磁场就变，线圈两端出现<strong>感应电压</strong>。磁通 Φ 与 *N* 匝交链成磁通链 Ψ=*N*Φ；感应电压 <code>u=dΨ/dt</code>（式 6-9），方向符合<strong>楞次定律</strong>——感应效应总是<strong>反抗电流/磁通的变化</strong>〔邱 p.127〕。电感元件是实际线圈的理想化模型〔邱 p.127；李 §5-5〕。</p>
+            <p class="muted">电感元件的特性是磁通链 Ψ 与电流 *i* 的代数关系。当 Ψ 与 *i* 取<strong>关联参考方向（右手螺旋）</strong>时，线性电感有下面的关系——这个正号依赖右手螺旋约定，与电容的"电压极性/电荷极性一致"是同类前提。</p>
+            <div class="eq-line">Ψ = L i　　(6-10)/(5-15)，L＞0，单位亨利 H</div>
+          </div>
+          <div class="fig-box sm" aria-label="电感线圈与韦安特性曲线示意图">
+            <svg class="svg-diag" viewBox="0 0 300 200" role="img">
+              <title>电感线圈磁通链与线性韦安特性</title>
+              <text class="lbl" x="12" y="18">电感线圈</text>
+              <path class="elem" d="M40,40 q12,-16 24,0 q12,16 24,0 q12,-16 24,0 q12,16 24,0" fill="none"/>
+              <line class="wire" x1="40" y1="40" x2="40" y2="28"/>
+              <line class="wire" x1="136" y1="40" x2="136" y2="28"/>
+              <text class="dim" x="60" y="82">电流 i → 磁场</text>
+              <text class="dim" x="20" y="164">Ψ=Li（右手螺旋取正）</text>
+              <!-- Ψ-i line -->
+              <line class="wire" x1="160" y1="180" x2="280" y2="180"/>
+              <line class="wire" x1="160" y1="180" x2="160" y2="60"/>
+              <line class="accent" x1="160" y1="180" x2="268" y2="72" marker-end="url(#arL)"/>
+              <text class="ylb" x="272" y="182">i</text>
+              <text class="ylb" x="150" y="56">Ψ</text>
+              <text class="dim" x="200" y="170">过原点直线</text>
+              <defs><marker id="arL" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+            </svg>
+            <div class="fig-cap">左：线圈通电产生磁通链；右：线性电感的韦安特性是过原点直线。</div>
+          </div>
+        </div>
+
+        <div class="ok-box"><strong>陈述时刻 1 · 电感元件与 Ψ=Li</strong>（可抄笔记）：<strong>电感元件</strong>是存储磁场能量的二端元件，任一时刻磁链 Ψ(*t*) 与电流 *i*(*t*) 的关系由 *i*-Ψ 平面上的一条曲线确定；线性时不变电感的曲线是过原点直线。当磁链与电流取<strong>关联参考方向（右手螺旋）</strong>时 <strong>Ψ = L i</strong>　(6-10)/(5-15)，<em>L</em>＞0 为电感。〔邱 §6-2 p.127；李 §5-5〕</div>
+
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1（直流短路，形态二）：</strong>把 2 H 电感通以稳定的 5 A 直流电流，电路稳定后电感两端电压是多少？① 有电流就有电压，很大；② 电压为零，相当于短路；③ 要看回路里有没有电阻。先选，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred0')">① 有电流就有电压</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred0')">② 零，相当于短路</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred0')">③ 看有没有电阻</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-1a" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1 →</button>
+        <div class="reveal" id="rev-1a">
+          <p><strong>② 才对：0 V，稳态短路。</strong>稳态时 <code>i</code> 恒定 → <code>di/dt=0</code> → <code>u=0</code>〔李 §5-6〕。<strong>别拿电容结论"稳态开路"套过来</strong>——电感存的是电流，稳态电流能持续流动，所以相当于短路。预测答案：②。〔我编的题〕</p>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 核心推导：u=L·di/dt 与直流短路（形态一＋形态二）</div>
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">把 u=L·di/dt 推出来（与电容并排写） →</button>
+        <div class="reveal" id="rev-2a">
+          <ol class="step-list">
+            <li>从 <code>Ψ = L i</code> 出发，两边对时间求导：<code>dΨ/dt = L·di/dt</code>（<em>L</em> 为常数）。</li>
+            <li>电磁感应定律（关联方向）：<code>u = dΨ/dt</code>〔邱 (6-9)；李 (5-16)〕。</li>
+            <li>两式相接：<strong><code>u = L·di/dt</code></strong>〔邱 (6-11)；李 (5-17)〕。</li>
+          </ol>
+          <p class="muted"><strong>板书对照</strong>：电容 <code>q=Cu → i=dq/dt=C·du/dt</code>；电感 <code>Ψ=Li → u=dΨ/dt=L·di/dt</code>。<strong>结构完全一样，只是 <code>q↔Ψ、u↔i、C↔L</code></strong>〔李 §5-7〕。</p>
+          <div class="ok-box"><strong>陈述时刻 2 · 电感的 VCR</strong>（可抄笔记）：当电压 <code>u</code> 与电流 <code>i</code> 取<strong>关联参考方向（右手螺旋）</strong>时，<strong>u(t) = L·di(t)/dt</strong>　(6-11)/(5-17)；若方向不关联，须写成 <code>u = −L·di/dt</code>。关联方向的正号恰好体现楞次定律"反抗电流变化"〔李 §5-6〕。含义：电感电压正比于<strong>电流变化率</strong>而非电流本身。<strong>推论（直流短路）</strong>：电流恒定→<code>di/dt=0</code>→<code>u=0</code>，直流稳态相当于短路。〔邱 p.128；李 §5-6〕</div>
+          <table class="mini-t">
+            <tr><th>元件</th><th>因果规则</th></tr>
+            <tr><td>电阻</td><td>有电压就一定有电流（代数，无记忆）</td></tr>
+            <tr><td>电容</td><td><strong>电压变化</strong>才有电流</td></tr>
+            <tr><td>电感</td><td><strong>电流变化</strong>才有电压</td></tr>
+          </table>
+          <p class="muted">三种元件一句话自述〔李 §5-6〕——别把它们搞混。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 2（变化率决定电压，形态一）：</strong>同一个 2 H 电感，哪种情况电压更大？① 电流固定 5 A 不动；② 1 s 内从 0 A 匀速升到 5 A；③ 0.1 s 内从 0 A 匀速升到 5 A。先选，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">① 固定 5 A</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">② 1 s 升到 5 A</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">③ 0.1 s 升到 5 A</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-2b" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-2b">
+          <p><strong>③ 最大。</strong>电压正比于变化率：① <code>di/dt=0</code>→<code>u=0</code>；② <code>5 A/s</code>→<code>u=2×5=10 V</code>；③ <code>50 A/s</code>→<code>u=2×50=100 V</code>。这就把"电压看斜率不看电流值"钉死了。预测答案：③。〔我编的题〕</p>
+        </div>
+
+        <!-- 实验台 A -->
+        <div class="cap-lab">
+          <h4>实验台 A · 由 i(t) 求 u(t)（微分视角，L=2 H 固定）</h4>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>电流变化率 di/dt <span id="A-slope-v">0 A/s</span></label>
+              <input type="range" id="A-slope" min="-5" max="5" step="1" value="0" />
+              <div class="preset">
+                <button onclick="setLabA(0)">直流（斜率0）</button>
+                <button onclick="setLabA(5)">匀速升 +5 A/s</button>
+                <button onclick="setLabA(-5)">匀速降 −5 A/s</button>
+              </div>
+              <div class="fig-box sm" style="margin-top:10px" aria-label="i(t)斜率与u(t)电压关系示意图">
+                <svg class="svg-diag" viewBox="0 0 300 160" role="img">
+                  <title>电流斜率与电压大小对应</title>
+                  <text class="icurve" x="12" y="18" style="font-weight:700">i(t) 上排</text>
+                  <line class="wire" x1="34" y1="70" x2="286" y2="70"/>
+                  <line class="wire" x1="34" y1="70" x2="34" y2="20"/>
+                  <line class="icurve" id="A-iline" x1="40" y1="70" x2="240" y2="70" marker-end="url(#arA1)"/>
+                  <text class="plb" x="12" y="100">u(t) 下排</text>
+                  <line class="wire" x1="34" y1="140" x2="286" y2="140"/>
+                  <line class="wire" x1="34" y1="110" x2="34" y2="150"/>
+                  <line class="vcurve" id="A-uline" x1="40" y1="140" x2="240" y2="140" marker-end="url(#arA2)"/>
+                  <defs>
+                    <marker id="arA1" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f7a8d8"/></marker>
+                    <marker id="arA2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffe794"/></marker>
+                  </defs>
+                </svg>
+                <div class="fig-cap">上排 i(t) 的斜率决定下排 u(t) 的高度与正负。</div>
+              </div>
+            </div>
+            <div class="th-panel">
+              <h5>实时结果</h5>
+              <div class="th-row"><span class="k">电感 L</span><span class="v">2 H</span></div>
+              <div class="th-row"><span class="k">变化率 di/dt</span><span class="v" id="A-slope-disp">0 A/s</span></div>
+              <div class="th-row"><span class="k">电压 u = L·di/dt</span><span class="v" id="A-u">0 V</span></div>
+              <div class="th-eq">u = L × (di/dt) = 2 × 斜率<br>斜率为零→电压零（短路）；斜率正负→电压正负。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 积分形式、记忆与电流连续性（核心难点）</div>
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">反解出积分形式，看"记忆"从哪来 →</button>
+        <div class="reveal" id="rev-3a">
+          <p>从 <code>u=L·di/dt</code> 反解：<code>di=(1/L)·u dt</code>，对时间积分得</p>
+          <div class="eq-line">i(t) = i(t₀) + (1/L)∫<sub>t₀</sub><sup>t</sup> u(ξ)dξ　　(6-13)/(5-19)</div>
+          <p><strong>记忆</strong>：<code>i(t)</code> 不只取决于此刻电压，而取决于从 <code>t₀</code> 到 <code>t</code> 的<strong>全部电压历史</strong>，外加初始电流 <code>i(t₀)</code>。与电容对偶：电容的初始电压浓缩历史，电感的<strong>初始电流</strong>浓缩历史〔李 §5-6〕。求电感电流必须知道初值——这是下一课暂态初值的根源。〔邱 p.128；李 §5-6〕</p>
+          <div class="ok-box"><strong>陈述时刻 3 · 积分形式与记忆性质</strong>（可抄笔记）：<strong>i(t)=i(t₀)+(1/L)∫u dξ</strong>　(6-13)/(5-19)。电感电流取决于<strong>初始电流＋此前全部电压历史</strong>；<code>i(t₀)</code> 浓缩了 <code>t₀</code> 前的历史。电感是<strong>记忆元件</strong>。〔邱 §6-2；李 §5-6〕</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-3b" data-stage="3" onclick="revealBlock(this)">用对偶推"电流不能突变"，并看它的前提 →</button>
+        <div class="reveal" id="rev-3b">
+          <p>由对偶性，取任意时刻 <code>t₁</code>，令 <code>Δt→0</code>：</p>
+          <div class="eq-line">i<sub>L</sub>(t₁+Δt) − i<sub>L</sub>(t₁) = (1/L)∫<sub>t₁</sub><sup>t₁+Δt</sup> u(ξ)dξ</div>
+          <p>若电压<strong>有界</strong>（<code>|u|＜M</code>），这段积分绝对值 ≤ <code>M·Δt/L → 0</code>，故 <code>i<sub>L</sub>(t₁+) = i<sub>L</sub>(t₁−)</code>〔李 (5-21)〕。</p>
+          <div class="ok-box"><strong>陈述时刻 4 · 电感电流的连续性（有条件）</strong>（可抄笔记）：<strong>若电感电压有界，则电感电流连续</strong>：<code>i<sub>L</sub>(t+)=i<sub>L</sub>(t−)</code>　(5-21)，即"<strong>电感电流不能突变</strong>"。<strong>条件：电压有界；电压无界时不成立。</strong> 物理本质：储能 ½*Li*² 不能突变，否则功率无限大。<strong>⚠与电容的条件对偶别套反：电容看"电流有界"，电感看"电压有界"。</strong>〔李 §5-7〕</div>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 3（电流能否突变，形态二，核心难点）：</strong>电感此刻电流 2 A。有人说"只要电压足够大，就能在瞬间把它跳到 10 A"。对吗？① 对，电压够大就行；② 不对，只要电压有界电流就不能突变；③ 看电感量大小决定。先选，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">① 电压够大就行</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">② 电压有界则不能突变</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">③ 看电感量大小</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-3c" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3 →</button>
+        <div class="reveal" id="rev-3c">
+          <p><strong>② 才对，但条件必须讲清。</strong><strong>电压有界</strong>时电流连续；若用理想的无界（冲激）电压，理论上可让电流跳变，但超出本课范围〔李 §5-7〕。物理意义：储能不能突变，否则功率无限大。注意这里看的是<strong>电压</strong>有界（电容那课看的是电流有界）。预测答案：②。〔我编的题〕</p>
+        </div>
+
+        <p class="muted" style="margin-top:10px;"><strong>带做算例</strong>〔我编的题〕：L=2 H，<code>i(0)=3 A</code>，0–2 s 内 <code>u=4 V</code>。则 <code>∫₀² u dt=8 V·s</code>，<code>Δi=8/2=4 A</code>，故 <code>i(2)=3+4=7 A</code>。操作顺序：<strong>先积分→除以 L→加初值</strong>，初值绝不能漏。数值与上一课电容算例（C=2F、u(0)=3V、i=4A→u(2)=7V）刻意一致，方便对偶对照，为练习 6 打样。</p>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 储能 W=½Li² 与电容↔电感对偶表</div>
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">从功率把储能公式推出来 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>关联方向下瞬时功率 <code>p=u i=L i·di/dt</code>〔邱 (6-15)〕。从 <code>−∞</code> 积分到 <code>t</code>（设 <code>i(−∞)=0</code>）：</p>
+          <div class="eq-line">W<sub>L</sub>(t) = ∫ p dξ = ∫ L i d<i>i</i> = ½ L i²(t)　　(6-16)/(5-23)</div>
+          <p>两段间能量差 <code>W<sub>L</sub>(t₀,t)=½L[i²(t)−i²(t₀)]</code>：<code>|i|</code> 增大→吸收（充磁），<code>|i|</code> 减小→释放〔邱 p.128〕。</p>
+          <div class="ok-box"><strong>陈述时刻 5 · 电感储能公式</strong>（可抄笔记）：功率 <code>p=L i·di/dt</code>（关联方向，可正可负）；<strong>储能 W<sub>L</sub>(t)=½ L i²(t)</strong>　(6-16)/(5-23)。储能<strong>只与当前电流有关</strong>、恒 ≥0（无源元件）；电流反映储能状态。电感是<strong>储能元件、无源元件</strong>。〔邱 §6-2；李 §5-7〕</div>
+        </div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 4（储能会不会变负，形态二）：</strong>电感电流减小时释放储能。释放"放过头"，储能会不会变成负的？① 会，放过头就变负；② 不会，<code>W=½Li²≥0</code>，最多放到 0；③ 不确定。先选，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① 放过头变负</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 恒非负，最多到 0</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ 不确定</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>② 才对。</strong>储能 <code>½Li²</code> 恒非负（<code>L&gt;0</code>、<code>i²≥0</code>），电流降到 0 储能归零，不可能为负——电感是<strong>无源元件</strong>〔邱 p.128；李 §5-7〕。预测答案：②。〔我编的题〕</p>
+        </div>
+
+        <!-- 实验台 B -->
+        <div class="cap-lab">
+          <h4>实验台 B · 电流与储能（L=2 H 固定）</h4>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>当前电流 I <span id="B-i-v">6 A</span></label>
+              <input type="range" id="B-i" min="0" max="10" step="1" value="6" />
+              <div class="preset">
+                <button onclick="setLabB(0)">0 A（放空）</button>
+                <button onclick="setLabB(5)">5 A</button>
+                <button onclick="setLabB(10)">10 A（满）</button>
+              </div>
+              <div class="fig-box sm" style="margin-top:10px" aria-label="W-I抛物线示意图">
+                <svg class="svg-diag" viewBox="0 0 300 160" role="img">
+                  <title>储能随电流平方增长</title>
+                  <line class="wire" x1="40" y1="20" x2="40" y2="140"/>
+                  <line class="wire" x1="40" y1="140" x2="280" y2="140"/>
+                  <path class="vcurve" d="M40,140 Q160,20 260,20" fill="none"/>
+                  <line class="dim" id="B-mark" x1="0" y1="0" x2="0" y2="0" stroke-dasharray="4 3"/>
+                  <circle class="nodept" id="B-dot" cx="40" cy="140" r="5"/>
+                  <text class="ylb" x="30" y="16">W</text>
+                  <text class="ylb" x="274" y="140">I</text>
+                  <text class="dim" x="180" y="90">W = I²（L=2H）</text>
+                </svg>
+                <div class="fig-cap">储能随电流<strong>平方</strong>增长：电流翻倍，储能变四倍（与电容对偶）。</div>
+              </div>
+            </div>
+            <div class="th-panel">
+              <h5>实时结果</h5>
+              <div class="th-row"><span class="k">电感 L</span><span class="v">2 H</span></div>
+              <div class="th-row"><span class="k">电流 I</span><span class="v" id="B-i-disp">6 A</span></div>
+              <div class="th-row"><span class="k">储能 W=½·2·I²</span><span class="v" id="B-w">36 J</span></div>
+              <div class="th-eq">W = ½·L·I² = I²<br>5 A→25 J，10 A→100 J（翻四倍）<br>电流不能突变 ⇔ 储能不能突变。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4c" data-stage="4" onclick="revealBlock(this)">填电容↔电感对偶表（当堂对照） →</button>
+        <div class="reveal" id="rev-4c">
+          <div class="ok-box"><strong>陈述时刻 6 · 电容↔电感对偶表</strong>（本课核心工具，可抄笔记）：逐条口头验物理。</div>
+          <table class="mini-t duality-t">
+            <tr><th>维度</th><th>电容 C</th><th>电感 L</th></tr>
+            <tr><td>储能载体</td><td>电场，看<strong>电压</strong></td><td>磁场，看<strong>电流</strong></td></tr>
+            <tr><td>定义式</td><td><code>q=Cu</code></td><td><code>Ψ=Li</code></td></tr>
+            <tr><td>核心 VCR</td><td><code>i=C·du/dt</code></td><td><code>u=L·di/dt</code></td></tr>
+            <tr><td>积分式</td><td><code>u=u₀+(1/C)∫i dt</code></td><td><code>i=i₀+(1/L)∫u dt</code></td></tr>
+            <tr><td>记忆载体</td><td>电容电压 <code>u<sub>C</sub></code></td><td>电感电流 <code>i<sub>L</sub></code></td></tr>
+            <tr><td>不能突变</td><td><code>u<sub>C</sub></code> 不突变（<strong>电流有界</strong>）</td><td><code>i<sub>L</sub></code> 不突变（<strong>电压有界</strong>）</td></tr>
+            <tr><td>直流稳态</td><td><strong>开路</strong>（<code>i=0</code>）</td><td><strong>短路</strong>（<code>u=0</code>）</td></tr>
+            <tr><td>储能</td><td><code>W=½Cu²</code></td><td><code>W=½Li²</code></td></tr>
+            <tr><td>状态变量</td><td><code>u<sub>C</sub></code></td><td><code>i<sub>L</sub></code></td></tr>
+          </table>
+          <p class="muted">〔李 §5-7；邱 §6-1/§6-2〕<strong>"变"的是主角（u↔i）与条件对象，"不变"的是因果结构</strong>（变化率决定对方、带记忆、储能非负）。电容电压 <code>u<sub>C</sub></code> 与电感电流 <code>i<sub>L</sub></code> 是电路的<strong>状态变量</strong>——记忆历史、决定储能，是描述动态电路所需的最少变量〔李 §5-7〕。</p>
+        </div>
+
+        <div class="warn" style="margin-top:10px;"><strong>P2 预告（只作意识铺垫，不量化）</strong>：实际电感有<strong>导线电阻</strong>（模型要串一个电阻）、有<strong>额定工作电流</strong>（超限过热/电磁力形变/烧毁）〔李 §5-5〕。开关断开时电流骤降会感应出很高的电压（<strong>反冲</strong>），可能击穿器件——这就是后续接<strong>续流二极管</strong>保护的动机（本课不展开电路）。</div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习（7 题，覆盖核心难点，非例题近邻复制）</div>
+        <p class="muted">先独立作答再揭晓；数值题填数、概念题选择。每题判定后给出依据提示。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（形态一·分段微分）：L=1 H 电感电流分段：0–2 s 以 4 A/s 匀速上升；2–5 s 恒定；5–6 s 以 −2 A/s 匀速下降。求三段电压（依次填三个数）。</div>
+          <div class="numcheck" id="q-p1a" data-qid="q-p1a"><label>① 0–2 s：<input type="text" placeholder="V" /> V</label><button class="btn-sm" onclick="checkNum('q-p1a',4)">判定</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-p1b" data-qid="q-p1b"><label>② 2–5 s：<input type="text" placeholder="V" /> V</label><button class="btn-sm" onclick="checkNum('q-p1b',0)">判定</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-p1c" data-qid="q-p1c"><label>③ 5–6 s：<input type="text" placeholder="V" /> V</label><button class="btn-sm" onclick="checkNum('q-p1c',-2)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-p1" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p1">
+            <p><strong>4 V / 0 V / −2 V</strong>。依据〔李 (5-17)〕：电压＝斜率×L。<strong>错因</strong>：把电压当成正比于电流值（恒流段答成非零）。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 2（形态二·连续性＋条件）：开关动作前电感电流 <code>i<sub>L</sub>(0−)=6 A</code>。若开关过程中电感电压始终有界，求 <code>i<sub>L</sub>(0+)</code>。</div>
+          <div class="numcheck" id="q-p2" data-qid="q-p2"><label><code>i<sub>L</sub>(0+)</code> = <input type="text" placeholder="A" /> A</label><button class="btn-sm" onclick="checkNum('q-p2',6)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-p2" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p2">
+            <p><strong>6 A</strong>（连续）。依据〔李 (5-21)〕：<strong>电压有界</strong>下电流连续；条件是电压有界，无界时不成立。<strong>错因</strong>：把电容的条件"电流有界"套过来。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 3（形态二·直流稳态＋对偶）：直流电路达到稳态后，理想电感相当于什么？理想电容又相当于什么？</div>
+          <div class="choicebox" data-qid="q-p3" data-hint="用储能载体记忆：电感存电流，稳态电流能持续流动。">
+            <label><input type="radio" name="q-p3" value="a"/> ① 电感开路、电容短路</label>
+            <label><input type="radio" name="q-p3" value="b"/> ② 电感短路、电容开路</label>
+            <label><input type="radio" name="q-p3" value="c"/> ③ 两者都开路</label>
+            <button class="btn-sm" onclick="checkChoice('q-p3','b')">判定</button>
+            <div class="fb"></div>
+          </div>
+          <button class="reveal-btn" data-target="rev-p3" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p3">
+            <p><strong>② 电感短路、电容开路</strong>。依据〔邱 p.128 / p.125〕：电感稳态 <code>di/dt=0→u=0</code>（短路），电容稳态 <code>du/dt=0→i=0</code>（开路）。<strong>错因</strong>：两者记反——用电感存电流、电容存电压来记。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 4（形态一·储能计算）：L=2 H 电感电流从 3 A 升到 6 A，储能增加多少 J？</div>
+          <div class="numcheck" id="q-p4" data-qid="q-p4"><label>ΔW = <input type="text" placeholder="J" /> J</label><button class="btn-sm" onclick="checkNum('q-p4',27)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-p4" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p4">
+            <p><strong>27 J</strong>：<code>½·2·(6²−3²)=36−9=27</code>。依据〔邱 (6-16)；李 (5-23)〕。<strong>错因</strong>：误用 <code>½L(Δi)²=½·2·3²=9 J</code>——储能是 <code>i²</code> 之差，不是 Δ*i* 的平方。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 5（形态一·方向符号）：若电感上电压参考方向<strong>不符合</strong>右手螺旋（非关联），则 <code>u=L·di/dt</code> 应改成什么？</div>
+          <div class="choicebox" data-qid="q-p5" data-hint="回到第 1 课参考方向约定；关联方向的正号才体现楞次定律。">
+            <label><input type="radio" name="q-p5" value="a"/> ① u = L·di/dt（不变）</label>
+            <label><input type="radio" name="q-p5" value="b"/> ② u = −L·di/dt</label>
+            <label><input type="radio" name="q-p5" value="c"/> ③ u = L·di/dt 但取绝对值</label>
+            <button class="btn-sm" onclick="checkChoice('q-p5','b')">判定</button>
+            <div class="fb"></div>
+          </div>
+          <button class="reveal-btn" data-target="rev-p5" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p5">
+            <p><strong>② <code>u=−L·di/dt</code></strong>。依据〔李 §5-6〕；本质是第一课参考方向约定，关联方向的正号才体现楞次定律"反抗电流变化"。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 6（形态一·积分求电流，核心难点）：L=2 H 电感初始电流 <code>i(0)=3 A</code>。电压分段：0–2 s 内 <code>u=4 V</code>；2–3 s 内 <code>u=−2 V</code>。求 2 s 与 3 s 时刻的电流。</div>
+          <div class="numcheck" id="q-p6a" data-qid="q-p6a"><label>① <code>i(2)</code> = <input type="text" placeholder="A" /> A</label><button class="btn-sm" onclick="checkNum('q-p6a',7)">判定</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-p6b" data-qid="q-p6b"><label>② <code>i(3)</code> = <input type="text" placeholder="A" /> A</label><button class="btn-sm" onclick="checkNum('q-p6b',6)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-p6" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p6">
+            <p><strong>i(2)=7 A，i(3)=6 A</strong>。依据〔李 (5-19)〕：<code>i=i₀+(1/L)∫u dt</code>。0–2 s：∫=8 V·s，Δ*i*=4 A→7 A；2–3 s：∫=−2 V·s，Δ*i*=−1 A→6 A。</p>
+            <p class="warn"><strong>三个典型错因</strong>：① 漏加初值；② 分段时第二段忘用上段末值 7 A 当新初值；③ 负电压没算出负增量。</p>
+          </div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 7（形态二·对偶条件判断，核心难点）：判断这句话并改正——"电容电流不能突变，所以电感电流也不能突变，条件都是电流有界。"</div>
+          <div class="choicebox" data-qid="q-p7" data-hint="注意：不能突变的主角、以及条件的对象，两者别同时对反。">
+            <label><input type="radio" name="q-p7" value="a"/> ① 说法正确</label>
+            <label><input type="radio" name="q-p7" value="b"/> ② 错误：电容电压不突变(电流有界)，电感电流不突变(电压有界)</label>
+            <label><input type="radio" name="q-p7" value="c"/> ③ 错误：两者条件都是电压有界</label>
+            <button class="btn-sm" onclick="checkChoice('q-p7','b')">判定</button>
+            <div class="fb"></div>
+          </div>
+          <button class="reveal-btn" data-target="rev-p7" data-stage="5" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-p7">
+            <p><strong>② 才对。</strong>电容<strong>电压</strong>不突变（条件<strong>电流</strong>有界）；电感<strong>电流</strong>不突变（条件<strong>电压</strong>有界）。原话把"不能突变的主角"和"条件对象"同时对反了。依据〔李 §5-3、§5-7〕。</p>
+          </div>
+        </div>
+
+        <div class="ok-box" style="margin-top:12px;"><strong>过关自检</strong>（不看笔记能说出）：① 电感为什么稳态短路、为什么电压看变化率不看电流值；② <code>u=L·di/dt</code> 的推导链条、右手螺旋方向与楞次定律；③ 为什么电感有记忆、初始电流代表什么；④ "电流不能突变"的<strong>条件（电压有界）</strong>与物理意义，以及与电容条件的对偶区别；⑤ <code>W=½Li²</code> 的推导、为何恒非负；⑥ 给定 <code>u(t)</code> 与初值如何分段积分求 <code>i(t)</code>（先积分→除以 L→加初值）；⑦ 电容↔电感对偶表逐条能对上（尤其稳态开/短路、突变条件）。</div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 两种任务形态小结与下一课钩子</div>
+        <p><strong>形态一（定量求解）</strong>：<code>i→u</code> 用微分 <code>u=L·di/dt</code>（看斜率、管符号）；<code>u</code>+初值 <code>→i</code> 用积分 <code>i=i₀+(1/L)∫u dt</code>（别忘初值）；储能 <code>W=½Li²</code>。</p>
+        <p><strong>形态二（定性/工程判断）</strong>：直流稳态短路；<strong>电压有界⇒电流不跳变</strong>；储能恒非负；与电容逐条对偶；实际电感有过流风险与反冲保护。</p>
+        <p class="muted">下一课钩子：电容储电场能（电压有记忆）、电感储磁场能（电流有记忆），S2 的"储能元件"拼图齐了。<strong>L2-03 一阶 RC/RL 暂态与时间常数</strong>：把储能元件接进电阻电路，用 <code>τ=RC</code>、<code>τ=L/R</code> 描述"变化有多快"——这正是两课记忆性质的直接应用。</p>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：电感物理直觉（线圈、磁通链、楞次定律）；Ψ=*Li*（含右手螺旋条件）；*u*=*L*·di/dt 的可见推导与方向符号；三元件对比；积分形式与记忆；电流连续性及其<strong>电压有界条件</strong>、与电容条件的对偶区别；*W*=½*Li*² 的推导与无源性；直流稳态短路；电容↔电感对偶表；实际电感过流风险/反冲保护的意识铺垫。</p>
+          <p class="mini"><strong>不讲</strong>：一阶 RL 暂态、时间常数 τ、三要素法（L2-03）；相量/阻抗下的电感（L2-04/05）；初始电流等效电路的变换细节（只作直觉提及）；状态方程与状态变量的系统理论（只点"u_C、i_L 是状态变量"的认知）；冲激电压导致电流跳变的严格数学（只点"电压无界时不适用"）；互感、磁路细节、铁磁非线性量化；续流二极管保护电路的具体分析。</p>
+          <p class="mini"><strong>命题口径</strong>：全部数值为[我编的题]，已逐个验算自洽；概念/公式只引用已校对书证（邱 §6-2、李 §5-5~5-7），不引未摘章节号，不引 H&amp;H 章节号。积分算例数值与上一课电容算例一致以便对偶对照。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>由 <code>i(t)</code> 用 <code>u=L·di/dt</code> 求电压，能处理分段斜率与右手螺旋/关联方向符号。</li>
+            <li>由 <code>u(t)</code> 与初值用积分形式分段求 <code>i(t)</code>，不忘初值与上段末值。</li>
+            <li>解释电感的"记忆"、初始电流代表的历史。</li>
+            <li>说清"电流不能突变"的<strong>条件（电压有界）</strong>与物理意义，并与电容条件区分。</li>
+            <li>用 <code>W=½Li²</code> 算储能与能量变化，理解无源性。</li>
+            <li>逐条复述电容↔电感对偶表，稳态开路/短路与突变条件不套反。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与对偶总纲 5′ / 电感是什么与 Ψ=Li 5′ / u=L·di/dt 与直流短路 11′ / 积分形式·记忆·电流连续性 10′ / 储能 W=½Li² 6′ / 对偶表与应用直觉 6′ / 独立练习 7′。飞轮比喻只立直觉、迅速回到公式；四个预测题先锁定再揭晓；两个实验台用于验证"斜率定电压、平方定储能"；对偶表当堂填写而非直接给全。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>线圈、磁通链 Ψ=NΦ、感应电压 u=dΨ/dt、楞次定律</td><td>邱 §6-2 p.127；李 §5-6 (5-16)</td></tr>
+            <tr><td>电感元件模型、Ψ=Li（右手螺旋条件）、韦安特性</td><td>邱 (6-10) p.127；李 §5-5 (5-15)</td></tr>
+            <tr><td>u=L·di/dt；非关联带负号；直流短路；三元件对比</td><td>邱 (6-11) p.128；李 (5-17) §5-6</td></tr>
+            <tr><td>积分形式 i=i₀+(1/L)∫u dt；记忆性质、初值浓缩历史</td><td>邱 (6-12)~(6-14) p.128；李 (5-18)(5-19) §5-6</td></tr>
+            <tr><td>电流连续性 i_L(t+)=i_L(t−) 及其电压有界条件、电压无界不适用</td><td>李 (5-21) §5-7</td></tr>
+            <tr><td>功率 p=L i·di/dt；储能 W=½Li²；无源性；储能连续的本质</td><td>邱 (6-15)(6-16) p.128；李 (5-23) §5-7</td></tr>
+            <tr><td>电容↔电感对偶性；u_C、i_L 是状态变量</td><td>李 §5-7</td></tr>
+            <tr><td>实际电感导线电阻、额定工作电流、铁磁物质非线性</td><td>李 §5-5</td></tr>
+            <tr><td>飞轮比喻、四个预测题、两个实验台、七道练习的数值</td><td>通识 / 我编的题（已验算自洽）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。所有书证见 <code>书籍/摘录/L2-02.md</code>。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-02-inductor-intuition';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-02 增量脚本：预测门 + 两个实验台 ===== */
+  (function(){
+    // 预测门：选定后解锁对应揭示（揭示按钮在 .pred 块之外）
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 实验台 A：u = L × di/dt, L=2
+    function renderA(){
+      var slope = parseFloat(document.getElementById('A-slope').value) || 0;
+      document.getElementById('A-slope').value = slope;
+      document.getElementById('A-slope-v').textContent = slope + ' A/s';
+      document.getElementById('A-slope-disp').textContent = slope + ' A/s';
+      var u = 2 * slope;
+      document.getElementById('A-u').textContent = u + ' V';
+      // i(t) line: slope>0 rising, <0 falling, =0 flat
+      var iline = document.getElementById('A-iline');
+      var iyEnd = 70 - slope * 7;
+      iline.setAttribute('y2', String(iyEnd));
+      // u(t) line: height from baseline 140, up positive
+      var uline = document.getElementById('A-uline');
+      var uy = 140 - u * 3.5;
+      uline.setAttribute('y1', String(uy));
+      uline.setAttribute('y2', String(uy));
+    }
+    window.setLabA = function(v){
+      document.getElementById('A-slope').value = v;
+      renderA();
+    };
+    // 实验台 B：W = ½·2·I² = I²
+    function renderB(){
+      var i = parseFloat(document.getElementById('B-i').value) || 0;
+      document.getElementById('B-i').value = i;
+      document.getElementById('B-i-v').textContent = i + ' A';
+      document.getElementById('B-i-disp').textContent = i + ' A';
+      var w = 0.5 * 2 * i * i;
+      document.getElementById('B-w').textContent = w + ' J';
+      var x = 40 + i * 22;
+      var y = 140 - (i * i) * 1.2;
+      var dot = document.getElementById('B-dot');
+      dot.setAttribute('cx', String(x));
+      dot.setAttribute('cy', String(y));
+      var mk = document.getElementById('B-mark');
+      mk.setAttribute('x1', String(x)); mk.setAttribute('x2', String(x));
+      mk.setAttribute('y1', String(y)); mk.setAttribute('y2', '140');
+    }
+    window.setLabB = function(v){
+      document.getElementById('B-i').value = v;
+      renderB();
+    };
+    document.getElementById('A-slope').addEventListener('input', renderA);
+    document.getElementById('B-i').addEventListener('input', renderB);
+    renderA();
+    renderB();
+
+    // 共享 resetFlow 会解锁所有按钮；重来后重新锁上预测门、清空反馈/输入/选项、复位实验台
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      setLabA(0);
+      setLabB(6);
+    };
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第七课 · 叠加、替代与最大功率传输 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:310px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .flowar{stroke:var(--chalk-pink);stroke-width:2;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .ctrl{fill:rgba(255,179,199,.12);stroke:var(--chalk-pink);stroke-width:2.2}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    /* 实验台 */
+    .solve-lab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .solve-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .solve-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .solve-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:3px 0 1px}
+    .solve-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;font-size:.82rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim)}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.45}
+    .th-agree{font-family:var(--mono);font-size:.8rem;font-weight:700;margin-top:6px;color:var(--chalk-pink)}
+    .curve-wrap{margin-top:8px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.22);padding:4px}
+    .curve-wrap svg{display:block;width:100%;height:auto;max-width:360px;margin:0 auto}
+    .curve-wrap .ax{stroke:var(--chalk-dim);stroke-width:1.5}
+    .curve-wrap .cv{fill:none;stroke:var(--chalk-yellow);stroke-width:2.5}
+    .curve-wrap .pk{fill:var(--chalk-green)}
+    .curve-wrap .cur{fill:var(--chalk-pink);stroke:#fff;stroke-width:1.2}
+    .curve-wrap text{fill:var(--chalk-faint);font-family:var(--mono);font-size:11px}
+    @media(max-width:1100px){.solve-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第七课 · 叠加、替代与最大功率传输</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题：线性与齐次性</a></li>
+        <li><a href="#stage-1">1 · 叠加定理（置零、受控源）</a></li>
+        <li><a href="#stage-2">2 · 功率不可叠加</a></li>
+        <li><a href="#stage-3">3 · 替代定理（P2）</a></li>
+        <li><a href="#stage-4">4 · 最大功率传输 + 效率陷阱</a></li>
+        <li><a href="#stage-5">5 · 独立练习（先求等效再匹配）</a></li>
+        <li><a href="#stage-6">6 · 实验台（叠加 + 最大功率曲线）</a></li>
+        <li><a href="#stage-7">7 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">把前六课的<strong>整体硬算</strong>换成<strong>分而治之</strong>：叠加拆<strong>激励</strong>、等效打包<strong>结构</strong>，再用戴维南证明第五课欠的“负载=内阻功率最大”。</div>
+      <div class="mini">前置：L1-01~03（<code>u=Ri</code>、KCL/KVL、功率）、L1-05（戴维诺顿打包单负载）、L1-06（节点/网孔是<strong>线性方程组</strong>）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-07.md</code>（邱 §4-1/§4-2/§4-4；李上 §3-1/§3-2/§3-3/§4-8，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-07-教案.md</code>（初审退 3 项、复审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三把“分而治之”的钥匙（随时查）</h4>
+      <div class="mini"><strong>叠加</strong>：拆<strong>激励</strong>。某支路响应 = 各独立源单独作用分响应之<strong>代数和</strong>。电压源置零→短路，电流源置零→开路，<strong>受控源始终保留</strong>。</div>
+      <div class="mini"><strong>替代</strong>：换<strong>结构</strong>。已知端口 <code>u,i</code> → 用 <code>u<sub>s</sub>=u</code> 电压源 / <code>i<sub>s</sub>=i</code> 电流源 / <code>R=u/i</code> 电阻替换，外部不变。</div>
+      <div class="mini"><strong>最大功率</strong>：可变负载 <code>R<sub>L</sub>=R<sub>eq</sub></code>（匹配）→ <code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>。</div>
+      <div class="mini"><strong>两条红线</strong>：功率<strong>不可</strong>叠加（<code>∝i²</code> 非线性）；“匹配效率 50%”<strong>只对单电压源模型</strong>成立。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第七课（L1-07）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §4-1/§4-2/§4-4、李瀚荪 5e 上 §3-1~§3-3/§4-8（已摘录校对）</span>
+      </div>
+      <h1>叠加、替代与最大功率传输</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先看“分而治之”凭什么成立（线性），再走通叠加定理与它的边界（受控源、功率），然后是把结构换掉的替代定理，最后用戴维南证明第五课欠的最大功率结论并拆穿“50% 效率”的坑。先认记号：<code>激励</code>＝独立电源，是电路输入；<code>响应</code>＝由激励引起的任一处电压或电流；<code>齐次性/比例性</code>＝激励放大 n 倍响应也放大 n 倍；<code>可加性</code>＝多激励共同响应＝各激励单独响应之和；<code>叠加定理</code>＝可加性的正式名称；<code>匹配</code>＝<code>R<sub>L</sub>=R<sub>eq</sub></code>。现在只认得词，后面现场讲清。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题与线性</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">叠加定理</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">功率不可叠加</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">替代定理</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">最大功率</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">独立练习</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="7">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 核心问题：多个电源，能不能“各算各的”（6′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">前六课都把电源放一起整体算。可眼前这个电路有<strong>两个独立的源</strong>，我只想知道负载那一条支路的电流 <code>i</code>。<br>能不能先看电压源一个人干了什么，再看电流源一个人干了什么，最后<strong>合起来</strong>？</p>
+            <p class="speak teacher">“这听着像‘魔法’，但它其实是线性方程组的必然。今天既讲清这个魔法、它的边界，也把第五课欠你的‘负载=内阻功率最大’证明还上。”</p>
+            <p class="muted">右边这张电路（电压源串 12 Ω 的支路、9 A 电流源支路、6 Ω 负载支路三者并联）后面<strong>例题 A 会反复用</strong>，先混个眼熟。</p>
+          </div>
+          <div class="fig-box md" aria-label="电压源与电流源并联共同驱动负载的电路示意图">
+            <svg class="svg-diag" viewBox="0 0 370 200" role="img">
+              <title>三条并联支路：左为36V电压源串12欧电阻，中为9A电流源，右为6欧负载，求负载电流i</title>
+              <line class="wire" x1="30" y1="35" x2="340" y2="35"/>
+              <line class="wire" x1="30" y1="175" x2="340" y2="175"/>
+              <!-- 左支路：电压源 + 12Ω -->
+              <line class="wire" x1="80" y1="35" x2="80" y2="78"/>
+              <circle class="elem" cx="80" cy="96" r="18" fill="none"/><text class="lbl" x="55" y="93">36V</text><text class="dim" x="61" y="103">+ −</text>
+              <line class="wire" x1="80" y1="114" x2="80" y2="132"/>
+              <rect class="elem" x="70" y="132" width="20" height="28" rx="2" fill="none"/><text class="lbl" x="94" y="150">12Ω</text>
+              <line class="wire" x1="80" y1="160" x2="80" y2="175"/>
+              <!-- 中支路：9A 电流源 -->
+              <line class="wire" x1="185" y1="35" x2="185" y2="78"/>
+              <circle class="elem" cx="185" cy="105" r="18" fill="none"/><text class="lbl" x="208" y="102">9A</text>
+              <path class="flowar" d="M185,95 L185,115" marker-end="url(#arw)"/><text class="dim" x="170" y="130">↑ 电流源</text>
+              <line class="wire" x1="185" y1="123" x2="185" y2="175"/>
+              <!-- 右支路：负载 6Ω -->
+              <line class="wire" x1="300" y1="35" x2="300" y2="88"/>
+              <rect class="elem" x="290" y="88" width="20" height="34" rx="2" fill="none"/><text class="lbl" x="314" y="108">6Ω</text>
+              <line class="wire" x1="300" y1="122" x2="300" y2="175"/>
+              <path class="accent" d="M322,150 L322,108" marker-end="url(#arw2)"/><text class="ylb" x="318" y="166">i</text>
+              <defs><marker id="arw" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffb3c7"/></marker><marker id="arw2" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+              <text class="dim" x="14" y="196">两源共同驱动负载，求 i —— 能拆开算吗？</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：两个独立源 + 一个负载，求 i。这也是例题 A 的电路。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1（别算，先猜）：</strong>一个<strong>只有一个独立源</strong>的线性电阻电路，若把这个源（比如电压源电压）放大到 <code>3</code> 倍，某支路的响应会怎样？① 也放大到 3 倍　② 不变　③ 说不准。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'x3');enableGate('gate-pred0')">① 也放大到 3 倍</button>
+            <button class="pred-opt" onclick="pickPred(this,'same');enableGate('gate-pred0')">② 不变</button>
+            <button class="pred-opt" onclick="pickPred(this,'idk');enableGate('gate-pred0')">③ 说不准</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-0a" data-stage="0" onclick="revealBlock(this)" disabled>公布预测 1：齐次性与“线性” →</button>
+        <div class="reveal" id="rev-0a">
+          <p>李瀚荪从单一激励电路出发：以某支路电流 <code>i</code> 为响应，由 KCL/KVL/VCR 两类约束可解出 <code>i</code> =（电阻组成的分式）× <code>u<sub>s</sub></code>。电阻都是常数，所以这是一个<strong>正比关系</strong> <code>i=K·u<sub>s</sub></code>〔李 §3-1 式(3-1)(3-2)〕。</p>
+          <p><strong>齐次性（比例性）</strong>：激励放大 <code>n</code> 倍，响应也放大 <code>n</code> 倍——这就是“线性”的一个表现（预测 1 答案：①）〔李 §3-1〕。</p>
+          <div class="ok-box"><strong>陈述时刻 1 · 线性 = 齐次性 + 可加性</strong>（可抄笔记）：线性电路有两条性质——<strong>齐次性</strong>（单个激励放大 <code>n</code> 倍，响应放大 <code>n</code> 倍）与<strong>可加性</strong>（多个激励共同作用的响应，等于各激励单独作用响应之和）。前者今天只作引子，后者就是叠加定理；二者合起来才是“线性”。〔李 §3-1；邱 §4-1 p.83〕</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0b" data-stage="0" onclick="revealBlock(this)">网络函数（点到即可） →</button>
+        <div class="reveal" id="rev-0b">
+          <p>顺手点名<strong>网络函数</strong> <code>H=响应/激励</code>〔李 §3-1 式(3-3)〕：它是只由电路结构与参数决定的常数，一个 <code>H</code> 就把“激励→某响应”的关系打包表征了。本课只需知道它是齐次性的另一种说法，<strong>不深挖</strong>〔通识〕。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 叠加定理：拆激励，代数和（13′）〔邱 §4-1 / 李 §3-2〕</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">从齐次性到可加性：魔法根在哪 →</button>
+        <div class="reveal" id="rev-1a">
+          <p>邱关源用两电源电路说明：由 KCL、KVL、VCR 列出的方程解出来，响应 <code>i</code>、<code>u</code> 都是两个激励 <code>u<sub>s</sub></code>、<code>i<sub>s</sub></code> 的<strong>线性组合</strong>——<code>i=i′+i″</code>，其中 <code>i′</code> 是电流源置零、只留电压源时的分响应，<code>i″</code> 是电压源置零、只留电流源时的分响应〔邱 p.83–84〕。</p>
+          <p class="warn"><strong>根在哪（与第六课接上）</strong>：第六讲的节点电压法/网孔电流法，方程都是“系数矩阵 × 未知量 = 右端向量”，而<strong>右端向量正是各激励的线性组合</strong>。克莱姆法则解出来，每个未知量（从而每个响应）都是右端各分量的线性组合——所以响应必然能按激励拆开相加〔邱 p.84–85 式(4-3)〕。<strong>这不是要背的操作口诀，是线性代数的直接结论。</strong></p>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>预测 2（先猜后揭，置零规则）：</strong>让某个独立源“不作用”时，该怎么处理它？① 电压源短路、电流源开路　② 电压源开路、电流源短路　③ 都直接拆掉。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'sc-oc');enableGate('gate-pred1')">① 电压源短路、电流源开路</button>
+            <button class="pred-opt" onclick="pickPred(this,'oc-sc');enableGate('gate-pred1')">② 电压源开路、电流源短路</button>
+            <button class="pred-opt" onclick="pickPred(this,'both');enableGate('gate-pred1')">③ 都直接拆掉</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1b" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 2：置零规则 + 叠加定理 →</button>
+        <div class="reveal" id="rev-1b">
+          <p>不作用的<strong>电压源置零 → 用短路线代替</strong>（电压为零的源就是一根导线）；不作用的<strong>电流源置零 → 用开路代替</strong>（电流为零的源就是断开）。所有<strong>电阻都不动</strong>；<strong>受控源保留</strong>在分电路里（原因见例题 B）。预测 2 答案：①〔邱 p.85–86 注意(2)〕。</p>
+          <div class="ok-box"><strong>陈述时刻 2 · 叠加定理</strong>（全称 + 条件 + 操作，可抄笔记）：<strong>在线性电阻电路中，某处的电压或电流，等于各个独立电源单独作用时在该处分别产生的电压或电流的代数和。</strong>〔邱 p.85；李 §3-2〕<br>- <strong>操作</strong>：每次只留一个独立源，其余独立源置零（电压源→短路、电流源→开路），电阻不动，受控源保留；各分响应参考方向取与原电路一致，取代数和时带好正负号。<br>- <strong>适用条件</strong>：只对<strong>线性电路</strong>成立，非线性电路不适用；只用于<strong>电压、电流</strong>，不能直接用于功率（环节 2 讲）。<br>- <strong>受控源</strong>：它不是激励、不单独作用，属于电路结构（体现在自阻/互阻、自导/互导里），<strong>每个分电路都要保留</strong>〔邱 p.85；李 §3-2〕。</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1c" data-stage="1" onclick="revealBlock(this)">例题 A：两个源各算各的 →</button>
+        <div class="reveal" id="rev-1c">
+          <p><strong>搭桥例题 A</strong>（用上面那张电路，李上例 3-8 的数值〔李 §3-3〕）：<code>u<sub>s</sub>=36 V</code> 串 <code>R=12 Ω</code> 的支路，与 <code>i<sub>s</sub>=9 A</code> 的电流源支路并联，共同驱动负载 <code>R<sub>L</sub>=6 Ω</code>，求 <code>R<sub>L</sub></code> 的电流。</p>
+          <ul>
+            <li>电压源单独作用（电流源→开路）：<code>i′=36/(12+6)=<strong>2 A</strong></code>〔李 §3-3 例 3-8〕。</li>
+            <li>电流源单独作用（电压源→短路）：分流，<code>i″=[12/(12+6)]×9=<strong>6 A</strong></code>〔李 §3-3 例 3-8〕。</li>
+            <li>叠加：<code>i=i′+i″=(2+6) A=<strong>8 A</strong></code>。</li>
+          </ul>
+          <p class="warn"><strong>留一手</strong>：这里先只要电流。功率先不算——环节 2 就用这组数揭开“功率不能叠加”的坑。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1d" data-stage="1" onclick="revealBlock(this)">例题 B：受控源必须保留 →</button>
+        <div class="reveal" id="rev-1d">
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>搭桥例题 B</strong>（〔我编的题〕；同类题见〔李 §3-2 例 3-4〕）：两网孔电路。左网孔有 6 V 电压源、1 Ω 电阻，并串一个<strong>受控电压源 <code>u<sub>c</sub>=3i<sub>1</sub></code></strong>（<code>i<sub>1</sub></code> 为左网孔电流，即控制量）；公共支路 2 Ω；右网孔是一盏 3 A 独立电流源。<code>i<sub>1</sub></code>、<code>i<sub>2</sub></code> 均取顺时针，求 <code>i<sub>1</sub></code>。</p>
+            </div>
+            <div class="fig-box md" aria-label="含受控源的两网孔叠加电路示意图">
+              <svg class="svg-diag" viewBox="0 0 380 210" role="img">
+                <title>两网孔：左含6V电压源、1欧、受控电压源3i1，公共2欧，右网孔3A电流源，i1 i2顺时针</title>
+                <line class="wire" x1="30" y1="30" x2="330" y2="30"/>
+                <line class="wire" x1="30" y1="170" x2="330" y2="170"/>
+                <!-- 左竖：6V + 1Ω + 受控源3i1 -->
+                <line class="wire" x1="60" y1="30" x2="60" y2="56"/>
+                <circle class="elem" cx="60" cy="70" r="14" fill="none"/><text class="lbl" x="36" y="74">6V</text>
+                <line class="wire" x1="60" y1="84" x2="60" y2="98"/>
+                <rect class="elem" x="50" y="98" width="20" height="24" rx="2" fill="none"/><text class="lbl" x="74" y="115">1Ω</text>
+                <line class="wire" x1="60" y1="122" x2="60" y2="132"/>
+                <polygon class="ctrl" points="60,134 75,149 60,164 45,149"/><text class="plb" x="80" y="153">3i₁</text>
+                <line class="wire" x1="60" y1="164" x2="60" y2="170"/>
+                <!-- 公共 2Ω -->
+                <line class="wire" x1="185" y1="30" x2="185" y2="88"/>
+                <rect class="elem" x="175" y="88" width="20" height="28" rx="2" fill="none"/><text class="lbl" x="199" y="106">2Ω</text>
+                <line class="wire" x1="185" y1="116" x2="185" y2="170"/>
+                <!-- 右竖：3A 电流源 -->
+                <line class="wire" x1="320" y1="30" x2="320" y2="88"/>
+                <circle class="elem" cx="320" cy="103" r="16" fill="none"/><text class="lbl" x="338" y="100">3A</text>
+                <path class="flowar" d="M320,95 L320,112" marker-end="url(#arB)"/>
+                <line class="wire" x1="320" y1="119" x2="320" y2="170"/>
+                <!-- 网孔电流 -->
+                <path class="loop" d="M92,52 Q135,42 172,52 Q178,100 172,148 Q135,158 92,148 Q86,100 92,52 Z"/>
+                <path class="loop" d="M200,52 Q262,42 308,52 Q314,100 308,148 Q262,158 200,148 Q194,100 200,52 Z"/>
+                <text class="ylb" x="112" y="104">i₁ ↻</text><text class="ylb" x="238" y="104">i₂ ↻</text>
+                <defs><marker id="arB" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#ffb3c7"/></marker></defs>
+                <text class="dim" x="14" y="196">受控源 3i₁ 在两个分电路都要保留并重算</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：受控源（粉色菱形）不置零、不单独作用，随本分电路电流重算。</div>
+            </div>
+          </div>
+          <ul>
+            <li><strong>6 V 单独作用</strong>（3 A→开路，受控源保留）：<code>u<sub>c</sub>′=3i<sub>1</sub>′</code>，左网孔 KVL <code>1·i<sub>1</sub>′+2·i<sub>1</sub>′+3i<sub>1</sub>′=6 → 6i<sub>1</sub>′=6 → i<sub>1</sub>′=<strong>1 A</strong></code>（受控源电压 3 V）。</li>
+            <li><strong>3 A 单独作用</strong>（6 V→短路，受控源保留）：<code>i<sub>2</sub>″=3 A</code> 被电流源锁定，公共 2 Ω 上电流为 <code>(i<sub>1</sub>″−3)</code>；左网孔 KVL <code>1·i<sub>1</sub>″+2(i<sub>1</sub>″−3)+3i<sub>1</sub>″=0 → 6i<sub>1</sub>″=6 → i<sub>1</sub>″=<strong>1 A</strong></code>（受控源电压 3 V）。</li>
+            <li>叠加：<code>i<sub>1</sub>=i<sub>1</sub>′+i<sub>1</sub>″=<strong>2 A</strong></code>。</li>
+          </ul>
+          <p class="warn"><strong>强调两点</strong>：① 受控源在两个分电路里都保留，电压随本分电路电流<strong>重新计算</strong>（3i<sub>1</sub>′ 与 3i<sub>1</sub>″）；若把它当独立源“置零/单独作用”，结果全错。② 分响应可为负、叠加按代数和相减——〔李 §3-2 例 3-4〕同类题中 <code>i′=2 A, i″=−0.6 A, i=1.4 A</code>，正是“取代数和、注意正负号”。</p>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 功率不可叠加（8′）〔邱 §4-1 注意(4) / 李 §3-3〕</div>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>预测 3（本课最关键的坑，先猜后揭）：</strong>接例题 A：电流 2 A + 6 A = 8 A。那么负载电阻的功率，是不是也把两个分功率加起来——<code>P′=(6 Ω)(2 A)²=24 W</code>，<code>P″=(6 Ω)(6 A)²=216 W</code>，所以总功率 = 24+216 = 240 W？① 是，就是 240 W；② 不是，240 W 这个数不对；③ 说不准。先猜，<strong>不公布</strong>。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'y240');enableGate('gate-pred2')">① 是，就是 240 W</button>
+            <button class="pred-opt" onclick="pickPred(this,'n240');enableGate('gate-pred2')">② 不是，240 W 不对</button>
+            <button class="pred-opt" onclick="pickPred(this,'idk2');enableGate('gate-pred2')">③ 说不准</button>
+          </div>
+          <p class="gate-note">选项里<strong>不透露</strong>正确值与方法；选定后揭示才解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2a" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 3：功率的坑 →</button>
+        <div class="reveal" id="rev-2a">
+          <p><strong>② 才对。</strong>正确做法：先叠加求总电流 <code>i=8 A</code>，<strong>再</strong>算功率 <code>P<sub>L</sub>=R<sub>L</sub>i²=(6 Ω)(8 A)²=<strong>384 W</strong></code>。而分功率之和 <code>24+216=<strong>240 W≠384 W</strong></code>〔李 §3-3 例 3-8〕。</p>
+          <p class="warn"><strong>为什么</strong>：尽管 2+6=8，但 <code>2²+6²=4+36=40 ≠ 8²=64</code>。功率 <code>P=i²R</code> 与电流是<strong>平方关系（非线性）</strong>，所以不满足叠加〔邱 §4-1 注意(4)；李 §3-3〕。</p>
+          <div class="ok-box"><strong>陈述时刻 3 · 功率不可直接叠加</strong>（可抄笔记）：叠加定理只对<strong>线性量</strong>——电压、电流——成立。功率 <code>P=ui=i²R</code> 是电压电流的乘积/平方，<strong>不是线性量，不能直接叠加</strong>。正确流程：<strong>先用叠加求出总的电压或电流，再据此计算功率</strong>。〔邱 p.86 注意(4)；李 §3-3〕</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2b" data-stage="2" onclick="revealBlock(this)">辨析（P2）：电源功率可按源累加？有条件 →</button>
+        <div class="reveal" id="rev-2b">
+          <p><span class="p-badge p2">P2</span>上面说的是<strong>某个电阻的功率</strong>不能叠加。但换一个问法——“各<strong>独立电源</strong>对电路提供/吸收的总功率”，在<strong>不含受控源的线性电阻电路</strong>里却可以按电源分别累加——这是<strong>有适用范围</strong>的规律，不是无条件的〔李 §3-3 例 3-9〕。</p>
+          <p>例 3-9（接例题 A 的电路，不含受控源）：直接算，电压源提供 −36 W（即吸收 36 W）、电流源提供 432 W，总提供 <code>396 W</code>；分开算，电压源单独作用时提供 72 W、电流源单独作用时提供 324 W，<code>72+324=396 W</code>，一致〔李 §3-3 例 3-9〕。</p>
+          <div class="warn"><strong>一句话点破</strong>：电阻功率 <code>P=i²R</code> 含平方（非线性，不能拆）；而上述电路里每个独立源的端电压/源电压固定，其提供功率对电流是线性的，且不含受控源时不破坏这种可加性，所以能按源拆。<strong>但含受控源时这条不成立</strong>——别把“电源功率可按源累加”当成无条件规矩。（P2，不作为必考主链。）</div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 替代定理：换掉结构，外部无感（P2，6′）〔邱 §4-2〕</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">替代定理：换什么、凭什么敢换 →</button>
+        <div class="reveal" id="rev-3a">
+          <p><span class="p-badge p2">P2</span><strong>过渡</strong>：叠加是“把<strong>激励</strong>拆开”。还有一类“分而治之”是把<strong>电路结构</strong>替换掉——已知某个二端网络的端口电压和电流，能不能把它整体换成一个简单的源，而外部电路毫无感觉？</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>已知二端网络 <code>N<sub>2</sub></code> 与其余部分连接处的端口电压 <code>u</code>、电流 <code>i</code>。用一个 <code>u<sub>s</sub>=u</code> 的电压源，或 <code>i<sub>s</sub>=i</code> 的电流源去替代 <code>N<sub>2</sub></code>，另一部分的内部电压电流<strong>维持不变</strong>〔邱 p.89〕。</p>
+              <p class="muted"><strong>为什么敢换</strong>：对外电路而言，它“看到”的就只是这个端口的 <code>u</code> 和 <code>i</code>；用一个能复现同样 <code>u,i</code> 的源顶上去，外电路解方程的结果就不会变〔邱 p.89–90〕。</p>
+            </div>
+            <div class="fig-box md" aria-label="二端网络被等效电源替代、外部不变的示意图">
+              <svg class="svg-diag" viewBox="0 0 380 180" role="img">
+                <title>左：网络N2经端口u,i接外部电路；右：换成us=u电压源后外部电路不变</title>
+                <text class="dim" x="20" y="18">替换前</text><text class="dim" x="215" y="18">替换后</text>
+                <!-- 左：N2 方框 + 外部网络方框 -->
+                <rect class="elem" x="30" y="60" width="70" height="60" rx="4" fill="none"/><text class="lbl" x="52" y="94">N₂</text>
+                <line class="wire" x1="100" y1="75" x2="160" y2="75"/><line class="wire" x1="100" y1="105" x2="160" y2="105"/>
+                <text class="ylb" x="118" y="70">i→</text><text class="ylb" x="118" y="122">u</text>
+                <rect class="elem" x="160" y="45" width="70" height="90" rx="4" fill="none"/><text class="lbl" x="180" y="94">外部</text>
+                <!-- 箭头 -->
+                <path class="accent" d="M248,90 L272,90" marker-end="url(#arC)"/>
+                <!-- 右：电压源 + 外部 -->
+                <circle class="elem" cx="300" cy="90" r="18" fill="none"/><text class="lbl" x="292" y="95">u</text>
+                <line class="wire" x1="300" y1="72" x2="300" y2="45"/><line class="wire" x1="300" y1="108" x2="300" y2="135"/>
+                <rect class="elem" x="265" y="135" width="70" height="30" rx="4" fill="none"/><text class="dim" x="282" y="154">外部不变</text>
+                <defs><marker id="arC" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+              </svg>
+              <div class="fig-cap">自包含示意图：复现同样的端口 u、i，外部电路毫无感觉。</div>
+            </div>
+          </div>
+          <p>例：已求得某支路 <code>u=8 V, i=1 A</code>，则它可用 <strong>8 V 电压源</strong>、或 <strong>1 A 电流源</strong>、甚至 <strong>8 Ω 电阻（<code>R=u/i</code>）</strong> 替代，外部各处电压电流都不变〔邱 p.90 例 4-7〕。</p>
+          <div class="ok-box"><strong>陈述时刻 4 · 替代定理</strong>（P2，可抄笔记）：若已知两个一端口网络连接的端口电压 <code>u</code> 与电流 <code>i</code>，则可用 <code>u<sub>s</sub>=u</code> 的电压源或 <code>i<sub>s</sub>=i</code> 的电流源（乃至 <code>R=u/i</code> 的电阻）替代其中一个网络，另一个网络的内部电压、电流均不变。它<strong>对线性、非线性电路都适用</strong>，常用于局部化简，也是证明其他定理的工具。〔邱 §4-2 p.89–90〕<br><strong>边界</strong>：若被替代部分含有“被外部电路依赖的受控源控制量”，替代后控制关系丢失，<strong>就不能替代</strong>〔邱 p.90〕。</div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 最大功率传输 + “50% 效率”陷阱（10′）〔邱 §4-4 / 李 §4-8〕</div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">接第五课的钩子：动机与推导起点 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>第五课把含源网络打包成 <code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code>，说过“负载等于内阻时功率最大”，但没证。先看动机：电力传输追求<strong>效率</strong>（功率巨大，损耗首要）；通信/测量追求<strong>功率大小</strong>（信号微弱，先拿到尽可能大的信号功率，效率次要）——最大功率传输解决第二类〔邱 p.97〕。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>把含源网络换成戴维南等效：<code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code> 接 <code>R<sub>L</sub></code>。电流 <code>i=u<sub>oc</sub>/(R<sub>eq</sub>+R<sub>L</sub>)</code>，于是</p>
+              <div class="formula sm">P<sub>L</sub> = i²R<sub>L</sub> = u<sub>oc</sub>²·R<sub>L</sub>/(R<sub>eq</sub>+R<sub>L</sub>)²</div>
+            </div>
+            <div class="fig-box md" aria-label="戴维南等效电源接可变负载的电路示意图">
+              <svg class="svg-diag" viewBox="0 0 360 170" role="img">
+                <title>戴维南等效：uoc电压源串Req接可变负载RL，电流i</title>
+                <line class="wire" x1="30" y1="45" x2="150" y2="45"/>
+                <circle class="elem" cx="90" cy="45" r="16" fill="none"/><text class="lbl" x="60" y="50">u<sub>oc</sub></text>
+                <line class="wire" x1="150" y1="45" x2="190" y2="45"/>
+                <rect class="elem" x="190" y="35" width="34" height="20" rx="2" fill="none"/><text class="lbl" x="196" y="50">R<sub>eq</sub></text>
+                <line class="wire" x1="224" y1="45" x2="300" y2="45"/>
+                <line class="wire" x1="300" y1="45" x2="300" y2="80"/>
+                <rect class="elem" x="290" y="80" width="20" height="34" rx="2" fill="none"/><text class="lbl" x="314" y="100">R<sub>L</sub></text>
+                <line class="wire" x1="300" y1="114" x2="300" y2="140"/>
+                <line class="wire" x1="300" y1="140" x2="30" y2="140"/>
+                <line class="wire" x1="30" y1="140" x2="30" y2="45"/>
+                <path class="accent" d="M256,45 L256,20" marker-end="url(#arD)"/><text class="ylb" x="248" y="16">i</text>
+                <text class="dim" x="30" y="162">可变负载 R_L：P_L 随 R_L 怎么变？</text>
+                <defs><marker id="arD" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+              </svg>
+              <div class="fig-cap">自包含示意图：戴维南等效电源接可变负载，是推导的起点。</div>
+            </div>
+          </div>
+          <p class="muted">当场看两端：<code>R<sub>L</sub>→0</code> 电流最大但 <code>P<sub>L</sub>→0</code>（电阻为零不耗功率）；<code>R<sub>L</sub>→∞</code> 电压最大但电流为零、<code>P<sub>L</sub>→0</code>。两头都趋于零，中间必有最大值。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:10px;">
+          <p class="ask"><strong>预测 4（先猜后揭）：</strong>把 <code>R<sub>L</sub></code> 从 0 逐渐增大到无穷大，负载得到的功率 <code>P<sub>L</sub></code> 怎么变？① 一直增大；② 一直减小；③ 先增大后减小，中间有个最大值。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'up');enableGate('gate-pred3')">① 一直增大</button>
+            <button class="pred-opt" onclick="pickPred(this,'down');enableGate('gate-pred3')">② 一直减小</button>
+            <button class="pred-opt" onclick="pickPred(this,'peak');enableGate('gate-pred3')">③ 先增后减，有最大值</button>
+          </div>
+          <p class="gate-note">选定一个答案后，下面的揭示才会解锁。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4：匹配条件与最大功率 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>③ 才对。</strong>对 <code>R<sub>L</sub></code> 求导并令其为零：<code>dP<sub>L</sub>/dR<sub>L</sub>=0 ⟹ (R<sub>eq</sub>+R<sub>L</sub>)−2R<sub>L</sub>=0 ⟹ <strong>R<sub>L</sub>=R<sub>eq</sub></strong></code>〔邱 p.98；李 §4-8 式(4-34)〕。代回得最大功率：</p>
+          <div class="formula sm">P<sub>max</sub> = u<sub>oc</sub>² / (4R<sub>eq</sub>)　〔邱 p.98；李 §4-8 式(4-35)〕</div>
+          <p class="muted">诺顿形式：<code>P<sub>max</sub>=i<sub>sc</sub>²R<sub>eq</sub>/4</code>。</p>
+          <div class="ok-box"><strong>陈述时刻 5 · 最大功率传输定理</strong>（全称 + 条件 + 公式，可抄笔记）：当<strong>可变负载</strong> <code>R<sub>L</sub></code> 等于含源一端口网络的戴维南等效电阻 <code>R<sub>eq</sub></code> 时（称<strong>匹配</strong>），负载获得最大功率 <code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>。〔邱 §4-4 p.97–98；李 §4-8〕<br>- <strong>前提</strong>：定理是在 <code>R<sub>L</sub> 可变</code> 的前提下得出的。若反过来 <code>R<sub>L</sub></code> 固定、<code>R<sub>eq</sub></code> 可变，则应让 <code>R<sub>eq</sub></code> 尽量小（<code>R<sub>eq</sub>=0</code> 时负载功率最大），<strong>不是让二者相等</strong>——这是最常被忽略的前提〔李 §4-8〕。</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4c" data-stage="4" onclick="revealBlock(this)">例题 C：效率陷阱 →</button>
+        <div class="reveal" id="rev-4c">
+          <p><strong>搭桥例题 C</strong>（邱例 4-10）：某含源网络端口戴维南等效为 <code>u<sub>oc</sub>=10 V, R<sub>eq</sub>=2.5 Ω</code>。</p>
+          <ul>
+            <li>匹配：<code>R<sub>L</sub>=R<sub>eq</sub>=2.5 Ω</code>；<code>P<sub>max</sub>=10²/(4×2.5)=<strong>10 W</strong></code>〔邱 p.98 例 4-10〕。</li>
+            <li>陷阱：从戴维南等效电路看，<code>R<sub>L</sub></code> 与 <code>R<sub>eq</sub></code> 消耗功率相等，效率像是 50%。但<strong>返回原电路</strong>算，电源发出 60 W，只有 10 W 到负载——实际只有 <strong>16.67%</strong>〔邱 p.98 例 4-10〕。</li>
+          </ul>
+          <p class="warn"><strong>为什么</strong>：等效电路只对<strong>端口外特性</strong>等效，对<strong>内部功率并不等效</strong>；等效电阻上“算出来的”损耗不等于原网络内部真实损耗。</p>
+          <div class="ok-box"><strong>陈述时刻 6 · 关于“50% 效率”的辨析</strong>（可抄笔记）：“匹配时效率 50%”<strong>只在一种情况下成立</strong>：负载的功率来自一个真正的“理想电压源串内阻 <code>R<sub>eq</sub></code>”模型。对一般含源网络，它与戴维南等效电路<strong>对内不等效</strong>，由 <code>R<sub>eq</sub></code> 算得的功率不等于网络内部真实消耗的功率，所以负载得到最大功率时，<strong>实际效率未必是 50%</strong>（邱例 4-10 只有 16.67%）。〔李 §4-8；邱 §4-4 p.98〕</div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习：先自己求等效，再匹配（换拓扑、多一步）</div>
+
+        <div class="exercise">
+          <h4>该你了（例题 C 是“已给”戴维南参数；这里要你自己求）</h4>
+          <p>一个含源单口——12 V 理想电压源串 <code>R<sub>1</sub>=2 Ω</code>，从节点分出 <code>R<sub>2</sub>=6 Ω</code> 到地，端口就取在 <code>R<sub>2</sub></code> 两端（负载 <code>R<sub>L</sub></code> 将并在 <code>R<sub>2</sub></code> 上）。〔我编的题〕</p>
+          <ol>
+            <li>求该单口端口的开路电压 <code>u<sub>oc</sub></code> 与等效电阻 <code>R<sub>eq</sub></code>（提示：求 <code>R<sub>eq</sub></code> 时把独立电压源置零）。</li>
+            <li><code>R<sub>L</sub></code> 取多大时获得最大功率？最大功率是多少？</li>
+            <li>同学甲说“匹配了，效率就是 50%”。对吗？简述理由。</li>
+          </ol>
+
+          <div class="numcheck" id="ex-uoc" data-qid="ex-uoc"><label>① 开路电压 u<sub>oc</sub> = <input type="text" placeholder="例如 9" /> V</label><button class="btn-sm" onclick="checkNum('ex-uoc',9,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-req" data-qid="ex-req"><label>① 等效电阻 R<sub>eq</sub> = <input type="text" placeholder="例如 1.5" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-req',1.5,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-rl" data-qid="ex-rl"><label>② 匹配负载 R<sub>L</sub> = <input type="text" placeholder="例如 1.5" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-rl',1.5,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-pmax" data-qid="ex-pmax"><label>② 最大功率 P<sub>max</sub> = <input type="text" placeholder="例如 13.5" /> W</label><button class="btn-sm" onclick="checkNum('ex-pmax',13.5,0.01)">检查</button><div class="fb"></div></div>
+          <div class="choicebox" data-qid="ex-eff" data-hint="50% 只对真正的理想电压源串内阻模型成立；一般含源网络对内不等效。试着返回原电路算电源发出多少。" data-explain="不对。可验算：接 RL=1.5Ω 时 6∥1.5=1.2Ω，与 2Ω 串联，电源电流 12/(2+1.2)=3.75A，电源发出 45W，负载只得 13.5W，效率=30%，并非 50%。">
+            <p><strong>③ “匹配了，效率就是 50%”，对吗？</strong></p>
+            <label><input type="radio" name="qeff" value="yes" /> 对，匹配时效率就是 50%</label>
+            <label><input type="radio" name="qeff" value="no" /> 不对，实际不是 50%</label>
+            <button class="btn-sm" onclick="checkChoice('ex-eff','no')">检查</button><div class="fb"></div>
+          </div>
+
+          <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-5a">
+            <p><strong>①</strong> 开路（不接 <code>R<sub>L</sub></code>）时 <code>R<sub>1</sub></code>、<code>R<sub>2</sub></code> 串联分压，端口电压 <code>=12×6/(2+6)=<strong>9 V</strong></code>，即 <code>u<sub>oc</sub>=9 V</code>。求 <code>R<sub>eq</sub></code>：电压源置零→短路，从端口看进去是 <code>R<sub>1</sub></code> 与 <code>R<sub>2</sub></code> 并联，<code>R<sub>eq</sub>=2∥6=12/8=<strong>1.5 Ω</strong></code>。</p>
+            <p><strong>②</strong> 匹配 <code>R<sub>L</sub>=R<sub>eq</sub>=<strong>1.5 Ω</strong></code>；<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)=9²/(4×1.5)=81/6=<strong>13.5 W</strong></code>。</p>
+            <p><strong>③ 不对</strong>。“50%”只对“理想电压源串内阻”这个模型成立；对这个含源网络，等效电路对内不等效。验算：接 <code>R<sub>L</sub>=1.5 Ω</code> 时 <code>R<sub>2</sub>∥R<sub>L</sub>=6∥1.5=1.2 Ω</code>，与 <code>R<sub>1</sub>=2 Ω</code> 串联，电源电流 <code>=12/(2+1.2)=3.75 A</code>，12 V 电源发出 <code>45 W</code>，负载只得 <code>13.5 W</code>，实际效率 <code>=13.5/45=<strong>30%</strong></code>，并非 50%。</p>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 实验台：拖动参数，看叠加与最大功率怎么变</div>
+
+        <div class="solve-lab">
+          <h4>同一套规则，参数变了结果跟着变</h4>
+          <p class="muted" style="margin:0 0 8px;">左面板是叠加电路（例题 A 拓扑：电压源串 R、电流源、负载 <code>R<sub>L</sub></code> 三者并联），右面板是最大功率曲线（拖动 <code>R<sub>L</sub></code> 看峰值）。两栏默认值正是教案例题数值。</p>
+          <div class="solve-grid">
+            <div>
+              <div class="th-panel">
+                <h5>叠加面板（两源 + 负载）</h5>
+                <div class="solve-ctrl"><label>电压源 u<sub>s</sub> <span id="s-us-val">36 V</span></label><input type="range" id="s-us" min="1" max="60" step="1" value="36"/></div>
+                <div class="solve-ctrl"><label>电流源 i<sub>s</sub> <span id="s-is-val">9 A</span></label><input type="range" id="s-is" min="1" max="20" step="1" value="9"/></div>
+                <div class="solve-ctrl"><label>串联电阻 R <span id="s-r-val">12 Ω</span></label><input type="range" id="s-r" min="1" max="20" step="1" value="12"/></div>
+                <div class="solve-ctrl"><label>负载 R<sub>L</sub> <span id="s-rl-val">6 Ω</span></label><input type="range" id="s-rl" min="1" max="20" step="1" value="6"/></div>
+                <div class="th-row"><span class="k">电压源单独 i′=u<sub>s</sub>/(R+R<sub>L</sub>)</span><span class="v" id="s-ip">—</span></div>
+                <div class="th-row"><span class="k">电流源单独 i″=i<sub>s</sub>·R/(R+R<sub>L</sub>)</span><span class="v" id="s-ipp">—</span></div>
+                <div class="th-row"><span class="k">叠加总电流 i=i′+i″</span><span class="v" id="s-i">—</span></div>
+                <div class="th-row"><span class="k">分功率和 P′+P″</span><span class="v" id="s-psum">—</span></div>
+                <div class="th-row"><span class="k">真实功率 R<sub>L</sub>·i²</span><span class="v" id="s-preal">—</span></div>
+                <div class="th-agree" id="s-note">—</div>
+              </div>
+            </div>
+            <div>
+              <div class="th-panel">
+                <h5>最大功率面板（u<sub>oc</sub> 串 R<sub>eq</sub> 接 R<sub>L</sub>）</h5>
+                <div class="solve-ctrl"><label>开路电压 u<sub>oc</sub> <span id="m-uoc-val">10 V</span></label><input type="range" id="m-uoc" min="1" max="24" step="1" value="10"/></div>
+                <div class="solve-ctrl"><label>等效电阻 R<sub>eq</sub> <span id="m-req-val">2.5 Ω</span></label><input type="range" id="m-req" min="0.5" max="10" step="0.5" value="2.5"/></div>
+                <div class="solve-ctrl"><label>负载 R<sub>L</sub> <span id="m-rl-val">2.5 Ω</span></label><input type="range" id="m-rl" min="0.5" max="12" step="0.5" value="2.5"/></div>
+                <div class="th-row"><span class="k">当前电流 i</span><span class="v" id="m-i">—</span></div>
+                <div class="th-row"><span class="k">当前功率 P<sub>L</sub></span><span class="v" id="m-pl">—</span></div>
+                <div class="th-row"><span class="k">匹配功率 P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</span><span class="v" id="m-pmax">—</span></div>
+                <div class="th-row"><span class="k">R<sub>L</sub>/R<sub>eq</sub>（=1 时匹配）</span><span class="v" id="m-ratio">—</span></div>
+                <div class="th-row"><span class="k">等效电路视角效率（仅当模型是单电压源）</span><span class="v" id="m-eta">—</span></div>
+                <div class="th-agree" id="m-note" style="color:var(--chalk-green)">—</div>
+                <div class="curve-wrap">
+                  <svg id="mp-curve" viewBox="0 0 360 190" role="img" aria-label="负载功率P_L随R_L先增后减、在R_L=R_eq处达峰的曲线">
+                    <title>P_L 随 R_L/R_eq 变化曲线，峰值在比值=1处</title>
+                    <line class="ax" x1="45" y1="165" x2="345" y2="165"/>
+                    <line class="ax" x1="45" y1="20" x2="45" y2="165"/>
+                    <polyline class="cv" id="mp-path" points=""/>
+                    <circle class="pk" id="mp-peak" r="4.5" cx="120" cy="25"/>
+                    <circle class="cur" id="mp-cur" r="5" cx="120" cy="25"/>
+                    <text x="150" y="182">R_L / R_eq →</text>
+                    <text x="6" y="24">P_L</text>
+                    <text x="112" y="16">峰值</text>
+                    <text x="44" y="180">0</text>
+                    <text x="108" y="180">1</text>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="th-eq" id="lab-note">默认：叠加面板正是李例 3-8（2 A + 6 A = 8 A，分功率和 240 W ≠ 真实 384 W）；最大功率面板正是邱例 4-10（10 V/2.5 Ω→P_max=10 W，匹配时 R_L/R_eq=1）。</div>
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 环节 7 ============ -->
+      <section class="stage" id="stage-7">
+        <div class="stage-h">7 · 迁移自检</div>
+
+        <div class="exercise">
+          <h4>过关自检（不看笔记能说出才算会）</h4>
+          <ul>
+            <li>叠加定理为什么成立（线性方程组的线性性）？它的条件、置零规则是什么？</li>
+            <li>受控源为什么要保留在每一个分电路里？分响应为负时叠加怎么处理？</li>
+            <li>为什么电阻功率不能叠加？正确流程是什么？“电源功率可按源累加”的适用条件是什么？</li>
+            <li>替代定理在换什么、凭什么敢换、边界是什么？</li>
+            <li>最大功率的匹配条件与公式是什么？它的前提是什么？“匹配效率 50%”为什么是坑？</li>
+          </ul>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">一个核心问题：多个源、只想看一条支路时“分而治之”——<br>叠加拆激励（置零、受控源保留、取代数和，功率不可叠加）→ 替代换结构（端口 u,i 不变，边界是受控源控制量）→ 戴维南证明匹配 R<sub>L</sub>=R<sub>eq</sub>、P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)，并识破“50% 效率”。</div>
+        <p><strong>贯穿全课的线索</strong>：L1-06 的“节点/网孔方程是线性方程组”，正是叠加定理“凭什么能拆”的根；L1-05 的戴维南打包，正是最大功率推导的起点。第三课讲的功率 <code>P=i²R</code>，则解释了为什么功率不能跟着电流一起叠加。</p>
+        <p class="muted">下一课钩子：这三课我们一个个定理地用——叠加拆激励、等效打包、戴维南看负载。可拿到一张真实电路图，元件杂、标注乱、既有受控源又有多个电阻，该先干什么、用什么顺序把这些工具组合起来？第八课：直流电路综合——读图、建模与求解，把前七课的工具串成一套可复用的解题流程。</p>
+        <button class="reveal-btn" data-target="rev-7a" data-stage="7" onclick="revealBlock(this)">展开：两种任务形态小结 →</button>
+        <div class="reveal" id="rev-7a">
+          <p><strong>任务形态一</strong>（给定多电源线性电路，求某支路响应）：判断该源单独作用→其余置零（电压源短路、电流源开路、受控源保留）→分别求分响应→取代数和得总 <code>i/u</code>→再据此算功率（环节 1 例题 A/B、预测 1/2/3）。</p>
+          <p><strong>任务形态二</strong>（给定含源单口或具体电路，求负载最大功率）：先求（或已给）戴维南参数 <code>u<sub>oc</sub>, R<sub>eq</sub></code>→匹配 <code>R<sub>L</sub>=R<sub>eq</sub></code>→<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>→辨析效率是不是 50%（环节 4 例题 C、环节 5 独立练习、预测 4）。</p>
+          <p class="muted"><span class="p-badge p3">P3</span>只知道“还有特勒根定理、互易定理、对偶原理”这些线性电路的其他性质即可，本课不展开〔邱 §4-5/§4-6〕。</p>
+        </div>
+        <!-- QA:stage-7:BEGIN -->
+        <!-- QA:stage-7:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：线性=齐次性+可加性（网络函数仅点到）；叠加定理（根是线性方程组的线性性、置零规则、受控源保留、适用条件）；功率不可叠加（反例+原因+正确流程，辨析电源功率可按源累加的条件）；替代定理（内容+边界，P2）；最大功率传输（推导、匹配条件、公式、前提“负载可变”、效率陷阱）。</p>
+          <p class="mini"><strong>不讲</strong>：网络函数的分类与计算（只点定义）；邱 §4-1 中含受控源叠加的复杂数值（受控源“要保留”讲清即可，李例 3-4 作同类引用）；替代定理的严密证明（只讲“对外等效”直觉）；邱 §4-5 特勒根、§4-6 互易、对偶原理（P3 仅认知）；电源“最大功率与效率不可兼得”的系统优化（工程课后续）。</p>
+          <p class="mini"><strong>记号约定</strong>：电压源置零→短路、电流源置零→开路；分响应参考方向一律取与原电路一致，取代数和时带符号；最大功率一律用戴维南形式 <code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>（诺顿形式作补充）。教案与页面统一采用这套。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出叠加定理的根（线性方程组的线性性）、条件与置零规则，能正式表述它。</li>
+            <li>会分电路：电压源短路、电流源开路、电阻不动、受控源保留，取代数和带符号。</li>
+            <li>知道功率不可叠加的原因与正确流程，能说明“电源功率可按源累加”的条件。</li>
+            <li>说出替代定理在换什么、边界是什么（P2）。</li>
+            <li>会推、会用最大功率传输：匹配条件、P<sub>max</sub> 公式、前提“负载可变”，并识破“50% 效率”陷阱。</li>
+            <li>知道边界：叠加只适用线性电路；特勒根/互易/对偶仅作认知（P3）。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与线性性质 6′ / 叠加定理 13′ / 功率不可叠加 8′ / 替代定理 6′ / 最大功率传输 10′ / 练习与收尾 2′（课后延伸为主）。45 分钟是预算：因果链完整前提下压缩低增益重复；叠加只用一个数值例题 + 一个受控源小例，替代定理作为 P2 精简。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>叠加对激励分而治之、戴维南对结构、最大功率是其应用（第四章导读）</td><td>邱 p.83 原文</td></tr>
+            <tr><td>齐次性/比例性、网络函数 H=响应/激励、i=K·u<sub>s</sub></td><td>李 §3-1 原文（PDF 124–125）</td></tr>
+            <tr><td>叠加定理的线性方程组证明（克莱姆法则、响应是激励的线性组合）</td><td>邱 p.84–85 原文（式 4-3）</td></tr>
+            <tr><td>叠加定理正式表述、适用线性电路、受控源保留、置零规则、取代数和</td><td>邱 p.85–86 原文；李 §3-2 原文（式 3-14）</td></tr>
+            <tr><td>功率不可叠加及反例（李例 3-8：36V/9A/12Ω/6Ω→2A/6A/8A、24+216≠384W）</td><td>邱 p.86 注意(4)；李 §3-3 例 3-8 原文</td></tr>
+            <tr><td>电源提供总功率可按源累加（不含受控源）、例 3-9（72+324=396W）、受控源例 3-4（i′=2A、i″=−0.6A、i=1.4A）</td><td>李 §3-3 例 3-9、§3-2 例 3-4 原文</td></tr>
+            <tr><td>替代定理内容、证明思路、边界、例（u=8V/i=1A/R=8Ω）</td><td>邱 §4-2 p.89–90 原文（例 4-7）</td></tr>
+            <tr><td>最大功率两类问题动机、P<sub>L</sub> 表达式、匹配条件与 P<sub>max</sub> 推导、前提“负载可变”</td><td>邱 §4-4 p.97–98 原文；李 §4-8 式(4-32)(4-34)(4-35)</td></tr>
+            <tr><td>效率陷阱“对内不等效”、例 4-10（10V/2.5Ω/10W/16.67%）</td><td>邱 §4-4 p.98 例 4-10 原文；李 §4-8 原文</td></tr>
+            <tr><td>特勒根/互易/对偶仅作 P3 认知</td><td>邱 p.83 导读、§4-5/§4-6 标题（不展开）</td></tr>
+            <tr><td>预测 1/2/3/4、搭桥例题 B（自编受控源题）、独立练习（先求等效→匹配→效率辨析，含 30% 验算）</td><td>我编的题 / 通识（依据邱/李原文）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '007-superposition-maxpower';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-07 增量脚本：预测 gating + resetFlow 修补 + 双面板实验台 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 共享 resetFlow 会解锁所有 .reveal-btn（含预测门），这里覆盖：重来后重新锁上预测门
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+    };
+
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function f2(a){ return (Math.round(a*100)/100).toFixed(2); }
+
+    // ---- 面板1：叠加电路 ----
+    var sUs=document.getElementById('s-us'), sIs=document.getElementById('s-is'), sR=document.getElementById('s-r'), sRL=document.getElementById('s-rl');
+    function updSuper(){
+      if(!sUs||!sIs||!sR||!sRL) return;
+      var Us=+sUs.value, Is=+sIs.value, R=+sR.value, RL=+sRL.value;
+      set('s-us-val', Us+' V'); set('s-is-val', Is+' A'); set('s-r-val', R+' Ω'); set('s-rl-val', RL+' Ω');
+      var ip = Us/(R+RL);          // 电压源单独：串联分压电流
+      var ipp = Is*R/(R+RL);       // 电流源单独：分流到 RL
+      var i = ip + ipp;
+      var Psum = RL*ip*ip + RL*ipp*ipp;
+      var Preal = RL*i*i;
+      set('s-ip', f2(ip)+' A'); set('s-ipp', f2(ipp)+' A'); set('s-i', f2(i)+' A');
+      set('s-psum', f2(Psum)+' W'); set('s-preal', f2(Preal)+' W');
+      set('s-note', '分功率和 ≠ 真实功率：先叠加求 i='+f2(i)+' A，再算 P='+f2(Preal)+' W（功率不可叠加）');
+    }
+    [sUs,sIs,sR,sRL].forEach(function(e){ if(e) e.addEventListener('input', updSuper); });
+    updSuper();
+
+    // ---- 面板2：最大功率 + P_L–R_L 曲线 ----
+    var mUoc=document.getElementById('m-uoc'), mReq=document.getElementById('m-req'), mRL=document.getElementById('m-rl');
+    var mpPath=document.getElementById('mp-path'), mpCur=document.getElementById('mp-cur');
+    // 归一化曲线：横轴 t=R_L/R_eq∈[0,4]，纵轴 p=P_L/P_max=4t/(1+t)²∈[0,1]
+    function buildCurve(){
+      if(!mpPath) return;
+      var pts=[];
+      for(var k=0;k<=80;k++){
+        var t=k/80*4, p=4*t/((1+t)*(1+t));
+        pts.push((45+t/4*300).toFixed(1)+','+(165-p*140).toFixed(1));
+      }
+      mpPath.setAttribute('points', pts.join(' '));
+    }
+    function updMax(){
+      if(!mUoc||!mReq||!mRL) return;
+      var Uoc=+mUoc.value, Req=+mReq.value, RL=+mRL.value;
+      set('m-uoc-val', Uoc+' V'); set('m-req-val', Req+' Ω'); set('m-rl-val', RL+' Ω');
+      var i=Uoc/(Req+RL);
+      var PL=Uoc*Uoc*RL/((Req+RL)*(Req+RL));
+      var Pmax=Uoc*Uoc/(4*Req);
+      var ratio=RL/Req;
+      var eta=RL/(Req+RL); // 等效电路视角效率，匹配时 50%
+      set('m-i', f2(i)+' A'); set('m-pl', f2(PL)+' W'); set('m-pmax', f2(Pmax)+' W');
+      set('m-ratio', f2(ratio)); set('m-eta', f2(eta*100)+'%');
+      var matched = Math.abs(ratio-1) < 0.01;
+      set('m-note', matched
+        ? '已匹配：R_L=R_eq='+Req+' Ω → P_L=P_max='+f2(Pmax)+' W（等效模型效率 50%，一般网络未必）'
+        : '未匹配：R_L/R_eq='+f2(ratio)+'，拖动 R_L 到 '+Req+' Ω 可获最大功率');
+      if(mpCur){
+        var td=Math.min(ratio,4);
+        var p=4*td/((1+td)*(1+td));
+        mpCur.setAttribute('cx',(45+td/4*300).toFixed(1));
+        mpCur.setAttribute('cy',(165-p*140).toFixed(1));
+      }
+    }
+    buildCurve();
+    [mUoc,mReq,mRL].forEach(function(e){ if(e) e.addEventListener('input', updMax); });
+    updMax();
+  })();
+  </script>
+</body>
+</html>

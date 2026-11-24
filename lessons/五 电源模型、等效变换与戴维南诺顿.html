@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第五课 · 电源模型、等效变换与戴维南/诺顿 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:380px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .boxdash{fill:none;stroke:var(--chalk-faint);stroke-width:1.4;stroke-dasharray:5 4}
+    .svg-diag .axis{stroke:var(--chalk-dim);stroke-width:1.6;fill:none}
+    .svg-diag .lineplot{stroke:var(--chalk-yellow);stroke-width:2.6;fill:none}
+    .svg-diag .workband{fill:rgba(183,240,192,.12)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    /* 等效电源实验台 */
+    .thlab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .thlab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .th-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .th-ctrl label{display:flex;justify-content:space-between;font-size:.86rem;color:var(--chalk-dim);margin-bottom:2px}
+    .th-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;font-size:.85rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim)}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .th-agree{font-family:var(--mono);font-size:.8rem;font-weight:700;margin-top:6px;color:var(--chalk-green)}
+    .th-agree.bad{color:var(--danger)}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.4}
+    @media(max-width:1100px){.th-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第五课 · 电源模型、等效变换与戴维南/诺顿</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与伏安直线</a></li>
+        <li><a href="#stage-1">1 · 两种模型与等效变换</a></li>
+        <li><a href="#stage-2">2 · 戴维南与诺顿定理</a></li>
+        <li><a href="#stage-3">3 · 求 Req 两法</a></li>
+        <li><a href="#stage-4">4 · 接负载分析</a></li>
+        <li><a href="#stage-5">5 · 等效电源实验台</a></li>
+        <li><a href="#stage-6">6 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">把第四课“对外等效”从<strong>无源电阻</strong>推广到<strong>含源一端口</strong>：一条伏安直线两个参数 → 两种等效电源模型 → 戴维南/诺顿 → 接负载分析。</div>
+      <div class="mini">前置：L1-01~04（<code>u=Ri</code>、KCL/KVL、<code>P=i²R</code>、对外等效与等效电阻、分流）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-05.md</code>（邱 §2-4~2-6、§4-3；李上 §4-6/§4-7 原文，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-05-教案.md</code>（初审退 3 项、复审通过）。学习目标、节奏与来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>随时查</h4>
+      <div class="mini"><strong>伏安直线</strong>：两截距 <code>u_oc</code>（开路）、<code>i_sc</code>（短路）定一条线</div>
+      <div class="mini"><strong>两模型互换</strong>：电压源串 R ↔ 电流源并 G；<code>G=1/R</code>、<code>i_s=u_s/R</code></div>
+      <div class="mini"><strong>核心关系</strong>：<code>u_oc = R_eq · i_sc</code>（知二求三）</div>
+      <div class="mini"><strong>戴维南</strong>：电压源 <code>u_oc</code> 串 <code>R_eq</code></div>
+      <div class="mini"><strong>诺顿</strong>：电流源 <code>i_sc</code> 并 <code>R_eq</code>（<code>G_eq=1/R_eq</code>）</div>
+      <div class="mini"><strong>求 R_eq 两法</strong>：置零独立源（电压源短路/电流源开路）后求输入电阻；或 <code>u_oc/i_sc</code>（不置零）</div>
+      <div class="mini"><strong>接负载</strong>：<code>i_L = u_oc/(R_eq+R_L)</code>，<code>u_L=i_L·R_L</code></div>
+      <div class="mini"><strong>仍是</strong>：对外等效、内部不等效；<code>含源≠有源</code></div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第五课（L1-05）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §2-4/§2-5/§2-6/§4-3、李瀚荪 5e 上 §4-6/§4-7（已摘录校对）</span>
+      </div>
+      <h1>电源模型、等效变换与戴维南/诺顿</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先遇到“能不能把含源黑箱看成一个电源”的问号，再要公式；点“继续/公布”才会出现下一段。先把记号认下来——<code>u_oc</code> 开路电压（oc=open circuit）、<code>i_sc</code> 短路电流（sc=short circuit）、<code>u_s</code>/<code>i_s</code> 理想源激励值、<code>R_eq</code> 等效电阻（也叫输出电阻）、<code>一端口</code> 就是引出一对端子、电流从一端进另一端出的网络。现在只认得，不要求会用。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">伏安直线</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">两模型互换</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">戴维南/诺顿</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">求 Req 两法</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">接负载分析</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 一个问号：把含源黑箱“看成一个电源”（8′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">第四课会把一串电阻“看成一个”等效电阻。<br>现在黑箱里不只有电阻——有电源、有内阻。<br>我只想知道：接上一个负载后，负载分到多少电压、流过多少电流？</p>
+            <p class="speak">“能不能把这个黑箱也<strong>看成一个简单的电源</strong>，以后换负载只改一个数？这个‘看成’<strong>凭什么成立</strong>、那两个参数<strong>怎么求</strong>？”</p>
+          </div>
+          <div class="fig-box md" aria-label="实际电源伏安特性直线示意图">
+            <svg class="svg-diag" viewBox="0 0 380 230" role="img">
+              <title>实际电源u-i伏安特性：纵轴截距开路电压uoc，横轴截距短路电流isc，工作范围为其中一段直线</title>
+              <line class="axis" x1="60" y1="18" x2="60" y2="190" marker-end="url(#th0a)"/>
+              <line class="axis" x1="60" y1="190" x2="360" y2="190" marker-end="url(#th0a)"/>
+              <text class="ylb" x="26" y="24">u</text>
+              <text class="ylb" x="350" y="212">i</text>
+              <rect class="workband" x="96" y="62" width="118" height="88"/>
+              <line class="lineplot" x1="60" y1="48" x2="300" y2="190"/>
+              <circle class="nodept" cx="60" cy="48" r="4"/>
+              <circle class="nodept" cx="300" cy="190" r="4"/>
+              <text class="lbl" x="70" y="46">u_oc（开路电压）</text>
+              <text class="lbl" x="272" y="182">i_sc（短路电流）</text>
+              <text class="dim" x="104" y="132">工作范围：近似直线</text>
+              <text class="dim" x="66" y="222">电流 i 越大 → 端电压 u 越小</text>
+              <defs><marker id="th0a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-dim)"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：实际电源对外特性是一条 u-i 直线，两个截距把它定死（不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p0">
+          <p class="ask"><strong>先预测（别算）：</strong>一个真实电池（有内阻），接的负载电流越大，它的端电压是越大、越小、还是不变？凭生活直觉说，先不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'bigger');enableGate('gate-pred0')">端电压越大</button>
+            <button class="pred-opt" onclick="pickPred(this,'smaller');enableGate('gate-pred0')">端电压越小</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">实际电源的伏安特性 →</button>
+        <div class="reveal" id="rev-0a">
+          <p>邱关源讲实际直流电源（如干电池）：由于内部损耗，输出电压 <code>u</code> 随电流 <code>i</code> 增大而减小；在一段工作范围内，<code>u-i</code> 关系近似为<strong>一条直线</strong>〔邱 p.43〕。</p>
+          <p>这条直线有两个截距：<code>i=0</code>（开路）时电压是<strong>开路电压 u_oc</strong>；<code>u=0</code>（短路）时电流是<strong>短路电流 i_sc</strong>〔邱 p.43〕。</p>
+          <div class="ok-box"><strong>开路电压 u_oc</strong>：输出电流为零（端口开路）时的端口电压，是伏安直线在 u 轴上的截距。<strong>短路电流 i_sc</strong>：端口电压为零（端口短路）时的端口电流，是该直线在 i 轴上的截距。实际电源对外特性近似一条 u-i 直线，由这两个截距确定。〔邱 p.43〕</div>
+          <p class="muted">陈述时刻：一条直线两个截距就定死——所以要描述这个电源“对外是什么样”，只要两个数。这就是后面“等效参数”的来龙去脉。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-0b" data-stage="0" onclick="revealBlock(this)" disabled>公布预测 →</button>
+        <div class="reveal" id="rev-0b">
+          <p><strong>端电压越小。</strong>只讲道理（公式留到下一环节现场推）：电源内部有电阻，电流一大，内阻要分走一部分电压，留给外面的就少了。手机快充时电池发热、对外电压略降就是这事〔通识的生活类比〕。这个道理等下会变成一个干净的式子。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 两种电路模型与等效变换：造出“等效电源”（10′）〔邱 p.43–45〕</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">模型一：电压源串电阻 →</button>
+        <div class="reveal" id="rev-1a">
+          <p><strong>模型一：理想电压源 <code>u_s</code> 串电阻 <code>R</code></strong>（戴维南形状）。对外输出电流 <code>i</code>、端电压 <code>u</code>。由 KVL〔邱 p.44 式(2-9)〕：</p>
+          <div class="formula">u = u_s − R·i</div>
+          <p class="muted">口头：内阻越大、电流越大，对外电压掉得越多（正是预测 1 的式子）。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1b" data-stage="1" onclick="revealBlock(this)">模型二 + 互换条件 + 陈述时刻 →</button>
+        <div class="reveal" id="rev-1b">
+          <p><strong>模型二：理想电流源 <code>i_s</code> 并联电导 <code>G</code>（<code>G=1/R</code>）</strong>（诺顿形状）。由 KCL〔邱 p.44 式(2-10)〕：<code>i = i_s − G·u</code>。</p>
+          <p><strong>两个模型什么时候对外一样</strong>（用第四课的等价判据现场推）：把模型一 <code>u=u_s−Ri</code> 改写为 <code>i=(u_s/R)−(1/R)u = u_s/R − G u</code>，和模型二的 <code>i=i_s−G u</code> 对照——只要两项分别相等即可：</p>
+          <div class="formula">G = 1/R　且　i_s = u_s/R = G·u_s</div>
+          <p>于是 <code>u_oc=u_s</code>（模型一开路时内阻无压降）、<code>i_sc=i_s</code>，并且 <code>u_oc = R_eq·i_sc</code>（即 <code>R_eq=u_oc/i_sc</code>）〔邱 p.44 式(2-11)〕。</p>
+          <div class="ok-box"><strong>实际电源的两种模型与互换条件</strong>：对外可等效为<strong>电压源 u_s 串内阻 R</strong>（<code>u=u_s−Ri</code>），也可等效为<strong>电流源 i_s 并电导 G=1/R</strong>（<code>i=i_s−Gu</code>）。同一条伏安直线的互换条件是 <code>G=1/R、i_s=u_s/R</code>，并有 <code>u_oc=u_s、i_sc=i_s、u_oc=R_eq·i_sc</code>。〔邱 p.44〕<br><strong>适用</strong>：线性工作段；<strong>对外等效、内部不等效</strong>——开路时两模型对外都不供电，但并联电导模型内部仍在耗能〔邱 p.44〕。</div>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>预测 2（先猜，别算）：</strong>把“12 V 电压源串 2 Ω”换成电流源模型，电流源该取多少、并联多大电阻，对外才一样？</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'is3');enableGate('gate-pred1')">3 A 电流源并 2 Ω</button>
+            <button class="pred-opt" onclick="pickPred(this,'is6');enableGate('gate-pred1')">6 A 电流源并 2 Ω</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1c" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-1c">
+          <p><strong>6 A 电流源并 2 Ω。</strong><code>G=1/2=0.5 S</code>，<code>i_s=u_s/R=12/2=6 A</code>。当场验两个截距：开路端电压 <code>=6 A×2 Ω=12 V</code> ✓；短路电流 <code>=6 A</code> ✓——两个截距都对上，就是同一条直线。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1d" data-stage="1" onclick="revealBlock(this)">顺带点到：源的串并联限制、受控源是什么 →</button>
+        <div class="reveal" id="rev-1d">
+          <p>电压源串联可直接相加（方向一致取 +），电流源并联可直接相加；但<strong>电压不等的电压源不能并联</strong>（违背 KVL），<strong>电流不等的电流源不能串联</strong>（违背 KCL）〔邱 p.42–43〕。</p>
+          <div class="warn"><strong>术语点到 · 受控源</strong>：前面都是“独立源”——电压/电流值给定、不随别的量变。还有一种<strong>受控源</strong>：它的电压或电流受电路中<strong>另一处的电压或电流</strong>控制（比如“输出电压 = 3 × 某处电流”）。本课主线只处理独立源，受控源只在定理适用条件里出现，<strong>知道是这么一类电源即可</strong>，不要求会分析它（求解留到后面）〔通识入门定义〕。受控源模型也能做串阻/并导变换，但<strong>必须保留控制量所在支路</strong>〔邱 p.45，P3 不展开〕。</div>
+        </div>
+
+        <div class="side-fig-row" style="margin-top:8px;">
+          <div class="side-text">
+            <p class="muted">两种模型长这样、这样互换：</p>
+          </div>
+          <div class="fig-box lg" aria-label="两种电源模型互换示意图">
+            <svg class="svg-diag" viewBox="0 0 470 190" role="img">
+              <title>左：电压源us串电阻R，标u=us-Ri；右：电流源is并电导G，标i=is-Gu；中间双向箭头写互换条件</title>
+              <text class="dim" x="14" y="16">模型一：电压源串电阻</text>
+              <circle class="nodept" cx="24" cy="100" r="3.5"/><text x="14" y="124">a</text>
+              <line class="wire" x1="24" y1="100" x2="52" y2="100"/>
+              <circle class="elem" cx="70" cy="100" r="18" fill="none"/><text class="lbl" x="58" y="106">u_s</text>
+              <line class="wire" x1="88" y1="100" x2="112" y2="100"/>
+              <rect class="elem" x="112" y="90" width="46" height="20" rx="2" fill="none"/><text x="126" y="105">R</text>
+              <line class="wire" x1="158" y1="100" x2="186" y2="100"/>
+              <circle class="nodept" cx="186" cy="100" r="3.5"/><text x="180" y="124">b</text>
+              <text class="ylb" x="30" y="160">u = u_s − R·i</text>
+              <text class="ylb" x="200" y="86">⇄</text>
+              <text class="dim" x="176" y="112">i_s=u_s/R</text>
+              <text class="dim" x="176" y="128">G=1/R</text>
+              <text class="dim" x="272" y="16">模型二：电流源并电导</text>
+              <circle class="nodept" cx="300" cy="100" r="3.5"/><text x="290" y="124">a</text>
+              <circle class="elem" cx="340" cy="100" r="18" fill="none"/><text class="lbl" x="330" y="106">i_s</text>
+              <line class="wire" x1="300" y1="100" x2="322" y2="100"/>
+              <line class="wire" x1="358" y1="100" x2="430" y2="100"/>
+              <line class="wire" x1="390" y1="60" x2="390" y2="80"/><line class="wire" x1="390" y1="120" x2="390" y2="140"/>
+              <rect class="elem" x="370" y="80" width="40" height="40" rx="2" fill="none"/><text x="382" y="105">G</text>
+              <line class="wire" x1="390" y1="60" x2="430" y2="60"/><line class="wire" x1="430" y1="60" x2="430" y2="140"/><line class="wire" x1="390" y1="140" x2="430" y2="140"/>
+              <circle class="nodept" cx="430" cy="100" r="3.5"/>
+              <text class="ylb" x="300" y="172">i = i_s − G·u</text>
+              <text class="dim" x="14" y="186">u_oc = u_s　，　i_sc = i_s　，　u_oc = R_eq · i_sc</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：两种模型对外是同一条伏安直线，互换只改参数、不改外部行为。</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 戴维南与诺顿定理：从“一个电源”推广到“任意含源网络”（12′）〔邱 p.90–92 / 李 §4-6、§4-7〕</div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">推广凭什么成立 →</button>
+        <div class="reveal" id="rev-2a">
+          <p>刚才那个“电压源串电阻”本身就是最简单的含源网络。那黑箱里是十个电源、一堆电阻呢？邱关源说〔邱 p.90–91〕：任意<strong>含独立源、线性电阻（和受控源）的一端口</strong>，其端口伏安特性<strong>也是一条直线</strong>（书中算出的例子形如 <code>u=32−8i</code>）。</p>
+          <p>既然还是直线，就还是两个参数定死——照样能等效成一个电压源串电阻（戴维南）或电流源并电阻（诺顿）。这就是“看成”成立的根本原因：**对外伏安特性相同**（和第四课同一判据，只是网络里多了电源）。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>预测 3（先猜）：</strong>要把一个复杂含源黑箱等效成电源，最少需要知道几个数？① 只要开路电压；② 开路电压 + 等效电阻；③ 必须把内部所有电源电阻都告诉我。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'one');enableGate('gate-pred2')">① 一个数</button>
+            <button class="pred-opt" onclick="pickPred(this,'two');enableGate('gate-pred2')">② 两个数</button>
+            <button class="pred-opt" onclick="pickPred(this,'all');enableGate('gate-pred2')">③ 全都要</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2b" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 3 →</button>
+        <div class="reveal" id="rev-2b">
+          <p><strong>② 两个数。</strong>一条直线两个参数就够。工程上最容易测的是<strong>开路电压 u_oc</strong> 和<strong>短路电流 i_sc</strong>，再用 <code>R_eq=u_oc/i_sc</code> 得第三个——**知二求三**〔邱 p.92 / 李 §4-6〕。（多数电路不方便真短路，所以更常用“开路电压 + 置零求等效电阻”。）</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2c" data-stage="2" onclick="revealBlock(this)">陈述时刻：戴维南定理 →</button>
+        <div class="reveal" id="rev-2c">
+          <div class="ok-box"><strong>戴维南定理（Thevenin's theorem）</strong>：一个含独立电源、线性电阻（和受控源）的一端口，对外可用一个<strong>电压源串联电阻</strong>的支路等效置换；电压源电压等于该一端口的<strong>开路电压 u_oc</strong>，串联电阻等于端口内<strong>全部独立源置零后的输入电阻 R_eq</strong>。端口伏安关系 <code>u=u_oc+R_eq·i</code>（关联参考方向下〔李 §4-6 式(4-27)〕）。〔邱 p.92〕</div>
+          <div class="warn"><strong>符号说明（别以为前后矛盾）</strong>：环节 1 写 <code>u=u_s−Ri</code>，这里却是 <code>u=u_oc+R_eq·i</code>——同一个“电压源串电阻”等效电路，符号相反只因<strong>电流参考方向不同</strong>：环节 1 的 <code>i</code> 是电源<strong>向外输出</strong>的电流（非关联，流出正极），所以内阻是扣分项 <code>−Ri</code>；这里按李瀚荪的<strong>关联参考方向</strong>（电流流入端口正极），内阻变成 <code>+R_eq·i</code>。两式是同一条伏安直线、只是横轴取反，代入时先认清 <code>i</code> 的方向再选符号〔李 §4-6 脚注提醒“注意参考方向假设”〕。本课接负载用 <code>i=u_oc/(R_eq+R_L)</code> 这种最简串联思路，可绕开符号纠结。</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2d" data-stage="2" onclick="revealBlock(this)">陈述时刻：诺顿定理 + 易混概念 →</button>
+        <div class="reveal" id="rev-2d">
+          <div class="ok-box"><strong>诺顿定理（Norton's theorem）</strong>：同一个含源一端口，对外也可用一个<strong>电流源并联电阻</strong>的支路等效置换；电流源电流等于该一端口的<strong>短路电流 i_sc</strong>，并联电阻同为独立源置零后的 <code>R_eq</code>（诺顿电导 <code>G_eq=1/R_eq</code>）。〔邱 p.92 / 李 §4-7〕<br><strong>条件与边界</strong>：线性一端口；仍是<strong>对外等效</strong>（对外电路电压电流不变，内部不等效）。两等效电路可互换（<code>u_oc=R_eq·i_sc</code>）；极端情形 <code>R_eq=0</code> 只有戴维南形式、<code>R_eq→∞</code> 只有诺顿形式〔李 §4-7〕。含受控源时控制量必须留在端口内部〔邱 p.92 脚注，P3〕。</div>
+          <p class="warn"><strong>两个易混点</strong>：<code>含源</code>（含独立源，描述结构）<strong>≠</strong> <code>有源</code>（对外供能，描述性能），别混用〔李 §4-6〕；诺顿里 <code>i_s</code> 与端口输出电流 <code>i</code> 参考方向<strong>相反</strong>（<code>i=i_s−Gu</code>），符号别代错〔邱 p.44〕。</p>
+        </div>
+
+        <div class="side-fig-row" style="margin-top:8px;">
+          <div class="side-text">
+            <p class="muted">黑箱与它的两种“替身”：</p>
+          </div>
+          <div class="fig-box lg" aria-label="含源一端口与戴维南诺顿等效示意图">
+            <svg class="svg-diag" viewBox="0 0 470 220" role="img">
+              <title>中间含源一端口黑箱接a、b两端，右侧上行为戴维南等效电压源uoc串Req，下行为诺顿等效电流源isc并Req</title>
+              <text class="dim" x="14" y="16">含源一端口黑箱</text>
+              <rect class="boxdash" x="20" y="42" width="120" height="120" rx="8"/>
+              <text class="dim" x="36" y="72">电源 + 电阻</text>
+              <text class="dim" x="36" y="92">结构任意</text>
+              <text class="dim" x="36" y="112">(…可能还有受控源)</text>
+              <circle class="nodept" cx="140" cy="80" r="3.5"/><text x="128" y="70">a</text>
+              <circle class="nodept" cx="140" cy="128" r="3.5"/><text x="128" y="146">b</text>
+              <text class="ylb" x="156" y="100">对外等效 ⇔</text>
+              <text class="dim" x="248" y="16">戴维南等效</text>
+              <circle class="nodept" cx="268" cy="58" r="3.5"/>
+              <circle class="elem" cx="288" cy="58" r="15" fill="none"/><text class="lbl" x="280" y="63">u_oc</text>
+              <line class="wire" x1="268" y1="58" x2="273" y2="58"/><line class="wire" x1="303" y1="58" x2="322" y2="58"/>
+              <rect class="elem" x="322" y="48" width="40" height="20" rx="2" fill="none"/><text x="334" y="63">R_eq</text>
+              <line class="wire" x1="362" y1="58" x2="392" y2="58"/><circle class="nodept" cx="392" cy="58" r="3.5"/>
+              <text class="dim" x="248" y="132">诺顿等效</text>
+              <circle class="nodept" cx="268" cy="164" r="3.5"/>
+              <circle class="elem" cx="288" cy="164" r="15" fill="none"/><text class="lbl" x="280" y="169">i_sc</text>
+              <line class="wire" x1="268" y1="164" x2="273" y2="164"/><line class="wire" x1="303" y1="164" x2="392" y2="164"/>
+              <line class="wire" x1="340" y1="140" x2="340" y2="150"/><line class="wire" x1="340" y1="178" x2="340" y2="188"/>
+              <rect class="elem" x="322" y="150" width="36" height="28" rx="2" fill="none"/><text x="330" y="168">R_eq</text>
+              <circle class="nodept" cx="392" cy="164" r="3.5"/>
+              <text class="ylb" x="248" y="210">u_oc = R_eq · i_sc</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：同一个黑箱，两种等效电路对外行为完全一样（不引用书内图号）。</div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 求 Req 的两法、输入电阻、知二求三（8′）〔邱 p.46 / 李思考题4-6〕</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">求 Req 的两法（别混） →</button>
+        <div class="reveal" id="rev-3a">
+          <p>三个等效参数满足 <code>u_oc=R_eq·i_sc</code>，知道任意两个求第三个。<code>u_oc</code>、<code>i_sc</code> 好测，那 <code>R_eq</code> 怎么求？两条路：</p>
+          <p><strong>法 A · 置零 + 求输入电阻</strong>：把端口内<strong>所有独立源置零</strong>——<strong>电压源用短路代替、电流源用开路代替</strong>〔邱 p.92〕——再从端口看进去的电阻就是 <code>R_eq</code>。若只剩电阻，直接用第四课串并联化简；若含受控源（无独立源），用<strong>电压-电流法</strong>：端口加试探电压求电流，<code>R_eq=u/i</code>〔邱 p.46 输入电阻〕。</p>
+          <p><strong>法 B · 开路短路比</strong>：<code>R_eq = u_oc / i_sc</code>〔邱 p.91 式(4-5)〕，用<strong>原网络（含源）</strong>的开路电压、短路电流相除，<strong>不置零</strong>。</p>
+          <div class="warn"><strong>区别（关键，李思考题 4-6）</strong>：法 A 要<strong>置零</strong>独立源、从端口外加源求 <code>u/i</code>；法 B 用<strong>原网络</strong>的开路/短路数据、<strong>不置零</strong>。两条路算同一个 <code>R_eq</code>，可互相校验。</div>
+          <div class="ok-box"><strong>陈述时刻 · 等效参数体系</strong>：<code>u_oc=R_eq·i_sc</code>，知二求三。<code>u_oc</code> 与 <code>R_eq</code> 定戴维南等效（电压源串电阻），<code>i_sc</code> 与 <code>R_eq</code> 定诺顿等效（电流源并电阻）。〔邱 p.91–92〕</div>
+        </div>
+
+        <div class="exercise" style="margin-top:10px;">
+          <h4>即时检查</h4>
+          <p>某含源一端口测得 <code>u_oc=12 V</code>、<code>i_sc=3 A</code>，求 <code>R_eq</code>。</p>
+          <div class="numcheck" id="ex-check" data-qid="ex-check"><label>R_eq = <input type="text" placeholder="例如 4" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-check',4,0.01)">检查</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-3b" data-stage="3" onclick="revealBlock(this)">看答案 →</button>
+          <div class="reveal" id="rev-3b"><p><code>R_eq=u_oc/i_sc=12/3=4 Ω</code>。这正是法 B（开路短路比，不置零）。</p></div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 搭出等效电路、接上负载分析（7′ + 收尾）</div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">搭桥例题：等效后就是最简串联 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>戴维南等效 <code>u_oc=10 V</code>、<code>R_eq=2 Ω</code>，接 <code>R_L=3 Ω</code>，求负载电流与电压。解：<code>i=u_oc/(R_eq+R_L)=10/5=2 A</code>，<code>u_L=i·R_L=6 V</code>。</p>
+          <p class="muted">一句话：等效成一个电源串电阻后，整个电路就是第四课最熟悉的串联回路。〔通识〕</p>
+        </div>
+
+        <div class="exercise" style="margin-top:10px;">
+          <h4>该你了（独立练习）：改编自李练习 4-16，先搭等效、再接载、换模型验证</h4>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>测得某含源一端口 <strong>开路电压 <code>u_oc=12 V</code>、短路电流 <code>i_sc=3 A</code></strong>。</p>
+              <p class="ask">① 求 <code>R_eq</code>，说出戴维南等效电路长什么样。<br>② 接 <code>R_L=8 Ω</code>，求负载电流 <code>i_L</code> 与负载电压 <code>u_L</code>。<br>③ 换诺顿视角：电流源 <code>i_s</code> 与并联电阻各是多少？用<strong>分流法</strong>重算 <code>i_L</code>，验证与②一致。<br>④ 求 <code>R_eq</code> 有哪两法？本题数据属于哪一法？<br>⑤（钩子）若负载换成 <code>R_L=4 Ω</code>，负载功率是多少？</p>
+            </div>
+            <div class="fig-box md" aria-label="戴维南等效电源接负载示意图">
+              <svg class="svg-diag" viewBox="0 0 360 180" role="img">
+                <title>戴维南等效：电压源uoc串Req，接负载RL，标电流iL</title>
+                <text class="dim" x="14" y="16">戴维南等效电路 + 负载</text>
+                <line class="wire" x1="24" y1="40" x2="24" y2="140"/><line class="wire" x1="24" y1="40" x2="336" y2="40"/>
+                <circle class="elem" cx="80" cy="40" r="16" fill="none"/><text class="lbl" x="70" y="45">u_oc</text>
+                <line class="wire" x1="24" y1="40" x2="64" y2="40"/><line class="wire" x1="96" y1="40" x2="140" y2="40"/>
+                <rect class="elem" x="140" y="30" width="52" height="20" rx="2" fill="none"/><text x="152" y="45">R_eq</text>
+                <line class="wire" x1="192" y1="40" x2="250" y2="40"/>
+                <rect class="elem" x="250" y="30" width="52" height="20" rx="2" fill="none"/><text x="264" y="45">R_L</text>
+                <line class="wire" x1="302" y1="40" x2="336" y2="40"/><line class="wire" x1="336" y1="40" x2="336" y2="140"/><line class="wire" x1="24" y1="140" x2="336" y2="140"/>
+                <line class="accent" x1="205" y1="62" x2="245" y2="62" marker-end="url(#th4a)"/>
+                <text class="lbl" x="204" y="84">i_L</text>
+                <text class="ylb" x="150" y="112">i_L = u_oc / (R_eq + R_L)</text>
+                <text class="dim" x="24" y="168">接上负载后就是最简串联回路</text>
+                <defs><marker id="th4a" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="var(--chalk-blue)"/></marker></defs>
+              </svg>
+              <div class="fig-cap">自包含示意图：搭出等效电路后，接负载分析回到第四课的串联回路。</div>
+            </div>
+          </div>
+
+          <div class="numcheck" id="ex-req" data-qid="ex-req"><label>① R_eq = <input type="text" placeholder="例如 4" /> Ω</label><button class="btn-sm" onclick="checkNum('ex-req',4,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-il" data-qid="ex-il"><label>② i_L = <input type="text" placeholder="例如 1" /> A</label><button class="btn-sm" onclick="checkNum('ex-il',1,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-ul" data-qid="ex-ul"><label>② u_L = <input type="text" placeholder="例如 8" /> V</label><button class="btn-sm" onclick="checkNum('ex-ul',8,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-is" data-qid="ex-is"><label>③ 诺顿电流源 i_s = <input type="text" placeholder="例如 3" /> A</label><button class="btn-sm" onclick="checkNum('ex-is',3,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-il-norton" data-qid="ex-il-norton"><label>③ 分流法重算 i_L = <input type="text" placeholder="例如 1" /> A</label><button class="btn-sm" onclick="checkNum('ex-il-norton',1,0.01)">检查</button><div class="fb"></div></div>
+          <div class="choicebox" data-qid="ex-method" data-hint="题目给的是开路电压和短路电流，属于不置零、直接用比值的方法。" data-explain="给 u_oc、i_sc 用 u_oc/i_sc（法 B，不置零）；若已知内部结构，才置零独立源后求输入电阻（法 A）。">
+            <p><strong>④ 本题求 R_eq 属于哪一法？</strong></p>
+            <label><input type="radio" name="qmethod" value="b" /> 法 B：u_oc/i_sc（不置零）</label>
+            <label><input type="radio" name="qmethod" value="a" /> 法 A：置零后求输入电阻</label>
+            <button class="btn-sm" onclick="checkChoice('ex-method','b')">检查</button><div class="fb"></div>
+          </div>
+          <div class="numcheck" id="ex-pmax" data-qid="ex-pmax"><label>⑤ R_L=4 Ω 时负载功率 = <input type="text" placeholder="例如 9" /> W</label><button class="btn-sm" onclick="checkNum('ex-pmax',9,0.01)">检查</button><div class="fb"></div></div>
+
+          <button class="reveal-btn" data-target="rev-4b" data-stage="4" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-4b">
+            <p><strong>①</strong> <code>R_eq=u_oc/i_sc=12/3=4 Ω</code>；戴维南等效 = 12 V 电压源串 4 Ω。</p>
+            <p><strong>②</strong> <code>i_L=12/(4+8)=1 A</code>；<code>u_L=1×8=8 V</code>。</p>
+            <p><strong>③</strong> 诺顿等效：<code>i_s=i_sc=3 A</code>、并 <code>4 Ω</code>；分流到 8 Ω 支路 <code>i_L=i_s·R_eq/(R_eq+R_L)=3×4/(4+8)=1 A</code>（或电导法 <code>(1/8)/(1/8+1/4)=1/3</code>，×3 A=1 A）——与②一致。</p>
+            <p><strong>④</strong> 两法：法 A 置零独立源后从端口求输入电阻（<strong>电压源短路、电流源开路</strong>，含受控源用电压-电流法 <code>R_eq=u/i</code>）；法 B <code>u_oc/i_sc</code>。本题给开路/短路数据，用法 B；若已知内部结构，则置零后从端口看进去算（法 A）。</p>
+            <p><strong>⑤</strong> <code>R_L=4 Ω=R_eq</code> 时 <code>i=12/(4+4)=1.5 A</code>，<code>P_L=i²R_L=1.5²×4=9 W</code>。负载电阻恰好等于等效内阻——<strong>功率达到最大</strong>（定理留到 L1-07，这里只埋钩子不证明）。</p>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 等效电源实验台：戴维南视角与诺顿视角，结果必须一致</div>
+
+        <div class="thlab">
+          <h4>动手拖一拖：同一台实际电源，两种模型算出的负载电流一样吗</h4>
+          <p class="muted" style="margin:0 0 8px;">拖动三个滑块（电压源 <code>u_s</code>、内阻 <code>R</code>、负载 <code>R_L</code>）。左栏用戴维南等效算负载电流，右栏用诺顿等效分流法算——两者应始终相等。同时核对 <code>u_oc=R_eq·i_sc</code>。</p>
+          <div class="th-grid">
+            <div>
+              <div class="th-ctrl"><label>电压源 u_s <span id="th-us-val">12.0 V</span></label><input type="range" id="th-us" min="1" max="24" step="0.5" value="12" /></div>
+              <div class="th-ctrl" style="margin-top:8px;"><label>内阻 R <span id="th-r-val">2 Ω</span></label><input type="range" id="th-r" min="1" max="20" step="0.5" value="2" /></div>
+              <div class="th-ctrl" style="margin-top:8px;"><label>负载 R_L <span id="th-rl-val">4 Ω</span></label><input type="range" id="th-rl" min="1" max="20" step="0.5" value="4" /></div>
+              <div style="margin-top:12px;font-size:.8rem;color:var(--chalk-faint);line-height:1.5;">默认 <code>u_s=12 V、R=2 Ω、R_L=4 Ω</code>，正是预测 2 的电路：诺顿等效 <code>i_s=6 A</code> 并 2 Ω。两栏负载电流都应是 2 A。</div>
+            </div>
+            <div>
+              <div class="th-panel">
+                <h5>等效参数（两模型共用）</h5>
+                <div class="th-row"><span class="k">u_oc = u_s</span><span class="v" id="th-uoc">—</span></div>
+                <div class="th-row"><span class="k">i_sc = u_s / R</span><span class="v" id="th-isc">—</span></div>
+                <div class="th-row"><span class="k">R_eq = R</span><span class="v" id="th-req">—</span></div>
+                <div class="th-eq" id="th-rel">—</div>
+              </div>
+              <div class="th-panel" style="margin-top:10px;">
+                <h5>接上负载 R_L 后</h5>
+                <div class="th-row"><span class="k">戴维南：i_L=u_oc/(R_eq+R_L)</span><span class="v" id="th-il-v">—</span></div>
+                <div class="th-row"><span class="k">诺顿分流：i_L=i_s·R_eq/(R_eq+R_L)</span><span class="v" id="th-il-n">—</span></div>
+                <div class="th-row"><span class="k">负载电压 u_L = i_L·R_L</span><span class="v" id="th-ul">—</span></div>
+                <div class="th-agree" id="th-agree">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 迁移自检：换个黑箱还能不能独立搭等效</div>
+
+        <div class="exercise">
+          <h4>过关自检（不看笔记能说出才算会）</h4>
+          <ul>
+            <li>实际电源的伏安直线由哪两个参数定？为什么两个就够？</li>
+            <li>电压源串电阻 ↔ 电流源并电导的互换条件是什么？<code>u_oc=R_eq·i_sc</code> 怎么用？</li>
+            <li>戴维南定理、诺顿定理各是什么？等效电路长什么样、两个参数怎么取？</li>
+            <li>求 <code>R_eq</code> 的两法分别怎么做？区别在哪（置零 vs 不置零）？</li>
+            <li>为什么<strong>对外等效、内部不等效</strong>？为什么 <code>含源≠有源</code>？</li>
+            <li>拿到一个含源黑箱 + 一个负载，我能独立搭出等效电路并算出负载电压电流吗？</li>
+          </ul>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">一个核心问题：把含源一端口“看成一个电源”——<br>伏安直线两截距 → 两种模型互换（<code>i_s=u_s/R</code>）→ 戴维南（<code>u_oc</code> 串 <code>R_eq</code>）/ 诺顿（<code>i_sc</code> 并 <code>R_eq</code>）→ <code>u_oc=R_eq·i_sc</code> 知二求三 → 接负载 <code>i_L=u_oc/(R_eq+R_L)</code>。</div>
+        <p><strong>贯穿全课的判据仍是第四课那句：对外伏安特性相同即等效；内部不等效。</strong></p>
+        <p class="muted">下一课钩子：戴维南/诺顿能把含源网络整体“打包”成电源，方便看单个负载。但要系统求解多节点、多回路、又不适合化简的网络，还得更规整的列方程方法。第六课：节点电压法与网孔电流法入门。</p>
+        <button class="reveal-btn" data-target="rev-6a" data-stage="6" onclick="revealBlock(this)">展开：两种任务形态小结 →</button>
+        <div class="reveal" id="rev-6a">
+          <p><strong>任务形态一</strong>（给定含源一端口，接负载分析）：求 <code>u_oc</code>、<code>i_sc</code>、<code>R_eq</code> 中好求的两个 → 用 <code>u_oc=R_eq·i_sc</code> 补第三个 → 搭等效电路 → 接负载算 <code>i_L、u_L</code>（独立练习①②③⑤）。</p>
+          <p><strong>任务形态二</strong>（等效参数与模型互换）：已知 <code>u_oc/i_sc/R_eq</code> 任意两个求第三个、选求 <code>R_eq</code> 的法 A 或法 B（独立练习④、即时检查），以及电压源模型与电流源模型按 <code>i_s=u_s/R</code> 互换（预测 2）。</p>
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：实际电源伏安特性直线与两个截距；电压源串电阻 / 电流源并电导及互换条件（<code>i_s=u_s/R</code>、<code>u_oc=R_eq·i_sc</code>）；戴维南、诺顿定理陈述与“对外等效”；等效参数知二求三；求 <code>R_eq</code> 两法及区别；输入电阻、电压-电流法；接负载分析；电压源不等不能并联、电流源不等不能串联（点到）；最大功率传输只埋钩子。</p>
+          <p class="mini"><strong>不讲</strong>：叠加定理、替代定理的严格内容（邱 §4-1/§4-2，只作证明背景提及）；最大功率传输定理证明（邱 §4-4 / 李 §4-8，L1-07）；含受控源严格求解与保留控制量支路细节（P3）；Y-Δ 变换细节；节点电压法/网孔电流法（L1-06）；互易/对偶原理。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出实际电源对外特性是一条伏安直线，由开路电压 u_oc、短路电流 i_sc 两个截距确定。</li>
+            <li>从 KVL/KCL 推出两种电源模型的伏安关系与互换条件 i_s=u_s/R、u_oc=R_eq·i_sc。</li>
+            <li>陈述戴维南定理与诺顿定理（等效电路、两个参数怎么取、条件），强调仍是“对外等效”。</li>
+            <li>已知三个等效参数中任意两个求第三个；会用求 R_eq 两法（置零后输入电阻 / u_oc÷i_sc）并说出区别。</li>
+            <li>搭出等效电路、接上负载算电压电流，并换诺顿视角用分流法验证。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与实际电源伏安特性 8′ / 两种模型与等效变换 10′ / 戴维南诺顿定理 12′ / 求 Req 两法与输入电阻 8′ / 练习与收尾 7′。45 分钟是预算：在因果链完整前提下压缩低增益重复，不为凑时长加料。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>实际电源伏安直线、开路电压 u_oc / 短路电流 i_sc 两截距</td><td>邱 p.43 原文</td></tr>
+            <tr><td>两种模型伏安关系 u=u_s−Ri、i=i_s−Gu，互换条件 G=1/R、i_s=G u_s、u_oc=R_eq·i_sc、对外等效内部不等效</td><td>邱 p.43–44 原文（式 2-9/2-10/2-11）</td></tr>
+            <tr><td>电压源串联/电流源并联相加；电压不等不能并联、电流不等不能串联；受控源变换保留控制量支路</td><td>邱 p.42–45 原文</td></tr>
+            <tr><td>输入电阻 R_i=u/i、电压-电流法；置零（电压源短路、电流源开路）</td><td>邱 p.46、p.92 原文</td></tr>
+            <tr><td>含源一端口伏安也是直线（u=32−8i 例）；戴维南/诺顿定理陈述；三参数知二求三；式(4-5)</td><td>邱 p.90–92 原文</td></tr>
+            <tr><td>戴维南 VCR u=u_oc+R_eq·i（式4-27）、含源≠有源、一步法/二步法、诺顿 G_eq=1/R_eq、极端情形</td><td>李 §4-6、§4-7 原文</td></tr>
+            <tr><td>求 Req 两法区别（置零外施源 vs 开路短路比）</td><td>李思考题 4-6</td></tr>
+            <tr><td>练习 4-16（原题 8V/0.5A/24Ω）改装为独立练习</td><td>李练习 4-16（数值与设问改编）</td></tr>
+            <tr><td>生活类比、预测 1/2/3、搭桥例题、独立练习新数值与钩子</td><td>我编的 / 通识</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '005-thevenin-norton';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-05 增量脚本：预测 gating + resetFlow 修补 + 等效电源实验台 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 共享 resetFlow 会解锁所有 .reveal-btn（含预测门），这里覆盖：重来后重新锁上预测门
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+    };
+
+    var usEl = document.getElementById('th-us');
+    var rEl  = document.getElementById('th-r');
+    var rlEl = document.getElementById('th-rl');
+    if(!usEl || !rEl || !rlEl) return;
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function fmtI(a){ var ma=a*1000; if(Math.abs(ma)>=1000) return a.toFixed(3)+' A'; if(Math.abs(ma)>=1) return ma.toFixed(2)+' mA'; return (ma*1000).toFixed(1)+' μA'; }
+    function fmtR(o){ if(o>=1000) return (o/1000).toFixed(2)+' kΩ'; return o.toFixed(1)+' Ω'; }
+    function upd(){
+      var Us = parseFloat(usEl.value), R = parseFloat(rEl.value), RL = parseFloat(rlEl.value);
+      set('th-us-val', Us.toFixed(1)+' V');
+      set('th-r-val', fmtR(R));
+      set('th-rl-val', fmtR(RL));
+
+      var uoc = Us, isc = Us/R, Req = R;
+      set('th-uoc', uoc.toFixed(2)+' V');
+      set('th-isc', fmtI(isc));
+      set('th-req', fmtR(Req));
+      set('th-rel', '校验 u_oc = R_eq·i_sc：'+uoc.toFixed(2)+' V = '+fmtR(Req)+' × '+fmtI(isc));
+
+      var iL_v = uoc/(Req+RL);          // 戴维南：电压源串电阻后最简串联
+      var iL_n = isc*Req/(Req+RL);      // 诺顿分流：i_s · R_eq/(R_eq+R_L)
+      var uL = iL_v*RL;
+      set('th-il-v', fmtI(iL_v));
+      set('th-il-n', fmtI(iL_n));
+      set('th-ul', uL.toFixed(2)+' V');
+      var ok = Math.abs(iL_v - iL_n) < 1e-9;
+      var ag = document.getElementById('th-agree');
+      ag.textContent = (ok?'✓ 两视角一致：':'✗ 两视角不一致：')+fmtI(iL_v)+' = '+fmtI(iL_n);
+      ag.className = 'th-agree'+(ok?'':' bad');
+    }
+    usEl.addEventListener('input', upd);
+    rEl.addEventListener('input', upd);
+    rlEl.addEventListener('input', upd);
+    upd();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>S1 阶段综合考核与补弱（L1-E） - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .box{stroke:var(--chalk-blue);stroke-width:2;fill:rgba(159,211,255,.06)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .card-note{border-left:3px solid var(--chalk-yellow);background:rgba(255,231,145,.06);padding:8px 12px;margin:10px 0;border-radius:0 6px 6px 0;font-size:.9rem;line-height:1.55}
+    .card-note b{color:var(--chalk-yellow)}
+    .exam-q{margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .exam-q .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px}
+    .exam-q .qtag-e{font-size:.78rem;color:var(--chalk-faint)}
+    .rev-grid{display:grid;grid-template-columns:1fr;gap:2px}
+    .rev-grid p{margin:3px 0;line-height:1.5}
+    .weak-t td:first-child{font-family:var(--mono);color:var(--chalk-blue)}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">S1 阶段综合考核与补弱（L1-E）</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础 · 阶段考核</span>
+    <span class="spacer"></span>
+    <span class="hint">先独立作答，再揭晓讲评；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（作答 → 讲评 → 补弱）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与考纲地图</a></li>
+        <li><a href="#stage-1">1 · 板块 A：概念辨析（4 题）</a></li>
+        <li><a href="#stage-2">2 · 板块 B：公式计算（3 题）</a></li>
+        <li><a href="#stage-3">3 · 板块 C：读图综合（4 空）</a></li>
+        <li><a href="#stage-4">4 · 板块 D：工程判断（1 题）</a></li>
+        <li><a href="#stage-5">5 · 错因定位与补弱路线</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">这是<strong>阶段考核课</strong>，不引入新定理、新公式、新记号——考的是 L1-01~08 全部 P1 的混合检验。</div>
+      <div class="mini">两种任务形态：<strong>形态一</strong>概念辨析与求解（A/B/C）、<strong>形态二</strong>工程判断与优化（B3/D）。</div>
+      <div class="mini">每题先独立作答，讲评含<strong>正解＋依据＋错因＋补弱指向</strong>。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">答案依据：<code>书籍/摘录/L1-E.md</code>（把前八课已校对正文按 C1~C9 汇编，不新增章节号）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-E-教案.md</code>（已过独立审核）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>S1 公式速查（考卷不提供，先自己想）</h4>
+      <div class="mini">参考方向：关联 <code>u=Ri</code>，非关联 <code>u=−Ri</code>；负号＝实际与参考相反。</div>
+      <div class="mini">功率：<code>p=ui</code>（关联，吸收），<code>p=−ui</code>（非关联）；<code>P<sub>R</sub>=i²R=u²/R</code>；发出=吸收。</div>
+      <div class="mini">KCL/KVL：<code>∑i=0</code>、<code>∑u=0</code>；独立数 KCL <code>n−1</code>、KVL <code>b−n+1</code>，合计 <code>b</code>。</div>
+      <div class="mini">分压 <code>u<sub>k</sub>=R<sub>k</sub>/ΣR·u</code>；分流 <code>i<sub>k</sub>=G<sub>k</sub>/ΣG·i</code>。</div>
+      <div class="mini">戴维南：<code>u=u<sub>oc</sub>+R<sub>eq</sub>i</code>；<code>u<sub>oc</sub>=R<sub>eq</sub>i<sub>sc</sub></code>；置零＝电压源短路、电流源开路、受控源保留。</div>
+      <div class="mini">最大功率：<code>R<sub>L</sub>=R<sub>eq</sub></code>，<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>。⚠ 50% 效率只对单电压源串内阻模型成立。</div>
+    </div>
+    <div class="side-block">
+      <h4>答题进度（本机记录）</h4>
+      <div class="mini" id="ex-text">答题进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">补弱后仍有真实卡点，再在终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 阶段考核（L1-E）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">覆盖 L1-01~08 全部 P1 · 不引入新知识</span>
+      </div>
+      <h1>S1 阶段综合考核与补弱</h1>
+      <p class="muted">八课下来，参考方向、KCL/KVL、功率、等效、戴维南、节点网孔、叠加、最大功率——每件你都学过。<strong>把题目打乱、不告诉用哪一招，你还能判断它在考什么、选对工具、算对符号、并在算完后发现自己的错吗？</strong>这节课就用一套覆盖全部 P1 的卷子回答："我到底真正掌握了什么、哪里还有漏洞。"每题<strong>先独立作答，讲评才解锁</strong>——不仅给对错，更定位你错在哪一步、该回哪一课补。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">考纲地图</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">板块 A 概念</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">板块 B 计算</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">板块 C 读图综合</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">板块 D 工程判断</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">补弱路线</span>
+      </div>
+      <div class="flow-note">上方链条是交卷与讲评的<strong>顺序</strong>：先按 A→D 独立作答，再逐题看讲评定位错因，最后按补弱路线回炉。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与考纲地图：考什么、怎么算分</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">这不是"边学边测"，而是<strong>先作答后揭晓</strong>：题目先出现，你先选、先算、先提交，讲评（正解＋依据＋错因＋补弱）才解锁。这样批改的是你<strong>第一反应的真实水平</strong>，而不是看完提示后的水平。</p>
+            <p class="speak teacher">“这节课没有新知识，只有一张考纲地图。它列的全是你学过的东西——我把它打乱，看你能不能自己认出来、选对招、算对符号。”</p>
+            <p class="muted">全卷按 <strong>C1~C9 九大能力点</strong>命题，全部来自前八课摘录。先展开总纲——它是整卷的"宪法"。</p>
+          </div>
+          <div class="fig-box md" aria-label="两类约束构成电路分析总纲的示意图">
+            <svg class="svg-diag" viewBox="0 0 380 180" role="img">
+              <title>元件约束VCR与连接约束KCL/KVL共同决定电路定解与校验</title>
+              <rect class="box" x="18" y="22" width="150" height="70" rx="6"/>
+              <text class="lbl" x="40" y="46">元件约束（VCR）</text>
+              <text class="dim" x="40" y="66">每个元件本身的 u-i 关系</text>
+              <text class="ylb" x="40" y="84">如 u = R i</text>
+              <rect class="box" x="212" y="22" width="150" height="70" rx="6"/>
+              <text class="lbl" x="232" y="46">连接约束（KCL/KVL）</text>
+              <text class="dim" x="232" y="66">元件互连的几何/拓扑关系</text>
+              <text class="ylb" x="232" y="84">∑i=0，∑u=0</text>
+              <path class="accent" d="M93,92 L160,128" marker-end="url(#arA)"/>
+              <path class="accent" d="M287,92 L220,128" marker-end="url(#arA)"/>
+              <rect class="box" x="115" y="132" width="150" height="38" rx="6"/>
+              <text class="plb" x="143" y="156">给定电路 → 定解 / 校验</text>
+              <defs><marker id="arA" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#9fd3ff"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：A/B/C 考两类约束的运用，D 考适用条件与工程权衡。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">展开：两类约束总纲与考纲对照表 →</button>
+        <div class="reveal" id="rev-0a">
+          <div class="card-note"><b>陈述卡 0 · 两类约束总纲（可抄笔记）</b><br>元件约束（各元件 VCR，如 <code>u=Ri</code>）＋ 连接约束（KCL <code>∑i=0</code>、KVL <code>∑u=0</code>）。给定电路靠两类约束定解；正确解一定满足两类约束。等效、戴维南、节点网孔、叠加都是"重排两类约束以更好求解"的包装。〔邱 导读 p.10；§1-8 p.22〕</div>
+          <table class="mini-t">
+            <tr><th>能力点</th><th>考什么</th><th>出处</th><th>板块</th></tr>
+            <tr><td>C1 参考方向</td><td><code>u=Ri</code> 与负号含义</td><td>邱 §1-5〔L1-01〕</td><td>A1</td></tr>
+            <tr><td>C2 功率</td><td><code>p=ui</code>、吸收/发出、守恒</td><td>邱 §1-3/§1-5〔L1-03〕</td><td>A3、C4</td></tr>
+            <tr><td>C3 KCL/KVL</td><td><code>∑i=0</code>、独立方程数</td><td>邱 §1-8/§3-2〔L1-02/08〕</td><td>A2、C1</td></tr>
+            <tr><td>C4 等效分式</td><td>分压按电阻、分流按电导</td><td>邱 §2-2；李 §1-8〔L1-04〕</td><td>B1</td></tr>
+            <tr><td>C5/C6 电源/戴维南</td><td>置零规则、<code>u<sub>oc</sub>=R<sub>eq</sub>i<sub>sc</sub></code></td><td>邱 §2-5/§4-3〔L1-05〕</td><td>B2、D</td></tr>
+            <tr><td>C7 系统求解</td><td>节点/网孔选法与列方程</td><td>邱 §3-3/§3-4〔L1-06〕</td><td>C（选法讲评）</td></tr>
+            <tr><td>C8 叠加/最大功率</td><td>置零、功率不可叠加、匹配</td><td>邱 §4-1/§4-4〔L1-07〕</td><td>A4、B3、D</td></tr>
+            <tr><td>C9 综合流程</td><td>五步流程、四项校验、对内不等效</td><td>邱/李综合〔L1-08〕</td><td>C、D</td></tr>
+          </table>
+          <p class="muted">达标线（依总览 L2 阶段综合考核口径）：<strong>≥70% 且 P1 关键题（A1/A2/A3、C 板块）无原则性错误</strong>方可进入 S2 动态电路。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 · 板块 A ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 板块 A：概念与定理辨析（形态一，4 题）</div>
+        <p class="muted">每题先选/先算并提交，讲评才解锁。讲评统一四段：<strong>正解 → 依据（书证）→ 常见错因 → 补弱指向</strong>。</p>
+
+        <div class="exam-q">
+          <div class="qt">A1（C1 参考方向）· 关联参考方向下电阻 <code>u=Ri</code>。若按所标方向算得电流 <code>i&lt;0</code>，说明什么？</div>
+          <div class="choicebox" data-qid="q-a1" data-hint="负号不是算错，也不是负电阻；它携带的是方向信息。" data-explain="实际方向与所标参考方向相反。u=Ri 只在关联方向成立，算得 i<0 只说明实际方向与参考相反，不是数值错误，更不是负电阻。">
+            <label><input type="radio" name="q-a1" value="a"/> ① 计算一定错了</label>
+            <label><input type="radio" name="q-a1" value="b"/> ② 电流实际方向与所标参考方向相反</label>
+            <label><input type="radio" name="q-a1" value="c"/> ③ 这个电阻是负电阻</label>
+            <button class="btn-sm" onclick="answerChoice('gate-a1','q-a1','b')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a1" data-gate data-target="rev-a1" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A1 讲评 →</button>
+          <div class="reveal" id="rev-a1">
+            <div class="rev-grid">
+              <p><strong>正解：②</strong>。</p>
+              <p><strong>依据</strong>〔邱 §1-5 p.16–17〕：<code>u=Ri</code> 只在关联方向成立，<code>i&lt;0</code> 表示实际方向与参考方向相反，不是数值错误，更不是负电阻。</p>
+              <p><strong>常见错因</strong>：把"负号"当成"算错"而强行改号，反而丢了符号信息。</p>
+              <p><strong>补弱</strong>：回 L1-01（参考方向决定了欧姆定律的正负号）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A2（C3 独立方程数）· 一个连通电路有 <code>n=4</code> 个节点，对全部节点列 KCL，其中<strong>独立</strong>的 KCL 方程有几个？（填数字）</div>
+          <div class="numcheck" id="q-a2" data-qid="q-a2"><label>独立 KCL 方程数 = <input type="text" placeholder="例如 3" /> 个</label><button class="btn-sm" onclick="answerNum('gate-a2','q-a2',3)">提交答案</button><div class="fb"></div></div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a2" data-gate data-target="rev-a2" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A2 讲评 →</button>
+          <div class="reveal" id="rev-a2">
+            <div class="rev-grid">
+              <p><strong>正解：3</strong>（=<code>n−1</code>）。</p>
+              <p><strong>依据</strong>〔邱 §3-2 p.56〕：对 <code>n</code> 个节点全列 KCL，各支路电流一正一负，全部方程相加恒为零 → 不独立，任取 <code>n−1</code> 个即独立。</p>
+              <p><strong>常见错因</strong>：答 4（把每个节点都算成独立）。</p>
+              <p><strong>补弱</strong>：回 L1-08 环节 3（独立方程数判据的推导）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 1 · 独立方程数判据（可抄笔记）</b><br><code>n</code> 节点、<code>b</code> 支路连通电路：独立 KCL = <code>n−1</code>，独立 KVL = <code>b−n+1</code>，合计 <b>b</b>，恰与 <code>b</code> 条支路电流未知量相等、方程组封闭。节点法把 KVL 那部分"免费"（只列 <code>n−1</code> 个 KCL），网孔法把 KCL 那部分"免费"（只列 <code>b−n+1</code> 个 KVL）。〔邱 §3-2 p.56–58〕</div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A3（C2 功率符号 · 形态一）· 某电阻的 <code>u</code>、<code>i</code> 取关联参考方向，<code>u=6 V</code>、<code>i=2 A</code>。它<strong>吸收</strong>的功率是多少 W？（填数字）</div>
+          <div class="numcheck" id="q-a3" data-qid="q-a3"><label>吸收功率 = <input type="text" placeholder="例如 12" /> W</label><button class="btn-sm" onclick="answerNum('gate-a3','q-a3',12)">提交答案</button><div class="fb"></div></div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a3" data-gate data-target="rev-a3" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A3 讲评 →</button>
+          <div class="reveal" id="rev-a3">
+            <div class="rev-grid">
+              <p><strong>正解：12 W</strong>（<code>p=ui=6×2=12 W&gt;0</code>，吸收）。</p>
+              <p><strong>依据</strong>〔邱 §1-3 p.14 式(1-1)、§1-5 p.17 式(1-5)〕：关联方向下 <code>p=ui</code>，<code>p&gt;0</code> 为吸收。</p>
+              <p><strong>常见错因</strong>：答 −12 W（混淆非关联的 <code>p=−ui</code>）。</p>
+              <p><strong>补弱</strong>：回 L1-03（功率 <code>p=ui</code> 与吸收/发出判据）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A4（C8 叠加置零）· 用叠加定理分析线性电路，让某个独立电源"不作用"时，正确做法是？</div>
+          <div class="choicebox" data-qid="q-a4" data-hint="置零只针对独立源；受控源由控制量决定，必须保留。" data-explain="独立电压源短路、独立电流源开路、受控源保留。把受控源也置零，叠加法就错了。">
+            <label><input type="radio" name="q-a4" value="a"/> ① 电压源、电流源、受控源一律短路</label>
+            <label><input type="radio" name="q-a4" value="b"/> ② 独立电压源短路、独立电流源开路、受控源保留</label>
+            <label><input type="radio" name="q-a4" value="c"/> ③ 一律开路</label>
+            <button class="btn-sm" onclick="answerChoice('gate-a4','q-a4','b')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a4" data-gate data-target="rev-a4" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A4 讲评 →</button>
+          <div class="reveal" id="rev-a4">
+            <div class="rev-grid">
+              <p><strong>正解：②</strong>。</p>
+              <p><strong>依据</strong>〔邱 §4-1 p.83–85〕：置零只针对<strong>独立源</strong>——独立电压源短路、独立电流源开路；受控源由控制量决定，必须保留。</p>
+              <p><strong>常见错因</strong>：把受控源也置零。</p>
+              <p><strong>补弱</strong>：回 L1-07（叠加定理的置零规则、受控源保留）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 2 · 叠加与功率不可叠加（可抄笔记）</b><br>叠加成立的基础是<strong>线性</strong>（齐次性＋可加性）：响应=各独立源单独作用响应之和。置零仅对独立源（电压源短路、电流源开路），<strong>受控源保留</strong>。功率与激励非线性，<strong>不能直接叠加</strong>——须先叠加 <code>u/i</code>，再算 <code>i²R</code>。〔邱 §4-1 p.83–85〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 · 板块 B ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 板块 B：公式计算（形态一 + 形态二，3 题）</div>
+
+        <div class="exam-q">
+          <div class="qt">B1（C4 分压）· <code>R₁=2 Ω</code> 与 <code>R₂=3 Ω</code> 串联接在 10 V 电源上，<code>R₂</code> 两端电压是多少 V？（填数字）</div>
+          <div class="numcheck" id="q-b1" data-qid="q-b1"><label><code>u₂</code> = <input type="text" placeholder="例如 6" /> V</label><button class="btn-sm" onclick="answerNum('gate-b1','q-b1',6)">提交答案</button><div class="fb"></div></div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-b1" data-gate data-target="rev-b1" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B1 讲评 →</button>
+          <div class="reveal" id="rev-b1">
+            <div class="rev-grid">
+              <p><strong>正解：6 V</strong>。分压 <code>u₂=R₂/(R₁+R₂)·u=3/5×10=6 V</code>。</p>
+              <p><strong>依据</strong>〔邱 §2-2 p.36 式(2-2)〕：串联分压按电阻正比。</p>
+              <p><strong>常见错因</strong>：按 <code>R₁</code> 比例答 4 V；或忘记分压只在<strong>纯串联</strong>时成立。</p>
+              <p><strong>补弱</strong>：回 L1-04（串联分压与"同电流"判据）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">B2（C6 戴维南电流）· 某含源单口的戴维南等效为 <code>u<sub>oc</sub>=12 V</code> 串 <code>R<sub>eq</sub>=4 Ω</code>。接入负载 <code>R<sub>L</sub>=8 Ω</code> 后，负载电流 <code>i<sub>L</sub></code> 是多少 A？（填数字）</div>
+          <div class="numcheck" id="q-b2" data-qid="q-b2"><label><code>i<sub>L</sub></code> = <input type="text" placeholder="例如 1" /> A</label><button class="btn-sm" onclick="answerNum('gate-b2','q-b2',1)">提交答案</button><div class="fb"></div></div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-b2" data-gate data-target="rev-b2" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B2 讲评 →</button>
+          <div class="reveal" id="rev-b2">
+            <div class="rev-grid">
+              <p><strong>正解：1 A</strong>。<code>i<sub>L</sub>=u<sub>oc</sub>/(R<sub>eq</sub>+R<sub>L</sub>)=12/(4+8)=1 A</code>。</p>
+              <p><strong>依据</strong>〔邱 §4-3 p.92 式(4-27)〕：<code>u=u<sub>oc</sub>+R<sub>eq</sub>i</code>。</p>
+              <p><strong>常见错因</strong>：分母漏加 <code>R<sub>eq</sub></code>（答 12/8=1.5 A）。</p>
+              <p><strong>补弱</strong>：回 L1-05（戴维南等效电路外接负载）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">B3（C8 最大功率 · 形态二）· 同一单口（<code>u<sub>oc</sub>=12 V</code>、<code>R<sub>eq</sub>=4 Ω</code>），<code>R<sub>L</sub></code> 取何值时负载功率最大？最大功率是多少 W？（填 <code>P<sub>max</sub></code> 的数字）</div>
+          <div class="numcheck" id="q-b3" data-qid="q-b3"><label>匹配 <code>R<sub>L</sub>=4 Ω</code> 时，<code>P<sub>max</sub></code> = <input type="text" placeholder="例如 9" /> W</label><button class="btn-sm" onclick="answerNum('gate-b3','q-b3',9)">提交答案</button><div class="fb"></div></div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-b3" data-gate data-target="rev-b3" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B3 讲评 →</button>
+          <div class="reveal" id="rev-b3">
+            <div class="rev-grid">
+              <p><strong>正解：<code>R<sub>L</sub>=R<sub>eq</sub>=4 Ω</code> 匹配，<code>P<sub>max</sub>=9 W</code></strong>。<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)=12²/(4×4)=144/16=9 W</code>。</p>
+              <p><strong>依据</strong>〔邱 §4-4 式(4-34)(4-35)〕。</p>
+              <p><strong>常见错因</strong>：分母写成 <code>2R<sub>eq</sub></code>（得 18 W）。</p>
+              <p><strong>补弱</strong>：回 L1-07（匹配条件与最大功率公式）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 3 · 戴维南 + 最大功率（可抄笔记）</b><br>任意含源线性一端口对外等效为 <code>u<sub>oc</sub></code> 串 <code>R<sub>eq</sub></code>：<code>u<sub>oc</sub></code>=开路电压，<code>R<sub>eq</sub></code>=独立源置零（电压源短路、电流源开路、受控源保留）后从端口看进去的电阻，且 <code>u<sub>oc</sub>=R<sub>eq</sub>i<sub>sc</sub></code>。负载最大功率条件 <code>R<sub>L</sub>=R<sub>eq</sub></code>，<code>P<sub>max</sub>=u<sub>oc</sub>²/(4R<sub>eq</sub>)</code>。<strong>等效只对端口外特性成立，对内功率不等效。</strong>〔邱 §4-3 p.90–93、§4-4〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 · 板块 C ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 板块 C：读图综合求解（形态一，覆盖 C3/C7/C2/C9）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">本板块是阶段综合的主题，沿用 L1-08 搭桥例题作<strong>复测</strong>：<strong>不给"用节点法"的提示</strong>，你要自己读图、选法、求解、校验。</p>
+            <p class="qbig">含源电路：节点 A 对参考地有三条支路。<br>① 电压源 <code>u<sub>s</sub>=10 V</code>（正极朝 A）串 <code>R₁=2 Ω</code> 到地；<br>② 电阻 <code>R₂=4 Ω</code> 到地；<br>③ 电流源 <code>i<sub>s</sub>=1 A</code>，由地指向 A（向 A 注入）。</p>
+            <p class="speak teacher">“先别问用什么法。先读图：几个节点、几条支路、独立方程几条？再决定选哪种工具。”</p>
+          </div>
+          <div class="fig-box lg" aria-label="节点A对地三条支路：电压源串R1、电阻R2、电流源Is">
+            <svg class="svg-diag" viewBox="0 0 420 240" role="img">
+              <title>节点A对地三条支路的含源电路</title>
+              <!-- top rail -->
+              <line class="wire" x1="40" y1="40" x2="380" y2="40"/>
+              <circle class="nodept" cx="210" cy="40" r="5"/>
+              <text class="ylb" x="218" y="30">A</text>
+              <!-- ground rail -->
+              <line class="wire" x1="40" y1="200" x2="380" y2="200"/>
+              <line class="wire" x1="190" y1="200" x2="190" y2="210"/><line class="wire" x1="202" y1="200" x2="202" y2="210"/><line class="wire" x1="214" y1="200" x2="214" y2="210"/>
+              <!-- branch 1: Us series R1 at x=100 -->
+              <line class="wire" x1="100" y1="40" x2="100" y2="70"/>
+              <circle class="elem" cx="100" cy="88" r="18" fill="none"/>
+              <text class="plb" x="74" y="84">+</text><text class="lbl" x="74" y="102">−</text>
+              <text class="ylb" x="34" y="92">u<sub>s</sub>=10V</text>
+              <line class="wire" x1="100" y1="106" x2="100" y2="126"/>
+              <rect class="elem" x="87" y="126" width="26" height="44" rx="2" fill="none"/>
+              <text class="lbl" x="46" y="152">R₁=2Ω</text>
+              <line class="wire" x1="100" y1="170" x2="100" y2="200"/>
+              <!-- branch 2: R2 at x=210 -->
+              <line class="wire" x1="210" y1="40" x2="210" y2="126"/>
+              <rect class="elem" x="197" y="126" width="26" height="44" rx="2" fill="none"/>
+              <text class="lbl" x="230" y="152">R₂=4Ω</text>
+              <line class="wire" x1="210" y1="170" x2="210" y2="200"/>
+              <!-- branch 3: current source at x=330 -->
+              <line class="wire" x1="330" y1="40" x2="330" y2="120"/>
+              <circle class="elem" cx="330" cy="140" r="20" fill="none"/>
+              <line class="flowar" x1="330" y1="152" x2="330" y2="128" marker-end="url(#arI)"/>
+              <text class="plb" x="356" y="145">i<sub>s</sub>=1A</text>
+              <line class="wire" x1="330" y1="160" x2="330" y2="200"/>
+              <defs><marker id="arI" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f7a8d8"/></marker></defs>
+            </svg>
+            <div class="fig-cap">自包含示意图：节点 A 对地三条支路，参考地为零电位。</div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">先独立作答四空（提示：先读图数 <code>n</code>、<code>b</code>，再选法）：</div>
+          <div class="numcheck" id="q-c-v" data-qid="q-c-v"><label>① 节点电压 <code>V</code> = <input type="text" placeholder="例如 8" /> V</label><button class="btn-sm" onclick="checkNum('q-c-v',8);tryUnlockC()">提交</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-c-i1" data-qid="q-c-i1"><label>② <code>i₁</code>（从 A 流出）= <input type="text" placeholder="例如 -1" /> A</label><button class="btn-sm" onclick="checkNum('q-c-i1',-1);tryUnlockC()">提交</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-c-i2" data-qid="q-c-i2"><label>③ <code>i₂</code>（从 A 流出）= <input type="text" placeholder="例如 2" /> A</label><button class="btn-sm" onclick="checkNum('q-c-i2',2);tryUnlockC()">提交</button><div class="fb"></div></div>
+          <div class="numcheck" id="q-c-p" data-qid="q-c-p"><label>④ 电阻吸收总功率 = <input type="text" placeholder="例如 18" /> W</label><button class="btn-sm" onclick="checkNum('q-c-p',18);tryUnlockC()">提交</button><div class="fb"></div></div>
+          <p class="gate-note">四空都填过（提交过）后解锁完整五步讲评。</p>
+          <button class="reveal-btn" id="gate-c" data-gate data-target="rev-c" data-stage="3" onclick="revealBlock(this)" disabled>揭晓 C 板块完整讲评 →</button>
+          <div class="reveal" id="rev-c">
+            <div class="rev-grid">
+              <p><strong>正解：① <code>V=8 V</code>　② <code>i₁=−1 A</code>　③ <code>i₂=2 A</code>　④ 电阻吸 <code>18 W</code></strong>。</p>
+              <p><strong>① 读图</strong>：把"电压源＋串 <code>R₁</code>"看成一个实际电源支路 → <code>n=2</code>、<code>b=3</code>，KCL=<code>n−1=1</code>、KVL=<code>b−n+1=2</code>，合计 3=<code>b</code>〔邱 §3-2〕。<span class="qtag-e">（若按每元件一条支路：n=3、b=4，判据不变。）</span></p>
+              <p><strong>② 建模</strong>：标 <code>V=v<sub>A</sub></code>，各支路电流取从 A 流出为正〔邱 §1-1〕。</p>
+              <p><strong>③ 选法</strong>：只有一个独立节点 → <strong>节点法最省</strong>（只列 1 个 KCL）；网孔法要 2 个，不作首选。<strong>常见错因／补弱</strong>：硬做串并联化简（电路并非纯串并）——这暴露"选法"没掌握，回 L1-08 工具选择表、L1-06 节点法。</p>
+              <p><strong>④ 求解</strong>：KCL <code>(V−10)/2 + V/4 − 1 = 0</code> → 乘 4：<code>2(V−10)+V−4=0</code> → <code>3V=24</code> → <code>V=8 V</code>；回代 <code>i₁=(8−10)/2=−1 A</code>、<code>i₂=8/4=2 A</code>。</p>
+              <p><strong>⑤ 校验（四项）</strong>：<b>KCL</b> 流入=电流源 1 A＋电源支路 1 A=2 A，流出 <code>i₂=2 A</code> ✓；<b>KVL</b> 沿 <code>R₂</code> 降 8 V、电源支路回升 10 V 再在 <code>R₁</code> 降 2 V，<code>8+2−10=0</code> ✓；<b>功率守恒</b> <code>R₁</code> 耗 2 W、<code>R₂</code> 耗 16 W，共 <strong>18 W</strong>，电源发 10 W＋电流源发 8 W=18 W，发=吸 ✓；<b>量级/符号</b> <code>V=8 V</code> 介于 0 与 10 V 合理，<code>i₁</code> 负号已按方向解读 ✓。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 4 · 五步流程与四项校验（可抄笔记）</b><br>读图 → 建模 → 选法 → 求解 → 校验。校验四项：① KCL（<code>∑i=0</code>）② KVL（<code>∑u=0</code>）③ 功率守恒（发出总和=吸收总和）④ 量级/符号/方程数封闭独立。戴维南等效对内不等效，校验功率须回<strong>原电路</strong>。〔邱 §1-1/§1-8/§3-1/§3-2；李 §4-1；L1-08〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 · 板块 D ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 板块 D：工程判断（形态二，覆盖 C6/C8/C9）</div>
+        <div class="exam-q">
+          <div class="qt">D1（"50% 效率"辨析）· 某同学用戴维南等效算出一个含<strong>多个独立电源</strong>网络的匹配负载功率，然后断言"匹配时传输效率一定是 50%"。这个结论对吗？</div>
+          <div class="choicebox" data-qid="q-d1" data-hint="50% 只对单个理想电压源串内阻模型成立；复杂网络的等效对内不等效。" data-explain="不一定。50% 只对单电压源串内阻模型成立；含多个电源的复杂网络等效对内不等效，效率须回原电路分别算电源发出与负载吸收功率（L1-08 实测为 66.7%，不是 50%）。">
+            <label><input type="radio" name="q-d1" value="a"/> ① 对，匹配就意味着 50%</label>
+            <label><input type="radio" name="q-d1" value="b"/> ② 不一定，50% 只对"单个理想电压源串内阻"模型成立，复杂网络要回原电路算真实效率</label>
+            <label><input type="radio" name="q-d1" value="c"/> ③ 一定大于 50%</label>
+            <button class="btn-sm" onclick="answerChoice('gate-d1','q-d1','b')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-d1" data-gate data-target="rev-d1" data-stage="4" onclick="revealBlock(this)" disabled>揭晓 D1 讲评 →</button>
+          <div class="reveal" id="rev-d1">
+            <div class="rev-grid">
+              <p><strong>正解：②</strong>。</p>
+              <p><strong>依据</strong>〔邱 §4-4；L1-07/L1-08〕：50% 效率是"单电压源串内阻"模型在匹配时的结论；含多个电源的复杂网络，等效对内不等效，效率必须<strong>回原电路</strong>分别算电源发出与负载吸收功率（L1-08 独立练习实测 66.7%，不是 50%）。</p>
+              <p><strong>常见错因</strong>：把戴维南等效的"对外等效"误当"对内也等效"，直接套 50%。</p>
+              <p><strong>补弱</strong>：回 L1-07 效率辨析、L1-08 形态二。</p>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 · 错因定位与补弱 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 错因定位与补弱路线</div>
+        <p class="muted">每题讲评都给了"常见错因＋补弱指向"。按你错题的能力点（C1~C9）归类，得到自己的<strong>薄弱清单</strong>，再按表回炉。</p>
+        <table class="mini-t weak-t">
+          <tr><th>你错的题</th><th>能力点</th><th>回哪一课补</th></tr>
+          <tr><td>A1</td><td>C1 参考方向符号</td><td>L1-01</td></tr>
+          <tr><td>A3、C④(功率)</td><td>C2 功率与守恒</td><td>L1-03</td></tr>
+          <tr><td>A2、C①</td><td>C3 KCL/KVL 与方程数</td><td>L1-02 / L1-08</td></tr>
+          <tr><td>B1</td><td>C4 分压分流</td><td>L1-04</td></tr>
+          <tr><td>B2、D1</td><td>C5/C6 戴维南</td><td>L1-05</td></tr>
+          <tr><td>C（选法/方程）</td><td>C7 节点网孔</td><td>L1-06</td></tr>
+          <tr><td>A4、B3、D1</td><td>C8 叠加/最大功率</td><td>L1-07</td></tr>
+          <tr><td>C（流程/校验）</td><td>C9 综合与校验</td><td>L1-08</td></tr>
+        </table>
+        <div class="formula sm" style="margin-top:12px;">达标线：<strong>≥70% 且 P1 关键题（A1/A2/A3、C 板块）无原则性错误</strong>方可进入 S2。未达标按薄弱清单回对应课重做独立练习，再补测。</div>
+        <p><strong>两种任务形态小结</strong>：<strong>形态一（概念与求解，A/B/C）</strong>——没有提示时自己判断题型、选工具、列方程、算数值、做校验；<strong>形态二（工程判断与优化，B3/D）</strong>——用戴维南打包、按匹配算最大功率，并<strong>辨析适用条件</strong>、不被 50% 这类漂亮结论误导。</p>
+        <p class="muted">下一课钩子：S1 直流电路到此收官并通过阶段考核。S2 进入<strong>动态电路</strong>——电容、电感登场，元件约束从 <code>u=Ri</code> 变成微分关系，KCL/KVL 依旧成立却要解微分方程。届时我们会带着这套反复检验的<strong>"读图→建模→选法→求解→校验"</strong>骨架，看看当约束里多了"记忆"，流程该怎么扩展。</p>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：S1 全部 P1 的混合检验（C1~C9）；每题讲评给正解、书证依据、常见错因、补弱指向；五步流程与四项校验复述；两种任务形态小结；达标线与补弱路线。</p>
+          <p class="mini"><strong>不讲</strong>：任何新定理/新公式/新记号（本课是考核课，只复述已学内容）；S2 动态电路的微分关系、三要素法（只在钩子里点到，不展开）；P2/P3 抽样内容（受控源复杂系统、非线性、矩阵形式）不在本卷出现。</p>
+          <p class="mini"><strong>命题口径</strong>：全部数值为[我编的题]，已在 L1-08 等课验算自洽；概念/公式讲评只引用已校对书证（邱、李上），不引未摘章节号，不引 H&amp;H 章节号。记号与前八课一致。</p>
+        </details>
+        <details><summary>学习目标（交卷后能独立做什么）</summary>
+          <ol class="mini">
+            <li>在没有提示的前提下，判断题型属于哪类能力点（C1~C9），选对工具。</li>
+            <li>正确使用参考方向符号、功率吸收/发出判据、KCL/KVL 与独立方程数。</li>
+            <li>熟练分压分流、戴维南等效与最大功率匹配，并辨析 50% 效率的适用边界。</li>
+            <li>对陌生电路独立走完"读图→建模→选法→求解→校验"五步流程。</li>
+            <li>用四项校验自查，并从错因反推该回哪一课补弱。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">考纲地图与作答规则 4′ / 板块 A 8′ / 板块 B 9′ / 板块 C 13′ / 板块 D 5′ / 错因定位与补弱 6′。45 分钟是预算：每题讲评直击"错因＋补弱"，不重讲整节新课；学生已会的题快速通过，把时间留给暴露漏洞的板块 C。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>C1 参考方向 u=Ri / u=−Ri、负号含义</td><td>邱 §1-5 p.16–17〔L1-01 摘录〕</td></tr>
+            <tr><td>C2 p=ui、p=−ui、P_R=i²R=u²/R、守恒</td><td>邱 §1-3 p.14、§1-5 p.17〔L1-03 摘录〕</td></tr>
+            <tr><td>C3 ∑i=0、∑u=0；n−1、b−n+1、合计 b</td><td>邱 §1-8 p.22–23、§3-2 p.56–58〔L1-02/L1-08 摘录〕</td></tr>
+            <tr><td>C4 等效判据、分压按电阻、分流按电导</td><td>邱 §2-1~2-2 p.34–37；李 §1-8〔L1-04 摘录〕</td></tr>
+            <tr><td>C5/C6 电源模型互换、戴维南/诺顿、u_oc=R_eq·i_sc、置零规则</td><td>邱 §2-5~2-6、§4-3 p.90–93〔L1-05 摘录〕</td></tr>
+            <tr><td>C7 网孔/节点法方程与自阻互阻、自导互导符号</td><td>邱 §3-3~3-4〔L1-06 摘录〕</td></tr>
+            <tr><td>C8 叠加置零、功率不可叠加、匹配与最大功率、50% 效率边界</td><td>邱 §4-1 p.83–85、§4-4〔L1-07 摘录〕</td></tr>
+            <tr><td>C9 两类约束总纲、系统求解法、建模原则、分解四步、五步流程与校验</td><td>邱 导读 p.10/§1-8 p.22/§3-1 p.54/§1-1 p.10–11；李 §4-1〔L1-08 摘录〕</td></tr>
+            <tr><td>陈述卡 0~4、考纲地图、错因定位与补弱路线、达标线</td><td>通识 / 我整理的教法（依据上述书证）</td></tr>
+            <tr><td>全部试题数值（A1~D1，含沿用 L1-08 的 Us=10V/R1=2Ω/R2=4Ω/Is=1A→V=8V/i1=−1A/i2=2A/18W）</td><td>我编的题（数值已验算自洽）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 未摘正文，不引用其章节号。李上印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。所有书证均为前八课摘录中已校对内容，见 <code>书籍/摘录/L1-E.md</code>。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L1-E-s1-assessment';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-E 增量脚本：作答后解锁讲评 + resetFlow 修补 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 数值题：提交了一个数才解锁讲评（空提交不解锁）
+    window.answerNum = function(gateId, id, expected){
+      if(typeof checkNum === 'function') checkNum(id, expected, 0.01);
+      var box = document.getElementById(id);
+      var inp = box && box.querySelector('input');
+      if(inp && inp.value.trim() !== '' && !isNaN(parseFloat(inp.value))) enableGate(gateId);
+    };
+
+    // 选择题：选了并提交才解锁讲评
+    window.answerChoice = function(gateId, qid, correctVal){
+      if(typeof checkChoice === 'function') checkChoice(qid, correctVal);
+      var box = document.querySelector('[data-qid="'+qid+'"]');
+      if(box && box.querySelector('input[type="radio"]:checked')) enableGate(gateId);
+    };
+
+    // 板块 C：四空都填过才解锁完整讲评
+    window.tryUnlockC = function(){
+      var ids = ['q-c-v','q-c-i1','q-c-i2','q-c-p'];
+      var allFilled = ids.every(function(id){
+        var b = document.getElementById(id); var inp = b && b.querySelector('input');
+        return inp && inp.value.trim() !== '' && !isNaN(parseFloat(inp.value));
+      });
+      if(allFilled) enableGate('gate-c');
+    };
+
+    // 共享 resetFlow 会解锁所有 .reveal-btn（含作答门），这里覆盖：
+    // 重来后重新锁上所有作答门，并清空反馈与输入（避免残留答案泄题）
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+    };
+  })();
+  </script>
+</body>
+</html>

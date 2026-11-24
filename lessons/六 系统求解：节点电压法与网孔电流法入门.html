@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>第六课 · 系统求解：节点电压法与网孔电流法入门 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:380px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .loop{stroke:var(--chalk-yellow);stroke-width:2.4;fill:none;stroke-dasharray:5 3}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .gnd{stroke:var(--chalk-dim);stroke-width:2}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    /* 求解实验台 */
+    .solve-lab{margin:10px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .solve-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .solve-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .solve-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:3px 0 1px}
+    .solve-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;font-size:.82rem;padding:2px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim)}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green)}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:5px;line-height:1.45}
+    .th-agree{font-family:var(--mono);font-size:.8rem;font-weight:700;margin-top:6px;color:var(--chalk-green)}
+    @media(max-width:1100px){.solve-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">第六课 · 系统求解：节点电压法与网孔电流法入门</span>
+    <span class="meta">教案先行 · 45 min · S1 直流电路基础</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（因果关系，不是时间表）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与方法选择思想</a></li>
+        <li><a href="#stage-1">1 · 网孔电流法</a></li>
+        <li><a href="#stage-2">2 · 节点电压法</a></li>
+        <li><a href="#stage-3">3 · 对比、方法选择与自检</a></li>
+        <li><a href="#stage-4">4 · 独立练习（日字形电路）</a></li>
+        <li><a href="#stage-5">5 · 求解实验台</a></li>
+        <li><a href="#stage-6">6 · 迁移自检</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">把前五课的<strong>化简/打包</strong>换成<strong>系统列方程</strong>：选一组聪明的未知量，让 KCL 或 KVL <strong>自动满足</strong>，方程从 b 个减到最少。</div>
+      <div class="mini">前置：L1-01~05（<code>u=Ri</code>、KCL/KVL 与参考方向符号、功率、等效电阻、戴维诺顿打包单负载）。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L1-06.md</code>（邱 §3-3/§3-4/§3-6；李上 §2-1/§2-2 原文，已校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L1-06-教案.md</code>（初审退 4 项、复审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">学习辅助（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>两法对偶（随时查）</h4>
+      <div class="mini"><strong>网孔法</strong>：变量=网孔电流；自动满足 <code>KCL</code>；列 <code>网孔数</code> 条 KVL；自阻恒正、顺时针绕行互阻恒负；右端=电压源代数和（推动+）；<strong>仅平面</strong>。</div>
+      <div class="mini"><strong>节点法</strong>：变量=节点电压；自动满足 <code>KVL</code>；列 <code>n−1</code> 条 KCL；自导恒正、互导恒负；右端=注入电流（流入+）；平面+非平面都行。</div>
+      <div class="mini"><strong>选法</strong>：数方程（网孔数 vs n−1）选少的；电流源多→节点法、电压源多→网孔法。</div>
+      <div class="mini"><strong>回代</strong>：网孔→支路电流=网孔电流代数和；节点→支路电流=(两端节点电压差)/R。</div>
+      <div class="mini"><strong>记号</strong>：电导 <code>G=1/R</code>，单位西门子 <code>S=1/Ω</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+        <!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学到真实卡点再在终端提问，问答会锚到这里；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S1 · 第六课（L1-06）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">正文依据：邱关源 6e §3-3/§3-4/§3-6、李瀚荪 5e 上 §2-1/§2-2（已摘录校对）</span>
+      </div>
+      <h1>系统求解：节点电压法与网孔电流法入门</h1>
+      <p class="muted">这一页按教案的揭示顺序制作：先看化简为什么不够用、再到“选对变量让定律自动满足”这个核心思想，然后分别走通网孔法与节点法。先认记号：<code>网孔</code>＝平面电路里中间不含其他支路的最小回路；<code>网孔电流 i_m</code>＝假想沿网孔连续流动的环流；<code>节点电压 u_n</code>＝某节点相对参考节点（地）的电压；<code>自阻/互阻、自导/互导</code>＝按电路结构直接写出的方程系数；<code>电导 G=1/R</code>，单位 S。现在只认得词，后面现场讲清。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">为何要系统求解</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">网孔电流法</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">节点电压法</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">对比与选法</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">独立练习</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">迁移自检</span>
+      </div>
+      <div class="flow-note">上方链条是本课的<strong>理解顺序</strong>，不是时间安排。每一步都是因为上一步不够用了才出现。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <div class="hook-card" id="stage-0">
+        <div class="stage-h">开场 · 核心问题：化简不够用时怎么办（7′）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="qbig">前五课都在“化简”：串并联合成一个电阻，戴维诺顿把网络打包成一个电源。<br>但这个电路电源与电阻交织，串不成串、并不成并，也找不到单一负载。</p>
+            <p class="speak">“化简走不通了——能不能不化简，直接<strong>列一组方程、一次解出全部</strong>？而且方程越少越好。”</p>
+          </div>
+          <div class="fig-box md" aria-label="多节点多回路、不便化简的电路示意图">
+            <svg class="svg-diag" viewBox="0 0 360 210" role="img">
+              <title>一个多节点多回路的网格电路，电源与电阻交织，不便串并联化简</title>
+              <text class="dim" x="14" y="16">化简够不动的电路</text>
+              <!-- 左竖支路含电压源 -->
+              <circle class="elem" cx="40" cy="110" r="16" fill="none"/><text class="lbl" x="30" y="115">u_s</text>
+              <line class="wire" x1="40" y1="40" x2="40" y2="94"/><line class="wire" x1="40" y1="126" x2="40" y2="180"/>
+              <!-- 三条竖支路 + 上下横线（日字形示意） -->
+              <line class="wire" x1="180" y1="40" x2="180" y2="180"/>
+              <rect class="elem" x="170" y="96" width="20" height="34" rx="2" fill="none"/>
+              <line class="wire" x1="320" y1="40" x2="320" y2="180"/>
+              <rect class="elem" x="310" y="96" width="20" height="34" rx="2" fill="none"/>
+              <line class="wire" x1="40" y1="40" x2="320" y2="40"/>
+              <line class="wire" x1="40" y1="180" x2="320" y2="180"/>
+              <rect class="elem" x="86" y="30" width="34" height="20" rx="2" fill="none"/>
+              <rect class="elem" x="232" y="30" width="34" height="20" rx="2" fill="none"/>
+              <rect class="elem" x="86" y="170" width="34" height="20" rx="2" fill="none"/>
+              <rect class="elem" x="232" y="170" width="34" height="20" rx="2" fill="none"/>
+              <circle class="nodept" cx="40" cy="40" r="3.5"/><circle class="nodept" cx="180" cy="40" r="3.5"/><circle class="nodept" cx="320" cy="40" r="3.5"/>
+              <circle class="nodept" cx="40" cy="180" r="3.5"/><circle class="nodept" cx="180" cy="180" r="3.5"/><circle class="nodept" cx="320" cy="180" r="3.5"/>
+              <text class="ylb" x="204" y="106">→ 列方程一次解出</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：多个节点、多个回路时，串并联化简与“打包”都失灵，需要系统列方程。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p0">
+          <p class="ask"><strong>先预测 1（别算）：</strong>一个电路有 <code>b</code> 条支路、<code>n</code> 个节点，若对每条支路都设一个电流当未知量（第二课的“笨办法”），至少要列多少个方程才解得出来？① b 个　② n 个　③ 2b 个。先猜，不公布。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred0')">① b 个</button>
+            <button class="pred-opt" onclick="pickPred(this,'n');enableGate('gate-pred0')">② n 个</button>
+            <button class="pred-opt" onclick="pickPred(this,'2b');enableGate('gate-pred0')">③ 2b 个</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">支路电流法的“笨” →</button>
+        <div class="reveal" id="rev-0a">
+          <p>最直接的思路：每条支路设一个电流。邱关源讲：对 <code>n</code> 个节点可列 (<code>n</code>−1) 个独立 KCL，对平面电路取网孔作独立回路可列 (<code>b</code>−<code>n</code>+1) 个独立 KVL，合起来正好 (<code>n</code>−1)+(<code>b</code>−<code>n</code>+1)=<code>b</code> 个方程，能解出 <code>b</code> 个支路电流——这就是<strong>支路电流法</strong>〔邱 p.59–61〕。</p>
+          <p class="muted">（预测 1 答案：① <code>b</code> 个。）但 <code>b</code> 条支路就 <code>b</code> 个方程，电路一大很啰嗦。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-0b" data-stage="0" onclick="revealBlock(this)" disabled>核心思想：少列方程的秘密 →</button>
+        <div class="reveal" id="rev-0b">
+          <p>关键洞察：<strong>KCL 和 KVL 里有一批方程“自动成立”。换一组未知量让它们自动成立，就省下那一整类方程。</strong>少的那一截，就是被变量选择“消化”掉的定律。</p>
+          <div class="ok-box"><strong>陈述时刻 · 少列方程的核心思想</strong>：列方程求解电路时，<strong>未知量的选法决定要列多少方程</strong>。若所选变量使某条定律自动满足，就省下那一整类方程——选<strong>网孔电流</strong>作变量 → KCL 自动满足 → 只需对每个网孔列 KVL（网孔法）；选<strong>节点电压</strong>作变量 → KVL 自动满足 → 只需对 (<code>n</code>−1) 个独立节点列 KCL（节点法）。这是本课唯一的核心思想。〔邱 §3-4 p.62 / §3-6 p.69；李 §2-2〕</div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </div>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 网孔电流法：让 KCL 自动满足（15′）〔邱 p.61–64〕</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">网孔电流是什么、为什么自动满足 KCL →</button>
+        <div class="reveal" id="rev-1a">
+          <p>邱关源用一个两网孔电路说明〔邱 p.62〕：中间公共支路的电流不是独立的——由节点 KCL 它等于两侧环流之差。不如把电流描述成“沿每个网孔连续流的假想环流”：外面支路只被一个环流穿过，公共支路被两个环流反向穿过。</p>
+          <p><strong>网孔电流 <code>i_m</code></strong>：假想沿网孔连续流动的电流，方向由我指定（本课统一顺时针）。支路电流＝穿过它的网孔电流的代数和：只属一个网孔的支路 <code>i=±i_m</code>，公共支路 <code>i=i_m1−i_m2</code>。</p>
+          <p class="warn"><strong>为什么自动满足 KCL</strong>：网孔电流是闭合环流，流进一个节点多少就从该节点流出多少，任何节点的 KCL 天然成立〔邱 p.62〕。所以<strong>不用再列 KCL</strong>，只需对每个网孔列一条 KVL。</p>
+        </div>
+
+        <div class="side-fig-row" style="margin-top:8px;">
+          <div class="side-text">
+            <p class="muted">两网孔电路（左含电压源、公共支路电阻 <code>R2</code>、右支路 <code>R3</code>），两条黄色虚线是顺时针网孔电流 <code>i_m1</code>、<code>i_m2</code>：</p>
+          </div>
+          <div class="fig-box md" aria-label="两网孔电路与顺时针网孔电流示意图">
+            <svg class="svg-diag" viewBox="0 0 360 190" role="img">
+              <title>两网孔电路，网孔电流im1、im2均顺时针，公共支路R2被两环流反向穿过</title>
+              <line class="wire" x1="30" y1="30" x2="240" y2="30"/>
+              <line class="wire" x1="30" y1="150" x2="240" y2="150"/>
+              <line class="wire" x1="30" y1="30" x2="30" y2="150"/>
+              <circle class="elem" cx="30" cy="90" r="15" fill="none"/><text class="lbl" x="16" y="95">us</text>
+              <line class="wire" x1="135" y1="30" x2="135" y2="150"/>
+              <rect class="elem" x="126" y="78" width="18" height="26" rx="2" fill="none"/><text x="146" y="96">R2</text>
+              <line class="wire" x1="240" y1="30" x2="240" y2="150"/>
+              <rect class="elem" x="231" y="78" width="18" height="26" rx="2" fill="none"/><text x="250" y="96">R3</text>
+              <rect class="elem" x="60" y="20" width="30" height="20" rx="2" fill="none"/><text x="66" y="35">R1</text>
+              <!-- 网孔电流虚线环 -->
+              <path class="loop" d="M50,55 Q85,42 118,55 Q128,90 118,128 Q85,142 50,128 Q42,90 50,55 Z"/>
+              <path class="loop" d="M152,55 Q190,42 225,55 Q232,90 225,128 Q190,142 152,128 Q145,90 152,55 Z"/>
+              <text class="ylb" x="72" y="90">im1 ↻</text><text class="ylb" x="176" y="90">im2 ↻</text>
+              <text class="dim" x="14" y="176">公共支路电流 = im1 − im2（两环流反向）</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：选网孔电流后 KCL 自动满足，只需列 KVL。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>预测 2（先猜）：</strong>一个有 3 个网孔、5 个节点的平面电路，用网孔电流法要列几条方程？① 3 条（网孔数）　② 4 条（节点数−1）　③ 5 条。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'m3');enableGate('gate-pred1')">① 3 条</button>
+            <button class="pred-opt" onclick="pickPred(this,'n4');enableGate('gate-pred1')">② 4 条</button>
+            <button class="pred-opt" onclick="pickPred(this,'b5');enableGate('gate-pred1')">③ 5 条</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1b" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-1b">
+          <p><strong>① 3 条。</strong>网孔法只列网孔数条 KVL——3 个网孔就是 3 条，比支路电流法的 5 条（b 条）少。KCL 那几条被变量选择“自动消化”了。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1c" data-stage="1" onclick="revealBlock(this)">方程怎么推导（不是背）→</button>
+        <div class="reveal" id="rev-1c">
+          <p>沿网孔绕一圈，电阻电压用“电阻 ×（流过它的网孔电流代数和）”，再用第二课的 KVL“电阻压降代数和＝电压源电压升代数和”〔邱 p.61 式(3-5)〕。先看<strong>未整理的原始方程</strong>——设左支路 <code>R1</code>、公共支路 <code>R2</code>、右支路 <code>R3</code>，左网孔含电压源 <code>u_s1</code>、公共支路含 <code>u_s2</code>，两网孔电流都顺时针。沿网孔 1〔邱 p.62〕：</p>
+          <div class="formula sm">R1·i_m1 + R2(i_m1 − i_m2) + u_s2 − u_s1 = 0</div>
+          <p><strong>当场看出互阻从哪来</strong>：公共支路 <code>R2</code> 上流的是 <code>i_m1−i_m2</code>（两环流反向），展开得 <code>(R1+R2)i_m1 − R2·i_m2 = u_s1−u_s2</code>——那个 <code>−R2</code> 就是互阻，来源是“公共电阻被邻网孔电流反向穿过”〔邱 p.63〕。把 <code>(R1+R2)</code> 记为自阻 <code>R11</code>、<code>−R2</code> 记为互阻 <code>R12</code>，得一般式〔邱 p.63 式(3-6)(3-7)〕：</p>
+          <div class="formula sm">R11·i_m1 + R12·i_m2 = u_s11<br>R21·i_m1 + R22·i_m2 = u_s22</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1d" data-stage="1" onclick="revealBlock(this)">陈述时刻：网孔电流法 + 搭桥例题 →</button>
+        <div class="reveal" id="rev-1d">
+          <div class="ok-box"><strong>网孔电流法</strong>：以网孔电流为独立变量（自动满足 KCL），对每个网孔列 KVL 求解；<strong>适用于平面电路</strong>。步骤：① 指定各网孔电流方向（本课统一顺时针）；② 写自阻（恒正＝本网孔所有电阻之和）与互阻（本课顺时针绕行→公共支路上方向相反→互阻为负）；③ 按 Σ自阻×本网孔电流 + Σ互阻×邻网孔电流 = 本网孔电压源代数和（推动为正、阻碍为负）列方程；④ 解方程得网孔电流，再由代数和合成支路电流。〔邱 §3-4 p.61–64〕<br><strong>边界</strong>：仅平面电路；公共支路含无伴电流源时需特殊处理（P2，本课不展开）。</div>
+          <p><strong>搭桥例题</strong>：左网孔 26 V 电压源，左支路 2 Ω、公共支路 3 Ω、右支路 4 Ω，两网孔电流都顺时针。自阻 R11=2+3=5 Ω、R22=3+4=7 Ω，互阻 R12=R21=−3 Ω；右端 26 V（推动左网孔）。方程 <code>5·i_m1−3·i_m2=26</code>、<code>−3·i_m1+7·i_m2=0</code>，解得 <code>i_m1=7 A</code>、<code>i_m2=3 A</code>，公共支路电流 <code>=7−3=4 A</code>。（数值不整也无妨——方法不受数值影响；实验台用这组整数。）〔通识〕</p>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 节点电压法：让 KVL 自动满足（15′）〔邱 p.69–73 / 李 §2-2〕</div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">电导、节点电压、为什么自动满足 KVL →</button>
+        <div class="reveal" id="rev-2a">
+          <div class="warn"><strong>术语点到 · 电导</strong>：<strong>电导 <code>G=1/R</code></strong>（电阻的倒数），单位<strong>西门子 S，1 S = 1/Ω</strong>。2 Ω 的电导是 1/2 = 0.5 S。用它写支路电流特别省事：<code>i=u/R=G·u</code>。第四课串并联已用过 *G*，这里正式点名。〔通识〕</div>
+          <p>在电路里<strong>任选一个节点作参考节点（地）</strong>，其余节点相对它的电压叫<strong>节点电压</strong> <code>u_n</code>（参考点为负、本节点为正）〔邱 p.69〕。每条支路接在两个节点间，其电压就是<strong>两端节点电压之差</strong> <code>u_支路=u_n首−u_n末</code>〔邱 p.69–70〕。</p>
+          <p class="warn"><strong>为什么自动满足 KVL</strong>：既然支路电压都是节点电压之差，那么沿任意回路绕一圈，这些差首尾相消、代数和必为零——KVL 自动满足〔邱 p.69〕。所以<strong>不用再列 KVL</strong>，只需对 (<code>n</code>−1) 个独立节点列 KCL，把支路电流写成“电导 ×（节点电压差）”代入。</p>
+        </div>
+
+        <div class="side-fig-row" style="margin-top:8px;">
+          <div class="side-text">
+            <p class="muted">两节点电路：节点 1、2 相对地为 <code>u_n1</code>、<code>u_n2</code>，三条支路电压都是节点电压之差：</p>
+          </div>
+          <div class="fig-box md" aria-label="两节点电路与节点电压示意图">
+            <svg class="svg-diag" viewBox="0 0 360 180" role="img">
+              <title>两节点电路，节点电压un1、un2相对参考节点，支路电压为节点电压之差</title>
+              <!-- 上排两个节点 -->
+              <circle class="nodept" cx="90" cy="55" r="4"/><circle class="nodept" cx="250" cy="55" r="4"/>
+              <text class="ylb" x="72" y="42">u_n1</text><text class="ylb" x="232" y="42">u_n2</text>
+              <!-- 节点间支路 -->
+              <line class="wire" x1="90" y1="55" x2="250" y2="55"/>
+              <rect class="elem" x="156" y="45" width="28" height="20" rx="2" fill="none"/><text x="162" y="60">R12</text>
+              <!-- 节点1到地 -->
+              <line class="wire" x1="90" y1="55" x2="90" y2="120"/>
+              <rect class="elem" x="80" y="82" width="20" height="26" rx="2" fill="none"/><text x="100" y="100">R1</text>
+              <line class="wire" x1="90" y1="120" x2="90" y2="132"/>
+              <!-- 节点2到地 -->
+              <line class="wire" x1="250" y1="55" x2="250" y2="120"/>
+              <rect class="elem" x="240" y="82" width="20" height="26" rx="2" fill="none"/><text x="260" y="100">R2</text>
+              <line class="wire" x1="250" y1="120" x2="250" y2="132"/>
+              <!-- 地 -->
+              <line class="gnd" x1="60" y1="132" x2="280" y2="132"/>
+              <line class="gnd" x1="90" y1="132" x2="90" y2="140"/><line class="gnd" x1="250" y1="132" x2="250" y2="140"/>
+              <text class="dim" x="150" y="160">参考节点（地）= 0 V</text>
+              <text class="dim" x="14" y="24">支路电压 = 两端节点电压之差</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：选节点电压后 KVL 自动满足，只需列 KCL。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>预测 3（先猜）：</strong>一个有 6 个节点、4 个网孔的电路，用节点电压法要列几条独立 KCL 方程？① 6 条　② 5 条（节点数−1）　③ 4 条。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'n6');enableGate('gate-pred2')">① 6 条</button>
+            <button class="pred-opt" onclick="pickPred(this,'n5');enableGate('gate-pred2')">② 5 条</button>
+            <button class="pred-opt" onclick="pickPred(this,'m4');enableGate('gate-pred2')">③ 4 条</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2b" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 3 →</button>
+        <div class="reveal" id="rev-2b">
+          <p><strong>② 5 条。</strong>参考节点不列（它的电压定为 0，所有电流汇集于此不需再解），其余 <code>n−1=5</code> 个节点各列一条〔邱 p.69〕。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2c" data-stage="2" onclick="revealBlock(this)">方程怎么推导（不是背）→</button>
+        <div class="reveal" id="rev-2c">
+          <p>对某独立节点，流出电流代数和＝流入电流代数和，每条支路电流 = <code>G</code>×（本节点电压 − 对端节点电压）〔邱 p.70 式(3-14)(3-15)；李 §2-2〕。先看<strong>未整理的原始 KCL</strong>——以邱图 3-16 的节点①为例，接在节点①的支路 <code>i1</code>（通向参考点）、<code>i4</code>（通向节点②）、<code>i6</code>（通向节点③）：</p>
+          <div class="formula sm">i1 + i4 + i6 = i_s1（注入节点①的电流源）</div>
+          <p>把每条支路电流用“电导 × 节点电压差”代入：<code>i1=G1·u_n1</code>，<code>i4=G4(u_n1−u_n2)</code>，<code>i6=G6(u_n1−u_n3)</code>。<strong>当场看出互导从哪来</strong>：展开后 <code>u_n2</code> 的系数是 <code>−G4</code>、<code>u_n3</code> 的系数是 <code>−G6</code>——这就是互导，来源是“邻节点电压前面带负号（支路电流按本节点电压−邻节点电压写）”〔邱 p.71〕。节点①方程整理为 <code>(G1+G4+G6)u_n1 − G4·u_n2 − G6·u_n3 = i_s1</code>，推广到各节点得一般式〔邱 p.71 式(3-18)〕：</p>
+          <div class="formula sm">G11·u_n1 + G12·u_n2 + … = i_s11<br>G21·u_n1 + G22·u_n2 + … = i_s22</div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2d" data-stage="2" onclick="revealBlock(this)">陈述时刻：节点电压法 + 例题 →</button>
+        <div class="reveal" id="rev-2d">
+          <div class="ok-box"><strong>节点电压法</strong>：选一个参考节点，以各独立节点对其电压为变量（自动满足 KVL），对每个独立节点列 KCL 求解；<strong>对平面和非平面电路都适用</strong>〔李 §2-2〕。步骤：① 选参考节点（地），给其余节点编号与节点电压；② 写自导（恒正＝本节点各支路电导之和）、互导（恒负＝公共支路电导的负值，无公共支路为 0）；③ 按 Σ自导×本节点电压 + Σ互导×邻节点电压 = 注入本节点电流源代数和（流入为正）列方程；④ 解方程得节点电压，再用“支路电压＝节点电压差、支路电流＝支路电压÷电阻（欧姆定律）”回代各支路电流。〔邱 §3-6 p.69–73 / 李 §2-2〕<br><strong>边界</strong>：电压源无串联电阻（无伴电压源）时用<strong>超节点</strong>思路——把含电压源的两节点包成一个封闭面列 KCL，再补一条电压约束方程（P2，点思路不展开）〔邱 p.73 / 李 §2-2〕。</div>
+          <p class="warn"><strong>李瀚荪点睛</strong>：节点方程本质就是“用电导×节点电压差写出的 KCL”，<strong>即使不记自导/互导公式，直接对每个节点按 KCL 写也永远正确</strong>——公式只是快速模板〔李 §2-2〕。</p>
+          <p><strong>例题（李 §2-2 例 2-5）</strong>：节点 1 经 2 Ω 到地、经 12 Ω 到节点 2、有 4 A 电流源流入；节点 2 经 12 Ω 到节点 1、经 6 Ω 到地、有 2 A 电流源流出。自导 G11=1/2+1/12=7/12 S、G22=1/4 S，互导 G12=G21=−1/12 S。方程 <code>(7/12)u_n1−(1/12)u_n2=4</code>、<code>−(1/12)u_n1+(1/4)u_n2=−2</code>，化简 <code>7u_n1−u_n2=48</code>、<code>−u_n1+3u_n2=−24</code>，解得 <code>u_n1=6 V</code>、<code>u_n2=−6 V</code>。回代：2 Ω 支路 <code>6/2=3 A</code>，节点 1→2 的 12 Ω 支路 <code>(6−(−6))/12=1 A</code>。<strong>强调：求出节点电压后必须用欧姆定律回代才有支路电流。</strong></p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 对比、方法选择与自检（5′）</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">两法对偶表 + 怎么选 →</button>
+        <div class="reveal" id="rev-3a">
+          <table class="mini-t">
+            <tr><th>对比项</th><th>网孔电流法</th><th>节点电压法</th></tr>
+            <tr><td>变量</td><td>网孔电流 i_m</td><td>节点电压 u_n</td></tr>
+            <tr><td>自动满足</td><td>KCL</td><td>KVL</td></tr>
+            <tr><td>要列的方程</td><td>每网孔一条 KVL</td><td>每独立节点一条 KCL（n−1 条）</td></tr>
+            <tr><td>系数</td><td>自阻(+)、互阻(顺时针→−)</td><td>自导(+)、互导(−)</td></tr>
+            <tr><td>右端</td><td>电压源代数和（推动+）</td><td>注入电流（流入+）</td></tr>
+            <tr><td>适用</td><td>仅平面电路</td><td>平面 + 非平面</td></tr>
+            <tr><td>何时更省</td><td>网孔数 &lt; n−1；电压源多</td><td>n−1 &lt; 网孔数；电流源多</td></tr>
+          </table>
+          <div class="ok-box"><strong>方法选择三原则</strong>〔李 §2-2〕：① 先数——独立节点数 <code>n−1</code> 与网孔数 <code>b−n+1</code> 谁小就选谁（方程少）；② 再看电源——主要是电流源→节点法更方便（方程常可观察写出），主要是电压源→网孔法更方便；③ 看形态——非平面电路只能用节点法。</div>
+          <p><strong>自检三招</strong>：① 求出的变量代回原方程看是否成立；② 由变量合成各支路电流后，任取一个没用过的节点查 KCL、任取一个回路查 KVL；③ 量级是否合理（方向、大小与电源量级相当）。邱关源例 3-6 末尾就用“各支路电流在参考点满足 KCL，求解正确”作自检〔邱 p.73〕。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 独立练习：日字形电路（换拓扑、换电源，真正考选法）</div>
+
+        <div class="exercise">
+          <h4>该你了（先判断选法，再用网孔法求解，最后自检）</h4>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p>一个平面“日”字形电路：上下两条横线各由两段电阻组成，三条竖线连接上下（左、中、右）。<strong>左竖支路是 20 V 电压源串 2 Ω</strong>，上左横 1 Ω、下左横 1 Ω，<strong>中竖支路 4 Ω</strong>（两网孔共用），上右横 2 Ω、下右横 2 Ω、右竖支路 4 Ω。共 <strong>6 个节点、2 个网孔</strong>，电源主要是电压源。</p>
+              <p class="ask">① 这题用网孔法还是节点法方程更少？各要列几条？<br>② 用<strong>网孔法</strong>（两网孔电流均顺时针）列方程：写自阻、互阻、右端电压源代数和，解出 <code>i_m1</code>、<code>i_m2</code>。<br>③ 公共中竖支路（4 Ω）的电流是多少？<br>④ 自检：把结果代回一条 KVL 看是否成立。</p>
+            </div>
+            <div class="fig-box md" aria-label="日字形两网孔练习电路示意图">
+              <svg class="svg-diag" viewBox="0 0 360 210" role="img">
+                <title>日字形电路：左竖20V串2Ω，中竖4Ω，右竖4Ω，上左/下左各1Ω，上右/下右各2Ω</title>
+                <line class="wire" x1="50" y1="40" x2="300" y2="40"/>
+                <line class="wire" x1="50" y1="170" x2="300" y2="170"/>
+                <!-- 左竖：电压源+电阻 -->
+                <line class="wire" x1="50" y1="40" x2="50" y2="80"/>
+                <circle class="elem" cx="50" cy="96" r="14" fill="none"/><text class="lbl" x="40" y="100">20V</text>
+                <line class="wire" x1="50" y1="110" x2="50" y2="128"/>
+                <rect class="elem" x="40" y="128" width="20" height="26" rx="2" fill="none"/><text x="62" y="146">2Ω</text>
+                <line class="wire" x1="50" y1="154" x2="50" y2="170"/>
+                <!-- 中竖 4Ω -->
+                <line class="wire" x1="175" y1="40" x2="175" y2="90"/>
+                <rect class="elem" x="165" y="90" width="20" height="30" rx="2" fill="none"/><text x="187" y="108">4Ω</text>
+                <line class="wire" x1="175" y1="120" x2="175" y2="170"/>
+                <!-- 右竖 4Ω -->
+                <line class="wire" x1="300" y1="40" x2="300" y2="90"/>
+                <rect class="elem" x="290" y="90" width="20" height="30" rx="2" fill="none"/><text x="312" y="108">4Ω</text>
+                <line class="wire" x1="300" y1="120" x2="300" y2="170"/>
+                <!-- 上左1 下左1 上右2 下右2 -->
+                <rect class="elem" x="92" y="30" width="30" height="20" rx="2" fill="none"/><text x="98" y="45">1Ω</text>
+                <rect class="elem" x="92" y="160" width="30" height="20" rx="2" fill="none"/><text x="98" y="175">1Ω</text>
+                <rect class="elem" x="222" y="30" width="30" height="20" rx="2" fill="none"/><text x="228" y="45">2Ω</text>
+                <rect class="elem" x="222" y="160" width="30" height="20" rx="2" fill="none"/><text x="228" y="175">2Ω</text>
+                <path class="loop" d="M62,60 Q112,48 162,60 Q168,105 162,150 Q112,162 62,150 Q56,105 62,60 Z"/>
+                <path class="loop" d="M188,60 Q240,48 288,60 Q294,105 288,150 Q240,162 188,150 Q182,105 188,60 Z"/>
+                <text class="ylb" x="95" y="105">im1 ↻</text><text class="ylb" x="222" y="105">im2 ↻</text>
+                <text class="dim" x="14" y="200">6 节点、2 网孔 → 网孔法 2 条 vs 节点法 5 条</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：拓扑与电源都换了；网孔法方程更少，正好考方法选择。</div>
+            </div>
+          </div>
+
+          <div class="choicebox" data-qid="ex-pick" data-hint="数一数：网孔数 2，节点数−1 = 5；电源主要是电压源。哪个方程少又顺手？" data-explain="网孔法 2 条 KVL，节点法 5 条 KCL；且电源主要是电压源，网孔法更方便——选网孔法。">
+            <p><strong>① 选哪种方法方程更少？</strong></p>
+            <label><input type="radio" name="qpick" value="mesh" /> 网孔法（2 条 KVL）</label>
+            <label><input type="radio" name="qpick" value="node" /> 节点法（5 条 KCL）</label>
+            <button class="btn-sm" onclick="checkChoice('ex-pick','mesh')">检查</button><div class="fb"></div>
+          </div>
+          <div class="numcheck" id="ex-im1" data-qid="ex-im1"><label>② i_m1 = <input type="text" placeholder="例如 3" /> A</label><button class="btn-sm" onclick="checkNum('ex-im1',3,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-im2" data-qid="ex-im2"><label>② i_m2 = <input type="text" placeholder="例如 1" /> A</label><button class="btn-sm" onclick="checkNum('ex-im2',1,0.01)">检查</button><div class="fb"></div></div>
+          <div class="numcheck" id="ex-ishare" data-qid="ex-ishare"><label>③ 公共支路电流 = <input type="text" placeholder="例如 2" /> A</label><button class="btn-sm" onclick="checkNum('ex-ishare',2,0.01)">检查</button><div class="fb"></div></div>
+
+          <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">做完再看完整答案 →</button>
+          <div class="reveal" id="rev-4a">
+            <p><strong>①</strong> 网孔法 2 条、节点法 <code>6−1=5</code> 条；电源主要是电压源，网孔法更方便且方程少〔李 §2-2〕——选网孔法。</p>
+            <p><strong>②</strong> 自阻 <code>R11=2+1+1+4=8 Ω</code>、<code>R22=2+2+4+4=12 Ω</code>；互阻 <code>R12=R21=−4 Ω</code>（顺时针→公共支路反向→负）；右端 <code>u_s11=+20 V</code>、<code>u_s22=0</code>。方程 <code>8·i_m1−4·i_m2=20</code>、<code>−4·i_m1+12·i_m2=0</code>，解得 <code>i_m1=3 A</code>、<code>i_m2=1 A</code>。</p>
+            <p><strong>③</strong> 公共支路被两环流反向穿过，电流 <code>=i_m1−i_m2=3−1=2 A</code>。</p>
+            <p><strong>④</strong> 代回网孔 1：<code>8×3−4×1=20 V</code> ✓；网孔 2：<code>−4×3+12×1=0</code> ✓。自检通过。</p>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 求解实验台：拖动参数，看方程系数与解怎么变</div>
+
+        <div class="solve-lab">
+          <h4>同一套列方程规则，参数变了方程跟着变</h4>
+          <p class="muted" style="margin:0 0 8px;">左面板是两网孔电路（网孔法），右面板是两节点电路（节点法）。拖动滑块，观察自阻/互阻、自导/互导和右端项如何由电路结构直接写出，以及解随参数怎么变。两栏都按本课统一符号规则（顺时针→互阻负；流入→注入电流正）。</p>
+          <div class="solve-grid">
+            <div>
+              <div class="th-panel">
+                <h5>网孔法面板（两网孔电路）</h5>
+                <div class="solve-ctrl"><label>电压源 u_s（左网孔） <span id="m-us-val">26 V</span></label><input type="range" id="m-us" min="1" max="40" step="1" value="26"/></div>
+                <div class="solve-ctrl"><label>左支路 R1 <span id="m-r1-val">2 Ω</span></label><input type="range" id="m-r1" min="1" max="12" step="1" value="2"/></div>
+                <div class="solve-ctrl"><label>公共支路 R2 <span id="m-r2-val">3 Ω</span></label><input type="range" id="m-r2" min="1" max="12" step="1" value="3"/></div>
+                <div class="solve-ctrl"><label>右支路 R3 <span id="m-r3-val">4 Ω</span></label><input type="range" id="m-r3" min="1" max="12" step="1" value="4"/></div>
+                <div class="th-row"><span class="k">自阻 R11=(R1+R2)</span><span class="v" id="m-r11">—</span></div>
+                <div class="th-row"><span class="k">自阻 R22=(R2+R3)</span><span class="v" id="m-r22">—</span></div>
+                <div class="th-row"><span class="k">互阻 R12=R21=−R2</span><span class="v" id="m-r12">—</span></div>
+                <div class="th-eq" id="m-eq">—</div>
+                <div class="th-row" style="margin-top:6px;"><span class="k">i_m1</span><span class="v" id="m-im1">—</span></div>
+                <div class="th-row"><span class="k">i_m2</span><span class="v" id="m-im2">—</span></div>
+                <div class="th-row"><span class="k">公共支路 = i_m1−i_m2</span><span class="v" id="m-ishare">—</span></div>
+              </div>
+            </div>
+            <div>
+              <div class="th-panel">
+                <h5>节点法面板（两节点电路）</h5>
+                <div class="solve-ctrl"><label>注入电流 i_s1（节点1） <span id="n-is1-val">4 A</span></label><input type="range" id="n-is1" min="-10" max="10" step="1" value="4"/></div>
+                <div class="solve-ctrl"><label>注入电流 i_s2（节点2） <span id="n-is2-val">−2 A</span></label><input type="range" id="n-is2" min="-10" max="10" step="1" value="-2"/></div>
+                <div class="solve-ctrl"><label>节点1对地 R_a <span id="n-ra-val">2 Ω</span></label><input type="range" id="n-ra" min="1" max="12" step="1" value="2"/></div>
+                <div class="solve-ctrl"><label>节点1-2间 R_b <span id="n-rb-val">12 Ω</span></label><input type="range" id="n-rb" min="1" max="12" step="1" value="12"/></div>
+                <div class="solve-ctrl"><label>节点2对地 R_c <span id="n-rc-val">6 Ω</span></label><input type="range" id="n-rc" min="1" max="12" step="1" value="6"/></div>
+                <div class="th-row"><span class="k">自导 G11=(1/Ra+1/Rb)</span><span class="v" id="n-g11">—</span></div>
+                <div class="th-row"><span class="k">自导 G22=(1/Rb+1/Rc)</span><span class="v" id="n-g22">—</span></div>
+                <div class="th-row"><span class="k">互导 G12=G21=−1/Rb</span><span class="v" id="n-g12">—</span></div>
+                <div class="th-eq" id="n-eq">—</div>
+                <div class="th-row" style="margin-top:6px;"><span class="k">u_n1</span><span class="v" id="n-un1">—</span></div>
+                <div class="th-row"><span class="k">u_n2</span><span class="v" id="n-un2">—</span></div>
+                <div class="th-row"><span class="k">R_a 支路 = u_n1/R_a</span><span class="v" id="n-ia">—</span></div>
+                <div class="th-row"><span class="k">R_b 支路 =(u_n1−u_n2)/R_b</span><span class="v" id="n-ib">—</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="th-agree" id="lab-note">默认：网孔面板正是搭桥例题（7 A/3 A/公共 4 A）；节点面板正是李例 2-5（6 V/−6 V、回代 3 A/1 A）。</div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 迁移自检</div>
+
+        <div class="exercise">
+          <h4>过关自检（不看笔记能说出才算会）</h4>
+          <ul>
+            <li>为什么网孔电流自动满足 KCL、节点电压自动满足 KVL？（各说一句因果）</li>
+            <li>两法各以什么为变量、各列什么方程、各列几条？</li>
+            <li>自阻/互阻、自导/互导的符号规则是什么？为什么互阻在本课恒负、互导恒负？</li>
+            <li>拿到一个新电路，怎样按“数方程 + 看电源 + 看形态”选方法？</li>
+            <li>求出网孔电流或节点电压后，为什么还要回代？怎么回代出支路电流？怎么自检？</li>
+          </ul>
+        </div>
+
+        <div class="formula sm" style="margin-top:12px;">一个核心问题：化简不够用时系统列方程——<br>选变量让定律自动满足（网孔电流→KCL 自动；节点电压→KVL 自动）→ 方程从 b 条减到最少 → 按结构写系数 → 解方程 → 回代支路电流 → KCL/KVL 自检。</div>
+        <p><strong>贯穿全课的线索</strong>：L1-02 的 KCL/KVL 与“参考方向决定符号”，在这里成了列方程的两条支柱；两法的互阻/互导符号、右端项正负，全是那条规则的直接应用。</p>
+        <p class="muted">下一课钩子：网孔法和节点法能一次解出全部支路电流电压，但如果电路里既有独立源又有受控源、只想关心某个元件的响应，有没有“分而治之”的线性方法？第七课：叠加定理、替代定理与最大功率传输——顺便把第五课埋的“负载等于内阻时功率最大”钩子上并证明。</p>
+        <button class="reveal-btn" data-target="rev-6a" data-stage="6" onclick="revealBlock(this)">展开：两种任务形态小结 →</button>
+        <div class="reveal" id="rev-6a">
+          <p><strong>任务形态一</strong>（给定平面电路，求各支路电流）：数网孔数与 n−1 → 选方程少的一法 → 写自阻/互阻或自导/互导 → 列方程求解 → 由网孔电流代数和或节点电压差合成支路电流 → KCL/KVL 自检（环节4 独立练习）。</p>
+          <p><strong>任务形态二</strong>（给定电路，选方法并判断方程数）：比较网孔数 b−n+1 与独立节点数 n−1，看电源种类与电路形态，选出更省的方法（环节4 第①问、预测 2/3、环节3 方法选择三原则）。</p>
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：化简法局限与系统列方程动机；选变量让 KCL/KVL 自动满足的核心思想；网孔电流法（定义、自动满足 KCL、自阻互阻符号、四步骤、平面限制）；节点电压法（参考节点、电导 G、自动满足 KVL、自导互导符号、四步骤、回代支路电流、平面/非平面都适用）；方法选择三原则；自检三招。</p>
+          <p class="mini"><strong>不讲</strong>：支路电流法/2b 法只作引入对比，不作掌握要求；邱 §3-5 回路电流法；含受控源、无伴电流源、无伴电压源/超节点的完整计算（超节点只点思路，P2）；矩阵形式与计算机辅助分析（P3，S3/L3）；叠加/替代/最大功率传输（L1-07）。</p>
+          <p class="mini"><strong>记号约定</strong>：网孔电流统一顺时针 → 互阻恒负；电压源代数和“推动为正、阻碍为负”；电流源“流入为正”。教案与页面统一采用这套。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>说出化简法的局限与系统列方程的动机；解释“选对变量让 KCL/KVL 自动满足”的核心思想。</li>
+            <li>说出网孔电流为什么自动满足 KCL，会按四步求平面电路各支路电流。</li>
+            <li>说出节点电压为什么自动满足 KVL，会按四步求节点电压并回代支路电流。</li>
+            <li>正确写自阻/互阻、自导/互导的符号，不丢掉“参考方向决定符号”。</li>
+            <li>面对新电路能比较方程数、看电源种类，选更少方程的方法，并用 KCL/KVL 与量级自检。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与方法选择 7′ / 网孔电流法 15′ / 节点电压法 15′ / 对比与自检 5′ / 练习与收尾 3′。45 分钟是预算：因果链完整前提下压缩低增益重复；两法各一个整数例题即可。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>支路电流法 b 个方程、2b 法、KVL“压降和=电压源电压和”形式</td><td>邱 p.59–61 原文</td></tr>
+            <tr><td>网孔电流定义、自动满足 KCL、原始 KVL 展开、自阻互阻定义与“同向绕行互阻恒负”、平面限制</td><td>邱 p.61–64 原文（式 3-6/3-7/3-8）</td></tr>
+            <tr><td>节点电压法引入、参考节点、支路电压=节点电压差、自动满足 KVL、原始 KCL 展开、自导互导注入电流与符号、电压源串电阻需等效变换</td><td>邱 p.69–71 原文（式 3-14~3-18）</td></tr>
+            <tr><td>无伴电压源/超节点思路（P2 边界）</td><td>邱 p.73 原文</td></tr>
+            <tr><td>方法选择三原则（数方程/看电源/看形态）、例 2-5（6V/−6V、回代用欧姆定律）、例 2-6（G13=0、流入为+）、“毋需自导互导直接按 KCL 写”</td><td>李 §2-2 原文（PDF 100–102）</td></tr>
+            <tr><td>超节点概念与电压约束（P2 边界）</td><td>李 §2-2 原文（PDF 102–103）</td></tr>
+            <tr><td>两法对偶表、自检三招、方法选择口诀化</td><td>我整理的通识（依据邱/李原文）</td></tr>
+            <tr><td>预测 1/2/3、搭桥例题（26V→7A/3A）、独立练习（日字形 6 节点/电压源/新设问）</td><td>我编的题 / 通识</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 这次未摘正文，不引用其章节号。李上网孔分析页为纯图页 OCR 无文字，网孔部分以邱原文为准；李上节点分析印刷页码按 PDF−18 映射推算、以原书为准，故用章节号标注。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = '006-nodal-mesh';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L1-06 增量脚本：预测 gating + resetFlow 修补 + 双面板求解实验台 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    // 共享 resetFlow 会解锁所有 .reveal-btn（含预测门），这里覆盖：重来后重新锁上预测门
+    var baseReset = window.resetFlow;
+    window.resetFlow = function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled = true; });
+    };
+
+    function set(id, txt){ var e = document.getElementById(id); if(e) e.textContent = txt; }
+    function fmtI(a){ return (Math.round(a*1000)/1000).toFixed(3)+' A'; }
+    function fmtV(a){ return (Math.round(a*1000)/1000).toFixed(3)+' V'; }
+    function fmtR(a){ return (Math.round(a*1000)/1000)+' Ω'; }
+    function fmtG(a){ return (Math.round(a*100000)/100000).toFixed(5)+' S'; }
+    // 方程项符号格式化：首项省略 +，后续项显式写 + 或 −，避免正系数前缺运算符被误读
+    function term(c, v, first, fmt){
+      fmt = fmt || function(x){ return ''+x; };
+      var sign = c < 0 ? '\u2212' : (first ? '' : '+');
+      return (first ? '' : ' ') + sign + (first ? '' : ' ') + fmt(Math.abs(c)) + '\u00b7' + v;
+    }
+    function fmtAmp(a){ return (a<0?'\u2212':'') + Math.abs(a) + ' A'; }
+
+    // ---- 网孔法面板：解 2x2 方程 ----
+    var mu=document.getElementById('m-us'), m1=document.getElementById('m-r1'), m2=document.getElementById('m-r2'), m3=document.getElementById('m-r3');
+    function updMesh(){
+      if(!mu||!m1||!m2||!m3) return;
+      var Us=+mu.value, R1=+m1.value, R2=+m2.value, R3=+m3.value;
+      set('m-us-val', Us+' V'); set('m-r1-val', fmtR(R1)); set('m-r2-val', fmtR(R2)); set('m-r3-val', fmtR(R3));
+      var R11=R1+R2, R22=R2+R3, R12=-R2, R21=-R2;
+      var det=R11*R22-R12*R21;
+      // [R11 R12; R21 R22][im1;im2]=[Us;0]
+      var im1=(Us*R22-0*R12)/det, im2=(R11*0-R21*Us)/det;
+      set('m-r11', fmtR(R11)); set('m-r22', fmtR(R22)); set('m-r12', fmtR(R12));
+      set('m-eq', '方程：'+term(R11,'im1',true)+term(R12,'im2',false)+' = '+Us+'；'+term(R21,'im1',true)+term(R22,'im2',false)+' = 0');
+      set('m-im1', fmtI(im1)); set('m-im2', fmtI(im2)); set('m-ishare', fmtI(im1-im2));
+    }
+    [mu,m1,m2,m3].forEach(function(e){ if(e) e.addEventListener('input', updMesh); });
+    updMesh();
+
+    // ---- 节点法面板 ----
+    var is1=document.getElementById('n-is1'), is2=document.getElementById('n-is2'), ra=document.getElementById('n-ra'), rb=document.getElementById('n-rb'), rc=document.getElementById('n-rc');
+    function updNode(){
+      if(!is1||!is2||!ra||!rb||!rc) return;
+      var Is1=+is1.value, Is2=+is2.value, Ra=+ra.value, Rb=+rb.value, Rc=+rc.value;
+      set('n-is1-val', Is1+' A'); set('n-is2-val', Is2+' A'); set('n-ra-val', fmtR(Ra)); set('n-rb-val', fmtR(Rb)); set('n-rc-val', fmtR(Rc));
+      var G11=1/Ra+1/Rb, G22=1/Rb+1/Rc, G12=-1/Rb, G21=-1/Rb;
+      var det=G11*G22-G12*G21;
+      var un1=(Is1*G22-G12*Is2)/det, un2=(G11*Is2-G21*Is1)/det;
+      set('n-g11', fmtG(G11)); set('n-g22', fmtG(G22)); set('n-g12', fmtG(G12));
+      set('n-eq', '方程：'+term(G11,'un1',true,fmtG)+term(G12,'un2',false,fmtG)+' = '+fmtAmp(Is1)+'；'+term(G21,'un1',true,fmtG)+term(G22,'un2',false,fmtG)+' = '+fmtAmp(Is2));
+      set('n-un1', fmtV(un1)); set('n-un2', fmtV(un2));
+      set('n-ia', fmtI(un1/Ra)); set('n-ib', fmtI((un1-un2)/Rb));
+    }
+    [is1,is2,ra,rb,rc].forEach(function(e){ if(e) e.addEventListener('input', updNode); });
+    updNode();
+  })();
+  </script>
+</body>
+</html>
