@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>二阶电路响应形态与工程直觉 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .svg-diag .cap-plate{stroke:var(--chalk-blue);stroke-width:4}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.96rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:92px}
+    .numcheck input.txtin{width:180px}
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .mode-btns{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+    .mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:var(--chalk-dim);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.85rem}
+    .mode-btn.active{background:rgba(255,224,138,.18);color:var(--chalk-yellow);border-color:var(--chalk-yellow);font-weight:700}
+    .wave-box{margin:8px 0 2px;padding:6px;border:1px solid var(--line);border-radius:6px;background:rgba(0,0,0,.22);max-width:480px}
+    .wave-box svg{display:block;width:100%;height:auto}
+    .wave-box text{font-family:var(--mono);fill:var(--chalk-faint);font-size:11px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}.wave-box{max-width:100%}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">二阶电路响应形态与工程直觉</span>
+    <span class="meta">教案先行 · 45 min · S3 第三课</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（能量往返 → 二阶方程 → 四种形态 → 阶跃过冲 → 工程取舍）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 等幅振荡（陈述① · 揭晓预测 1）</a></li>
+        <li><a href="#stage-2">2 · 二阶方程与四种形态（陈述② · 揭晓预测 2）</a></li>
+        <li><a href="#stage-3">3 · 阶跃过冲（陈述③ · 揭晓预测 3）</a></li>
+        <li><a href="#stage-4">4 · 工程取舍与边界（陈述④ · 揭晓预测 4）</a></li>
+        <li><a href="#stage-5">5 · 两个实验台（形态预判 / 过冲台）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">一个储能元件 → 一阶 → 单调指数；<strong>两个储能元件</strong>（L 与 C）→ 能量在两者之间交换 → 响应不再单调。性格由 R、L、C 三个参数定。</div>
+      <div class="mini">因果顺序：LC 能量往返 → 列二阶方程 → 看特征根 → 四种形态 → 阶跃过冲 → 工程取舍。<strong>不是时间安排</strong>；公式都在预测揭晓后才给。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-03.md</code>（邱 §7-5~§7-8 + 李上 §7-1~§7-4 正文 OCR + 校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-03-教案.md</code>（独立审核四审通过、数值全自洽）。目标、节奏、台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>特征根与四种形态（揭晓后才用）</h4>
+      <div class="mini">特征根 <code>p=−α±√(α²−ω₀²)</code>，<code>α=R/(2L)</code>、<code>ω₀=1/√(LC)</code>；临界电阻 <code>R_c=2√(L/C)</code>。</div>
+      <div class="mini">α&gt;ω₀ 过阻尼（不等负实根、单调）· α=ω₀ 临界（重根、不振荡）· α&lt;ω₀ 欠阻尼（共轭复根、振铃）· α=0 等幅（共轭虚根）。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>阻尼比与过冲（揭晓后才用）</h4>
+      <div class="mini"><code>ζ=α/ω₀</code>（无量纲）：ζ&lt;1 欠阻尼、ζ=1 临界、ζ&gt;1 过阻尼。ζ 越大过冲越小。</div>
+      <div class="mini">过冲 = 峰值 − 稳态值；面板固定 <code>L=C=1</code> 时 <code>ζ=R/2</code>（特例），一般用 <code>ζ=R/R_c</code>。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>串并联边界（揭晓后才用）</h4>
+      <div class="mini">串联 RLC：<code>α=R/(2L)</code>，<strong>R 越大越阻尼</strong>；并联 GCL：<code>α=G/(2C)=1/(2R_p C)</code>，<strong>G 越大越阻尼</strong>（即并联电阻 R_p 越小越阻尼）。"电阻越大越不易振铃"只适用于串联。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 第三课（L3-03）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">能量往返 · 特征根 · 四种形态 · 过冲与工程取舍</span>
+      </div>
+      <h1>二阶电路响应形态与工程直觉</h1>
+      <p class="muted">前面一阶电路，一个储能元件给出一条单调指数曲线。<strong>这节课解决一件事：同样是 RLC 电路，为什么有的响应单调回落、有的却来回振铃甚至冲过稳态值？能不能只看 R、L、C 三个参数就预判电路的"性格"，并把波形里的"振铃、过冲、迟迟不稳"跟阻尼对上号、说出工程上该怎么取舍？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">LC 往返</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">二阶方程</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">阶跃过冲</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">工程取舍</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习/过关</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉判断）</div>
+        <div class="speak teacher">师：先看一个极端——电路里只有电感 L 和电容 C，<strong>没有电阻</strong>。电容一开始存了能量，电感没有。先看图，想象合上开关后会发生什么。</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上电容带初始电压 <code>u_C(0)</code>、电感初始电流为零；回路里没有电阻，也就没有能量损耗。先只回答一个问题：这个来回倒腾会不会自己停下来？</p>
+          </div>
+          <div class="fig-box md" aria-label="LC 回路初始状态示意图：电容C带初始电压u零，电感L初始电流为零，两者接成回路无电阻，标注零输入即无外施电源靠初始储能">
+            <svg class="svg-diag" viewBox="0 0 380 190" role="img">
+              <line class="wire" x1="70" y1="40" x2="250" y2="40"/>
+              <line class="wire" x1="250" y1="40" x2="250" y2="150"/>
+              <line class="wire" x1="250" y1="150" x2="70" y2="150"/>
+              <line class="wire" x1="70" y1="150" x2="70" y2="96"/>
+              <line class="cap-plate" x1="52" y1="92" x2="88" y2="92"/>
+              <line class="cap-plate" x1="52" y1="106" x2="88" y2="106"/>
+              <line class="wire" x1="70" y1="106" x2="70" y2="150"/>
+              <text class="lbl" x="98" y="104">C</text>
+              <text class="ylb" x="100" y="72">u_C(0) ≠ 0</text>
+              <path class="wire" d="M170 40 L170 92"/>
+              <path class="wire" d="M150 82 L170 104 L190 82" fill="none" stroke="var(--chalk-dim)" stroke-width="2"/>
+              <path class="wire" d="M210 150 L210 98"/>
+              <path class="wire" d="M190 108 L210 86 L230 108" fill="none" stroke="var(--chalk-dim)" stroke-width="2"/>
+              <rect class="box" x="192" y="118" width="36" height="20" rx="4"/>
+              <text class="lbl" x="200" y="133">L</text>
+              <text class="ylb" x="252" y="100">i_L(0) = 0</text>
+              <text class="dim" x="14" y="180">零输入：无外施电源，靠初始储能</text>
+            </svg>
+            <div class="fig-cap">图① · LC 回路初始状态（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>没有电阻、没有能量损耗，这个来回倒腾会怎样？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">幅度越来越小，最后停下</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">幅度不变，永远来回振荡</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">单调降到零，不再回来</button>
+          </div>
+          <p class="gate-note">先自己选。公布只到"会不会衰减"这一现象层；名字和公式在下一步"继续"里才给。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：能量往返现象 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选"幅度不变、永远来回振荡"。</strong>电容放电、电流增长，能量从电场搬到电感；电感电流不能突变，又反过来给电容反向充电，能量回到电容……周而复始。没有电阻就没有损耗，储能总数 <code>W</code> 保持不变，所以振幅不衰减。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：四个阶段与储能守恒。</strong>能量在电容的电场与电感的磁场之间往返转移，总量 <code>W=½Li²+½Cu²</code> 在任意时刻都等于初值 <code>W(0)</code>——这就是"等幅"的由来。有电阻时能量会被一点点耗掉，振幅就会衰减。</p>
+            </div>
+            <div class="fig-box lg" aria-label="LC能量往返四阶段示意图：阶段一电容储能电压最大电流零，阶段二电容放完电电流最大能量全在电感，阶段三电容反向充电电流减小，阶段四能量回到电容回复初态，底部标注储能W等于二分之一Li平方加二分之一Cu平方恒定">
+              <svg class="svg-diag" viewBox="0 0 460 190" role="img">
+                <text class="ylb" x="12" y="24">能量在电场 ↔ 磁场之间往返</text>
+                <line class="guide" x1="115" y1="36" x2="115" y2="160"/>
+                <line class="guide" x1="230" y1="36" x2="230" y2="160"/>
+                <line class="guide" x1="345" y1="36" x2="345" y2="160"/>
+                <text class="dim" x="16" y="62">① 电容满</text><text class="lbl" x="16" y="80">u 最大</text><text class="dim" x="16" y="98">i = 0</text>
+                <text class="dim" x="130" y="62">② 电容放完</text><text class="lbl" x="130" y="80">i 最大</text><text class="dim" x="130" y="98">u = 0</text>
+                <text class="dim" x="245" y="62">③ 反向充电</text><text class="lbl" x="245" y="80">i 减小</text><text class="dim" x="245" y="98">u 反向</text>
+                <text class="dim" x="356" y="62">④ 回到初态</text><text class="lbl" x="356" y="80">u 最大</text><text class="dim" x="356" y="98">i = 0</text>
+                <text class="plb" x="20" y="126">电场能</text><text class="glb" x="130" y="126">磁场能</text><text class="plb" x="245" y="126">电场能</text><text class="glb" x="356" y="126">电场能</text>
+                <text class="ylb" x="16" y="160">W = ½Li² + ½Cu² = 常数</text>
+              </svg>
+              <div class="fig-cap">图② · LC 能量往返四阶段（自包含示意）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-ideal" data-stage="1" onclick="revealBlock(this)">继续：给现象命名 + 定义（陈述①） →</button>
+          <div class="reveal" id="rev-ideal">
+            <div class="ok-box"><strong>陈述时刻 ① · 二阶电路与 LC 等幅振荡</strong><br/><strong>全称/命名</strong>：二阶电路（second-order circuit）；LC 等幅振荡（undamped / sustained oscillation）。<br/><strong>一句定义</strong>：含两个独立储能元件（L 与 C）、需用二阶微分方程描述的电路叫二阶电路；只由 L、C 组成且无电阻时，储能在电场与磁场间往返转移而总量 <code>W=½Li²+½Cu²</code> 恒定，电压电流按正弦规律周而复始、振幅不衰减，称为等幅振荡。<br/><strong>符号式</strong>：<code>W=½Li²+½Cu²=常数</code>；<code>ω₀=1/√(LC)</code>；<code>u_C=U₀cos(ω₀t)</code>。〔邱 §7-5 印刷 p.154；李上 §7-1 / PDF 300–302〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1（陈述①在预测 1 揭晓内已给，此处无新预测） ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 等幅振荡（已在预测 1 揭晓的"继续"里完成）</div>
+        <p class="muted">陈述时刻 ① 已在上一个环节的"继续"按钮里给出：二阶电路、能量往返、储能守恒、等幅振荡与 <code>ω₀</code>。但等幅只是理想情况——真实电路总有电阻，能量会被耗掉。把电阻 R 串进来，会怎样？带着这个问题往下走。</p>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2：二阶方程与四种形态 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 二阶方程与四种形态（陈述时刻② · 揭晓预测 2）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <div class="speak teacher">师：RLC 串联接电源，取 <code>u_C</code> 为求解量。KVL：<code>u_R+u_L+u_C=u_s</code>，用 <code>i=C·du_C/dt</code> 代入 <code>u_R=Ri</code>、<code>u_L=L di/dt</code>，得到二阶方程。</div>
+            <div class="eq-line">LC·u_C″ + RC·u_C′ + u_C = u_s　（零输入时右端为 0）</div>
+            <p class="muted">沿用一阶"设 <code>e^(pt)</code>"的经验代入齐次方程，得到特征方程 <code>LCp²+RCp+1=0</code>；令 <code>α=R/(2L)</code>、<code>ω₀=1/√(LC)</code>，根写成 <code>p=−α±√(α²−ω₀²)</code>。答案全在根号 <code>α²−ω₀²</code> 的正负里。</p>
+          </div>
+          <div class="fig-box md" aria-label="RLC串联电路示意图：电压源us经开关接电阻R电感L电容C串联回路，标注电容电压uc为求解量，旁边写KVL方程LC乘uc二阶导加RC乘uc一阶导加uc等于us">
+            <svg class="svg-diag" viewBox="0 0 380 210" role="img">
+              <line class="wire" x1="40" y1="40" x2="90" y2="40"/>
+              <rect class="box" x="90" y="34" width="46" height="12"/>
+              <text class="lbl" x="104" y="28">R</text>
+              <line class="wire" x1="136" y1="40" x2="180" y2="40"/>
+              <path class="wire" d="M180 40 a12 12 0 0 0 24 0 a12 12 0 0 0 24 0 a12 12 0 0 0 24 0" fill="none" stroke="var(--chalk-dim)" stroke-width="2.2"/>
+              <text class="lbl" x="198" y="26">L</text>
+              <line class="wire" x1="252" y1="40" x2="290" y2="40"/>
+              <line class="cap-plate" x1="278" y1="32" x2="302" y2="32"/>
+              <line class="cap-plate" x1="278" y1="48" x2="302" y2="48"/>
+              <text class="lbl" x="306" y="46">C</text>
+              <line class="wire" x1="290" y1="48" x2="290" y2="160"/>
+              <line class="wire" x1="290" y1="160" x2="40" y2="160"/>
+              <line class="wire" x1="40" y1="160" x2="40" y2="60"/>
+              <circle cx="40" cy="50" r="8" fill="none" stroke="var(--chalk-dim)" stroke-width="2"/>
+              <text class="ylb" x="12" y="100">u_s</text>
+              <text class="glb" x="196" y="100">求 u_C</text>
+              <text class="dim" x="10" y="190">LC·u_C″ + RC·u_C′ + u_C = u_s</text>
+            </svg>
+            <div class="fig-cap">图③ · RLC 串联与二阶方程（自包含示意）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>看根号 <code>α²−ω₀²</code>：当 α&gt;ω₀、α=ω₀、α&lt;ω₀、以及 R=0（α=0）时，根各是什么数、波形大概什么样？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">根的正负决定一切，根号正负无所谓</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">根号正负会改变根的性质（实根/重根/复根），波形随之不同</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">四种情况波形都一样</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2：四种形态 + 临界电阻（陈述②） →</button>
+        <div class="reveal" id="rev-2">
+          <p>四种情况对应四种根、四种形态：</p>
+          <ul>
+            <li><code>α&gt;ω₀</code>（<code>R&gt;R_c</code>）：根号为正 → 两个不等负实根 → **过阻尼**，单调回落不振荡；</li>
+            <li><code>α=ω₀</code>（<code>R=R_c</code>）：重根 <code>p=−α</code> → **临界阻尼**，不振荡，是振荡与非振荡的分界；</li>
+            <li><code>α&lt;ω₀</code>（<code>R&lt;R_c</code>）：共轭复根 <code>−α±jω_d</code> → **欠阻尼**，衰减振荡/振铃；</li>
+            <li><code>R=0</code>（<code>α=0</code>）：共轭虚根 <code>±jω₀</code> → **等幅振荡**（回到预测 1）。</li>
+          </ul>
+          <p>分界电阻 <code>R_c=2√(L/C)</code>（即李上的阻尼电阻 <code>R_d</code>，由 <code>α=ω₀</code> 解出）。</p>
+          <div class="ok-box"><strong>陈述时刻 ② · 特征根、四种阻尼形态与临界电阻</strong><br/><strong>全称/命名</strong>：特征方程/特征根（characteristic equation / roots）、四种阻尼形态、临界电阻（critical resistance）。<br/><strong>一句定义</strong>：把 <code>u=Ke^(pt)</code> 代入二阶齐次方程得到的 <code>LCp²+RCp+1=0</code> 叫特征方程，其根 <code>p=−α±√(α²−ω₀²)</code>（<code>α=R/(2L)</code>、<code>ω₀=1/√(LC)</code>）叫特征根，只由 R、L、C 决定、与激励和初始储能无关；按 <code>α</code> 与 <code>ω₀</code> 的比较分为过阻尼（不等负实根、单调）、临界（重根、不振荡，是振荡与非振荡的分界）、欠阻尼（共轭复根、衰减振荡/振铃）、等幅（共轭虚根、无衰减正弦）；分界电阻 <code>R_c=2√(L/C)</code>。工程评价见陈述时刻 4，此处只判形态。<br/><strong>符号式</strong>：<code>p=−α±√(α²−ω₀²)</code>，<code>α=R/(2L)</code>，<code>ω₀=1/√(LC)</code>，<code>R_c=2√(L/C)</code>。〔邱 §7-5 印刷 p.154–162；李上 §7-2 式 7-13/7-14/7-15、例7-1~7-4 / PDF 303–310〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：四种形态波形对照。</strong>同一坐标系里，过阻尼单调回落、临界不振荡且贴着零走、欠阻尼在零附近衰减振荡、等幅振荡幅度不变。只改一个 R，波形就从"单调"一路变到"振荡"。</p>
+            </div>
+            <div class="fig-box lg" aria-label="四种二阶响应形态波形对照示意图：过阻尼曲线单调衰减到零，临界阻尼最快贴零不振荡，欠阻尼在零附近衰减振荡，等幅振荡正弦幅度不变，横轴时间纵轴响应">
+              <svg class="svg-diag" viewBox="0 0 460 210" role="img">
+                <line class="guide" x1="36" y1="100" x2="440" y2="100"/>
+                <line class="guide" x1="36" y1="18" x2="36" y2="190"/>
+                <text class="dim" x="6" y="24">u</text><text class="dim" x="440" y="118">t</text>
+                <text class="ylb" x="46" y="16">过阻尼</text>
+                <path d="M40 40 C70 70 110 92 170 99 L300 100" fill="none" stroke="var(--chalk-yellow)" stroke-width="2.4"/>
+                <text class="plb" x="46" y="56">临界</text>
+                <path d="M40 40 C72 80 96 98 130 100 L300 100" fill="none" stroke="var(--chalk-pink)" stroke-width="2.4"/>
+                <text class="lbl" x="46" y="140">欠阻尼</text>
+                <path d="M40 172 C55 90 70 128 88 100 C106 74 122 112 140 100 C158 90 176 104 194 100 C220 96 250 100 300 100" fill="none" stroke="var(--chalk-blue)" stroke-width="2.4"/>
+                <text class="glb" x="46" y="188">等幅</text>
+                <path d="M40 100 Q55 44 70 100 T100 100 T130 100 T160 100 T190 100" fill="none" stroke="var(--chalk-green)" stroke-width="2.4"/>
+                <text class="dim" x="220" y="46">单调不振荡 ←→ 振荡</text>
+              </svg>
+              <div class="fig-cap">图④ · 四种形态波形对照（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <p class="muted">李上的四个算例正好是同一 <code>L=1H, C=1F</code> 只改 <code>R=3/2/1/0Ω</code>，依次演示这四种形态——下面面板 A 就用这组参数，点预设按钮亲眼对比。</p>
+          <button class="reveal-btn" data-target="rev-2-ext" data-stage="2" onclick="revealBlock(this)">继续：只改 R 看形态演变（陈述② 的应用延伸） →</button>
+          <div class="reveal" id="rev-2-ext">
+            <p><code>L=1H, C=1F</code> 时 <code>R_c=2Ω</code>：<code>R=3</code> 过阻尼（<code>p≈−0.382/−2.618</code>）、<code>R=2</code> 临界（重根 <code>p=−1</code>）、<code>R=1</code> 欠阻尼（<code>p≈−0.5±j0.866</code>）、<code>R=0</code> 等幅（<code>p=±j</code>）。到面板 A 用四个预设按钮逐个看。</p>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3：二阶阶跃响应与过冲 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 二阶阶跃响应与过冲（陈述时刻③ · 揭晓预测 3）</div>
+        <div class="speak teacher">师：前面都是"电容自己带着初始能量放电"（零输入）。工程里更常见的是"一开始没能量，突然合上开关加电源"——这叫<strong>阶跃激励</strong>。欠阻尼 RLC 加上直流阶跃，输出会怎样？</div>
+        <p class="muted">阶跃下方程右端变成常数 <code>U_s</code>；解 = 特解（稳态 <code>U_s</code>）+ 齐次通解（刚才四种形态之一）。<strong>形态仍由特征根定、与激励无关；阶跃只决定稳态值。</strong></p>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>欠阻尼 RLC 加上阶跃，输出 <code>u_C</code> 从 0 往稳态值 <code>U_s</code> 爬。它会温和地爬到 <code>U_s</code> 停住，还是会冲过 <code>U_s</code> 再荡回来？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">冲过稳态值，再荡回来</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">温和爬到稳态就停住</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">看情况</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3：过冲与振铃（陈述③） →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选"冲过稳态值、再荡回来"。</strong>欠阻尼的齐次项是衰减振荡，<code>u_C</code> 边往 <code>U_s</code> 爬边围绕它摆动，第一次峰值超过 <code>U_s</code>——高出部分叫<strong>过冲</strong>，之后来回衰减摆动叫<strong>振铃</strong>，进入并保持在稳态附近所需时间叫<strong>稳定时间</strong>。李上例7-5：<code>U_s=300V</code>，峰值约 <code>516V</code>、上冲约 <code>216V</code>（定性例）。</p>
+          <div class="ok-box"><strong>陈述时刻 ③ · 二阶阶跃响应、过冲与振铃、阻尼比</strong><br/><strong>全称/命名</strong>：二阶阶跃响应（step response）、过冲（overshoot）、振铃（ringing）、稳定时间（settling time）、阻尼比（damping ratio）。<br/><strong>一句定义</strong>：二阶电路对直流阶跃激励的零状态响应 = 稳态特解 + 由特征根决定的齐次通解；欠阻尼时齐次项为衰减振荡，输出会冲过稳态值（峰值高出稳态的部分为过冲/上冲），并在稳态附近来回衰减摆动（振铃），经过一段稳定时间后进入并保持在稳态附近。形态仍由特征根定、与激励无关，阶跃只决定稳态值。为量化过冲，定义<strong>阻尼比 ζ≡α/ω₀</strong>（无量纲）：ζ&lt;1 欠阻尼、ζ=1 临界、ζ&gt;1 过阻尼，与 α 和 ω₀ 的比较等价；ζ 越大过冲越小。<br/><strong>符号式</strong>：<code>u(t)=稳态值 + e^(−αt)(A cos ω_d t+B sin ω_d t)</code>（欠阻尼）；过冲量 = 峰值 − 稳态值；<code>ζ=α/ω₀</code>（面板固定 <code>L=C=1</code> 时 <code>ζ=R/2</code>；一般串联 RLC 用 <code>ζ=R/R_c</code>）。〔邱 §7-7 印刷 p.166–169；李上 §7-3 例7-5 / PDF 312–314〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑤：欠阻尼阶跃响应与过冲。</strong>虚线是稳态值 <code>U∞</code>；第一次峰值高出稳态的部分是<strong>过冲</strong>，随后围绕稳态衰减摆动是<strong>振铃</strong>，最终进入稳态附近的时间是<strong>稳定时间</strong>。</p>
+            </div>
+            <div class="fig-box lg" aria-label="欠阻尼二阶阶跃响应过冲示意图：横轴时间纵轴输出，虚线为稳态值，曲线从零上升冲过稳态到峰值后围绕稳态衰减振荡，标注过冲为峰值减稳态值、振铃、稳定时间">
+              <svg class="svg-diag" viewBox="0 0 460 210" role="img">
+                <line class="guide" x1="36" y1="176" x2="440" y2="176"/>
+                <line class="guide" x1="36" y1="20" x2="36" y2="190"/>
+                <line class="guide" x1="36" y1="92" x2="440" y2="92" stroke-dasharray="5 4"/>
+                <text class="dim" x="12" y="24">u</text><text class="dim" x="440" y="194">t</text>
+                <text class="ylb" x="360" y="86">稳态 U∞</text>
+                <path d="M36 176 C60 96 78 34 100 34 C122 34 128 118 150 96 C172 74 176 116 198 98 C220 82 226 106 248 96 C280 84 320 92 430 92" fill="none" stroke="var(--chalk-blue)" stroke-width="2.6"/>
+                <circle cx="100" cy="34" r="4" fill="var(--chalk-yellow)"/>
+                <line class="guide" x1="100" y1="34" x2="100" y2="92"/>
+                <text class="ylb" x="108" y="30">峰值</text>
+                <text class="plb" x="112" y="70">过冲 = 峰值 − 稳态</text>
+                <text class="glb" x="210" y="140">振铃（衰减振荡）</text>
+                <line class="guide" x1="300" y1="82" x2="300" y2="176"/>
+                <text class="dim" x="268" y="168">稳定时间</text>
+              </svg>
+              <div class="fig-cap">图⑤ · 欠阻尼阶跃过冲（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4：工程取舍与边界 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 振铃的工程影响与边界（陈述时刻④ · 揭晓预测 4）</div>
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>既然过冲、振铃可能有害，那是不是把 R 加到过阻尼（不振荡）就一定最好？还有，"电阻越大越不易振铃"这句话，放到并联 RLC 也对吗？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">过阻尼一定最好；那句话对并联也成立</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">不一定，要看能否容忍过冲；那句话只对串联成立</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">过阻尼一定最好；那句话只对串联成立</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4：工程取舍与对偶边界（陈述④） →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>选第二项。</strong>过阻尼不振荡但恢复慢，临界是"无过冲中最快"，若系统允许少量过冲，稍欠阻尼响应更快——按需求取舍。而"电阻越大越不易振铃"只在<strong>串联 RLC</strong> 成立；<strong>并联 GCL</strong> 的一阶系数是电导 <code>G</code>（<code>α=G/(2C)</code>），<code>G</code> 越大越阻尼（并联电阻 <code>R_p=1/G</code> 越小越阻尼），把串联结论照搬会出错。</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 阻尼的工程取舍与串并联边界</strong><br/><strong>全称/命名</strong>：阻尼的工程取舍；串联 RLC 与并联 GCL 的对偶（duality）。<br/><strong>一句定义</strong>：过阻尼无过冲但恢复慢、欠阻尼快但有过冲振铃、临界是"无过冲中最快"；工程上按能否容忍过冲/振铃与稳定时间要求选阻尼，常取稍欠阻尼折中，没有"永远最好"。串联 RLC 的阻尼由 <code>α=R/(2L)</code> 决定（R 越大越阻尼）；对偶的并联 GCL 由 <code>α=G/(2C)</code> 决定（电导 G 越大越阻尼，等价于并联电阻 <code>R_p=1/G</code> 越小越阻尼）——"电阻越大越不易振铃"只适用于串联，不能照搬到并联。<br/><strong>符号式</strong>：串联 <code>α=R/(2L)</code>；并联 <code>α=G/(2C)=1/(2R_p C)</code>。〔李上 §7-3 例7-5、§7-4 式 7-17 / PDF 314、317；邱 §7-7（过阻尼过渡）印刷 p.168–169；工程取舍为〔通识〕〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑥：串联 RLC 与并联 GCL 的对偶。</strong>串联回路里阻尼元件是电阻 R（<code>α=R/2L</code>），R 越大越阻尼；并联回路里一阶系数是电导 G（<code>α=G/2C</code>），G 越大越阻尼。换成并联电阻 <code>R_p=1/G</code> 说，则是 <code>R_p</code> 越小越阻尼——方向恰好与串联电阻相反。</p>
+            </div>
+            <div class="fig-box lg" aria-label="串联RLC与并联GCL对偶对照示意图：左侧串联R L C接电压源标注alpha等于R除以2L且R越大越阻尼，右侧并联G C L接电流源标注alpha等于G除以2C且G越大越阻尼即并联电阻Rp越小越阻尼，底部写别把串联结论照搬并联">
+              <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+                <line class="guide" x1="230" y1="10" x2="230" y2="180"/>
+                <text class="ylb" x="14" y="24">串联 RLC（电压源）</text>
+                <line class="wire" x1="30" y1="52" x2="200" y2="52"/>
+                <rect class="box" x="60" y="46" width="34" height="12"/><text class="lbl" x="70" y="40">R</text>
+                <rect class="box" x="112" y="46" width="34" height="12"/><text class="lbl" x="122" y="40">L</text>
+                <line class="cap-plate" x1="162" y1="44" x2="182" y2="44"/><line class="cap-plate" x1="162" y1="60" x2="182" y2="60"/><text class="lbl" x="186" y="62">C</text>
+                <text class="glb" x="30" y="88">α = R / (2L)</text>
+                <text class="dim" x="30" y="110">R 越大 → 越阻尼</text>
+                <text class="plb" x="246" y="24">并联 GCL（电流源）</text>
+                <line class="wire" x1="246" y1="52" x2="430" y2="52"/>
+                <rect class="box" x="278" y="40" width="34" height="12"/><text class="lbl" x="286" y="36">G</text>
+                <rect class="box" x="330" y="40" width="34" height="12"/><text class="lbl" x="338" y="36">C</text>
+                <path class="wire" d="M386 52 a10 10 0 0 0 20 0 a10 10 0 0 0 20 0" fill="none" stroke="var(--chalk-dim)" stroke-width="2"/><text class="lbl" x="392" y="36">L</text>
+                <text class="glb" x="246" y="88">α = G / (2C)</text>
+                <text class="dim" x="246" y="110">G 越大 → 越阻尼（R_p = 1/G 越小）</text>
+                <text class="ylb" x="30" y="160">别把"电阻越大越不易振铃"照搬到并联</text>
+              </svg>
+              <div class="fig-cap">图⑥ · 串并联对偶与阻尼方向（自包含示意）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：实验台 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 两个实验台（形态预判台 / 阶跃过冲台）</div>
+        <p class="muted">拖动滑块看参数如何决定形态与过冲；数值全部按教案推导的公式联动，改参数后与独立计算一致。</p>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · 形态预判台（预测 2 揭晓后启用）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 2 揭晓后解锁（此刻显示会提前泄露形态判据）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="mode-btns">
+              <button class="mode-btn active" data-preset="3" onclick="setPreset(3)">R=3 过阻尼</button>
+              <button class="mode-btn" data-preset="2" onclick="setPreset(2)">R=2 临界</button>
+              <button class="mode-btn" data-preset="1" onclick="setPreset(1)">R=1 欠阻尼</button>
+              <button class="mode-btn" data-preset="0" onclick="setPreset(0)">R=0 等幅</button>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>R（Ω）<span id="A-R-v">3 Ω</span></label>
+                <input type="range" id="A-R" min="0" max="5" step="0.1" value="3" />
+                <label>L（H）<span id="A-L-v">1 H</span></label>
+                <input type="range" id="A-L" min="0.5" max="3" step="0.1" value="1" />
+                <label>C（F）<span id="A-C-v">1 F</span></label>
+                <input type="range" id="A-C" min="0.25" max="3" step="0.05" value="1" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（只由 R、L、C 定）</h5>
+                <div class="th-row"><span class="k">临界电阻 R_c=2√(L/C)</span><span class="v" id="A-Rc">—</span></div>
+                <div class="th-row"><span class="k">α=R/(2L)</span><span class="v" id="A-alpha">—</span></div>
+                <div class="th-row"><span class="k">ω₀=1/√(LC)</span><span class="v" id="A-w0">—</span></div>
+                <div class="th-row"><span class="k">Δ=α²−ω₀²</span><span class="v" id="A-delta">—</span></div>
+                <div class="th-row"><span class="k">特征根 p₁</span><span class="v" id="A-p1">—</span></div>
+                <div class="th-row"><span class="k">特征根 p₂</span><span class="v" id="A-p2">—</span></div>
+                <div class="th-row"><span class="k">形态判定</span><span class="v" id="A-shape">—</span></div>
+                <div class="res-line" id="A-form">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认 <code>L=1,C=1,R=3</code> → <code>R_c=2Ω</code>、<code>α=1.5</code>、<code>ω₀=1</code>、<code>Δ=1.25</code>、<code>p≈−0.382/−2.618</code>、<strong>过阻尼</strong>。四个预设固定 <code>L=C=1</code> 只改 R；拖 L/C 会改变 <code>R_c</code>，形态按同一组公式联动。</p>
+          </div>
+        </div>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · 阶跃过冲台（预测 3 揭晓后启用；L=C=1 固定）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 3 揭晓后解锁（此刻显示会提前泄露过冲数值）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>R（Ω）<span id="B-R-v">1 Ω</span></label>
+                <input type="range" id="B-R" min="0.2" max="2.4" step="0.1" value="1" />
+                <label>稳态值 U∞（V）<span id="B-U-v">10 V</span></label>
+                <input type="range" id="B-U" min="1" max="20" step="1" value="10" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（ζ 越大过冲越小）</h5>
+                <div class="th-row"><span class="k">ζ=α/ω₀=R/2</span><span class="v" id="B-zeta">—</span></div>
+                <div class="th-row"><span class="k">ω_d</span><span class="v" id="B-wd">—</span></div>
+                <div class="th-row"><span class="k">过冲 M_p</span><span class="v" id="B-mp">—</span></div>
+                <div class="th-row"><span class="k">峰值时刻 t_p</span><span class="v" id="B-tp">—</span></div>
+                <div class="th-row"><span class="k">峰值</span><span class="v" id="B-peak">—</span></div>
+                <div class="res-line" id="B-state">—</div>
+              </div>
+            </div>
+            <div class="wave-box" aria-label="阶跃响应实时波形：横轴时间纵轴输出，虚线为稳态值，曲线随R变化显示过冲和振铃">
+              <svg viewBox="0 0 400 200" role="img">
+                <line x1="40" y1="170" x2="388" y2="170" stroke="var(--chalk-faint)" stroke-width="1"/>
+                <line x1="40" y1="18" x2="40" y2="182" stroke="var(--chalk-faint)" stroke-width="1"/>
+                <line id="B-steady" x1="40" y1="60" x2="388" y2="60" stroke="var(--chalk-faint)" stroke-width="1" stroke-dasharray="5 4"/>
+                <text x="6" y="24">u</text><text x="388" y="194">t</text>
+                <text x="300" y="54" id="B-lbl-steady">稳态</text>
+                <path id="B-curve" d="" fill="none" stroke="var(--chalk-blue)" stroke-width="2.4"/>
+                <circle id="B-peakdot" cx="0" cy="0" r="4" fill="var(--chalk-yellow)" style="display:none;"/>
+              </svg>
+            </div>
+            <p class="muted" style="margin-top:6px;">默认 <code>R=1,U∞=10</code> → <code>ζ=0.5</code>、<code>ω_d≈0.866</code>、过冲 <code>16.3%</code>、<code>t_p≈3.63s</code>、峰值 <code>≈11.63V</code>。R 调小过冲变大、振铃更久；<code>R≥2</code> 无过冲。面板按公式显示数值供观察趋势，不要求记解析式。</p>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：独立练习 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（8 题，先作答再判定）与过关</div>
+        <p class="muted">形态一 · 给参数预判形态 + 读响应形式（1–4）；形态二 · 工程现象反推与边界取舍（5–8）。都不是例题的近邻复制。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（形态一）· RLC 串联 <code>L=1H, C=0.25F, R=5Ω</code>。求临界电阻 R_c（Ω），并判形态（填"过阻尼/临界/欠阻尼/等幅"）。</div>
+          <div class="numcheck" id="q-1" data-qid="q-1"><label>R_c <input type="text" placeholder="Ω" />，形态 <input class="txtin" type="text" placeholder="如：过阻尼" /></label><button class="btn-sm" onclick="checkNum1()">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 2（形态一）· 已知特征根 <code>p₁,₂=−3±j4</code>。判形态，并填"是否衰减振荡"（衰减振荡 / 不振荡）。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>形态 <input class="txtin" type="text" placeholder="如：欠阻尼" />，波形 <input class="txtin" type="text" placeholder="如：衰减振荡" /></label><button class="btn-sm" onclick="checkTextAny('q-2',[['欠阻尼'],['衰减振荡','振铃','振荡']],'负实部共轭复根 → 欠阻尼，波形为衰减振荡（振铃）。')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 3（形态一）· <code>L=2H, C=2F, R=2Ω</code>。求 R_c（Ω）、判形态，并写出 α。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>R_c <input type="text" placeholder="Ω" />，α <input type="text" placeholder="1/s" />，形态 <input class="txtin" type="text" placeholder="如：临界" /></label><button class="btn-sm" onclick="checkNum3()">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 4（形态一）· <code>R=0, L=4H, C=1F</code>。判形态并求振荡角频率 ω₀（rad/s）。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>ω₀ <input type="text" placeholder="rad/s" />，形态 <input class="txtin" type="text" placeholder="如：等幅" /></label><button class="btn-sm" onclick="checkNum4()">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 5（形态二）· 某二阶阶跃响应在稳态值附近来回摆动、幅度越来越小，这是？<br/>①过阻尼 ②临界 ③欠阻尼 ④等幅</div>
+          <div class="choicebox" id="q-5" data-qid="q-5" data-hint="摆动且幅度衰减是欠阻尼特征；过阻尼/临界不摆动，等幅度不衰减。" data-explain="选③：来回摆动说明有振荡（欠阻尼或等幅），幅度越来越小说明有衰减（欠阻尼），等幅度不衰减。"><label><input type="radio" name="q-5" value="a"/> ① 过阻尼</label><label><input type="radio" name="q-5" value="b"/> ② 临界</label><label><input type="radio" name="q-5" value="c"/> ③ 欠阻尼</label><label><input type="radio" name="q-5" value="d"/> ④ 等幅</label><button class="btn-sm" onclick="checkChoice('q-5','c')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 6（形态二）· 一个欠阻尼串联 RLC，把串联电阻 R 调小：过冲变大还是变小？振铃持续更久还是更短？（两空各填"变大/变小/更久/更短"）</div>
+          <div class="numcheck" id="q-6" data-qid="q-6"><label>过冲 <input class="txtin" type="text" placeholder="如：变大" />，振铃 <input class="txtin" type="text" placeholder="如：更久" /></label><button class="btn-sm" onclick="checkTextAny('q-6',[['变大'],['更久','更长']],'R 调小 → ζ=R/R_c 变小 → 过冲变大、振铃持续更久（稳定更慢）。')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 7（形态二）· 关于串联 RLC 与并联 GCL 的阻尼，正确的是？<br/>① 串联 R 越大越易振铃；② 并联 G 越大越易振铃；③ 串联 R_s 越大、并联电导 G 越大都让阻尼变大（并联电阻 R_p=1/G 越小越阻尼）；④ 两者完全相同。</div>
+          <div class="choicebox" id="q-7" data-qid="q-7" data-hint="串联 α=R/2L（R 大→阻尼大）；并联 α=G/2C（G 大→阻尼大，即 R_p=1/G 小→阻尼大）。①把串联方向说反、②把并联方向说反、④忽略对偶差异。" data-explain="选③：串联 R 越大、并联电导 G 越大都让阻尼变大，方向通过 R_s↔G 对偶对应。"><label><input type="radio" name="q-7" value="a"/> ①</label><label><input type="radio" name="q-7" value="b"/> ②</label><label><input type="radio" name="q-7" value="c"/> ③</label><label><input type="radio" name="q-7" value="d"/> ④</label><button class="btn-sm" onclick="checkChoice('q-7','c')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 8（形态二 · 辨析两空）·"临界阻尼无过冲，所以工程上永远选临界最好"，对吗？说出一条理由；若系统允许少量过冲、追求更快响应，应选略偏哪种形态？</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>理由 <input class="txtin" type="text" placeholder="如：临界是无过冲中最快，但允许过冲时稍欠阻尼更快" />，应选 <input class="txtin" type="text" placeholder="如：欠阻尼" /></label><button class="btn-sm" onclick="checkTextAny('q-8',[['需求','最快','过冲','稍欠阻尼','折中'],['欠阻尼']],'不对：临界是"无过冲中最快"，但允许过冲时稍欠阻尼上升更快，好坏看需求；应选略偏欠阻尼。')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出）</strong>：① 无电阻为什么等幅振荡（储能守恒）？② <code>α²−ω₀²</code> 的正负为什么决定形态？③ 临界电阻 <code>R_c=2√(L/C)</code> 怎么来的？④ 为什么形态与激励无关、阶跃只定稳态值？⑤ 过冲/振铃与 R（ζ）是什么关系？⑥ 为什么"电阻越大越不易振铃"只适用于串联、并联 GCL 方向如何？
+        </div>
+        <div class="warn-note">下一课钩子（L3-04 选学）：今天我们靠"看特征根"就预判了二阶性格，但每次都要先列微分方程再求根仍嫌麻烦。下一课用拉氏变换把微分方程变成代数方程，把今天的 <code>p</code> 变成可四则运算的 <code>s</code>——这是传递函数、滤波器、控制系统的语言。</div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏与来源台账（页尾资料）</summary>
+          <h4>学习目标</h4>
+          <p class="muted">形态一（给参数预判形态 + 读响应形式）：给 R/L/C 或特征根，算 <code>R_c</code> 或比 <code>α</code> 与 <code>ω₀</code>，判断过阻尼/临界/欠阻尼/等幅并写出响应形式、定性画波形。形态二（工程现象反推与边界取舍）：由波形反推阻尼状态，辨清振铃/过冲/稳定时间与阻尼的关系，知道串联 RLC 与并联 GCL 的对偶边界，按需求选阻尼。</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 6′ · 等幅振荡与二阶方程 6′ · 特征根四形态 12′ · 阶跃过冲 12′ · 工程取舍边界 6′ · 两实验台与练习 8′ · 收尾钩子 1′。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>LC 能量往返、储能守恒、等幅振荡</td><td>〔书〕李上 §7-1 / PDF 300–302（本文件新 OCR）</td></tr>
+            <tr><td>二阶零输入方程、特征方程、特征根只由结构参数定</td><td>〔书〕邱 §7-5 印刷 p.154–156；李上 §7-2 式 7-10~7-14 / PDF 303–304</td></tr>
+            <tr><td>四种形态、响应形式、临界电阻 <code>R_c=2√(L/C)</code>、阻尼电阻 <code>R_d</code>、例7-1~7-4</td><td>〔书〕邱 §7-5 印刷 p.156–162；李上 §7-2 式 7-15、例7-1~7-4 / PDF 304–310</td></tr>
+            <tr><td>二阶零状态响应 = 特解 + 齐次通解</td><td>〔书〕邱 §7-6 印刷 p.162</td></tr>
+            <tr><td>单位阶跃响应、矩形脉冲、二阶阶跃过阻尼例7-13</td><td>〔书〕邱 §7-7 印刷 p.166–169</td></tr>
+            <tr><td>"上冲(overshoot)"命名、欠阻尼阶跃 <code>300V→516V</code>、稳定时间直觉</td><td>〔书〕李上 §7-3 例7-5 / PDF 312–314</td></tr>
+            <tr><td>并联 GCL 对偶 <code>α=G/2C</code>、临界电导、例7-7</td><td>〔书〕李上 §7-4 式 7-17 / PDF 317–318</td></tr>
+            <tr><td>冲激响应边界认知（本课不讲求解，留 L3-04）</td><td>〔书〕邱 §7-8 印刷 p.169–172</td></tr>
+            <tr><td>阻尼比 ζ 定义、过冲/振铃工程取舍、串并联边界辨析</td><td>由上述方程 + 工程常识推导〔通识〕</td></tr>
+            <tr><td>4 预测 + 8 练习 + 两实验台全部数值、6 张 SVG</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽）/〔通识〕</td></tr>
+          </table>
+          <p class="muted">记号全课统一 <code>p</code> 作特征根（李上写 <code>s</code>，仅作一句注）、<code>α=R/2L</code>、<code>ω₀=1/√(LC)</code>、<code>R_c=2√(L/C)</code>、<code>ζ=α/ω₀</code>。邱 PDF=印刷+24（§7-5 印刷 p.154→PDF 178、§7-7 p.166→PDF 190、§7-8 p.169→PDF 193）；李上印刷页码按 PDF−18 推算、以原书为准故用章节号 + PDF 页；H&H 未摘正文，不引章节号。李上例7-5 的 ω 量纲换算有争议，只引用教材三值 <code>77.4ms/516V/12.92Hz</code> 作定性例、不自算其 ω；面板用自编自洽数值。正文见 <code>书籍/摘录/L3-03.md</code>，教案见 <code>lessons/drafts/L3-03-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：等幅振荡（储能守恒）；预测 2：根号正负决定根性质 → 四种形态，<code>R_c=2√(L/C)</code>；预测 3：冲过稳态再荡回（过冲/振铃/稳定时间，<code>ζ=α/ω₀</code>）；预测 4：不一定最好（临界无过冲最快、稍欠阻尼折中），那句话只对串联成立。练习：1 <code>R_c=4Ω</code>/过阻尼；2 欠阻尼/衰减振荡；3 <code>R_c=2Ω</code>/<code>α=0.5</code>/临界；4 <code>ω₀=0.5</code>/等幅；5 ③；6 变大/更久；7 ③；8 不对（临界是无过冲中最快、允许过冲时稍欠阻尼更快，看需求）/欠阻尼。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-03-second-order-response-shapes';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-03 增量脚本：预测门禁 + 陈述卡 gating + 双实验台 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(!isFinite(v)) return '—';
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+
+    /* ---------- 门禁：面板 A/B 与速查栏在对应预测揭晓后解锁 ---------- */
+    var aUnlocked=false, bUnlocked=false, cheatUnlocked=false;
+    function unlockA(){ if(aUnlocked) return; aUnlocked=true; el('A-lock').style.display='none'; el('A-body').style.display=''; solveA(); }
+    function unlockB(){ if(bUnlocked) return; bUnlocked=true; el('B-lock').style.display='none'; el('B-body').style.display=''; solveB(); }
+    function unlockCheat(){ if(cheatUnlocked) return; cheatUnlocked=true; document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display=''; }); }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred2') unlockA();
+      if(btn.id==='gate-pred3') unlockB();
+      if(btn.id==='gate-pred4') unlockCheat();
+    };
+
+    /* ---------- 面板 A：形态预判台 ---------- */
+    function setPreset(r){
+      if(!aUnlocked) return;
+      el('A-R').value=r; el('A-L').value=1; el('A-C').value=1;
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===parseFloat(r)); });
+      solveA();
+    }
+    window.setPreset=setPreset;
+    function solveA(){
+      if(!aUnlocked) return;
+      var R=parseFloat(el('A-R').value), L=parseFloat(el('A-L').value), C=parseFloat(el('A-C').value);
+      set('A-R-v',num(R,1)+' Ω'); set('A-L-v',num(L,1)+' H'); set('A-C-v',num(C,2)+' F');
+      var Rc=2*Math.sqrt(L/C), alpha=R/(2*L), w0=1/Math.sqrt(L*C), D=alpha*alpha-w0*w0;
+      set('A-Rc',num(Rc,3)+' Ω'); set('A-alpha',num(alpha,3)); set('A-w0',num(w0,3)); set('A-delta',num(D,3));
+      var p1,p2,shape,form;
+      if(D>1e-9){
+        var s=Math.sqrt(D);
+        p1=num(-alpha+s,3); p2=num(-alpha-s,3);
+        shape='过阻尼'; form='u = A₁e^('+p1+'t) + A₂e^('+p2+'t)（单调不振荡）';
+      } else if(Math.abs(D)<=1e-9){
+        p1=num(-alpha,3)+'（重根）'; p2='同上';
+        shape='临界阻尼'; form='u = (A₁ + A₂t)e^('+num(-alpha,3)+'t)（不振荡）';
+      } else {
+        var wd=Math.sqrt(-D);
+        p1=num(-alpha,3)+' + j'+num(wd,3); p2=num(-alpha,3)+' − j'+num(wd,3);
+        if(Math.abs(alpha)<1e-9){ shape='等幅振荡'; form='u = A sin('+num(wd,3)+'t + β)（无衰减正弦）'; }
+        else { shape='欠阻尼'; form='u = e^('+num(-alpha,3)+'t)(A cos '+num(wd,3)+'t + B sin '+num(wd,3)+'t)（衰减振荡）'; }
+      }
+      set('A-p1',p1); set('A-p2',p2); set('A-shape',shape); set('A-form',form);
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===R && L===1 && C===1); });
+    }
+    ['A-R','A-L','A-C'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：阶跃过冲台（L=C=1 固定） ---------- */
+    function stepU(t, R, U){
+      var alpha=R/2, w0=1;
+      if(R<2-1e-9){
+        var wd=Math.sqrt(1-alpha*alpha);
+        return U*(1-Math.exp(-alpha*t)*(Math.cos(wd*t)+(alpha/wd)*Math.sin(wd*t)));
+      } else if(R<=2+1e-9){
+        return U*(1-(1+alpha*t)*Math.exp(-alpha*t));
+      } else {
+        var D=alpha*alpha-1, sq=Math.sqrt(D), s1=-alpha+sq, s2=-alpha-sq;
+        return U*(1+(s2*Math.exp(s1*t)-s1*Math.exp(s2*t))/(s1-s2));
+      }
+    }
+    function solveB(){
+      if(!bUnlocked) return;
+      var R=parseFloat(el('B-R').value), U=parseFloat(el('B-U').value);
+      set('B-R-v',num(R,1)+' Ω'); set('B-U-v',num(U,0)+' V');
+      var alpha=R/2, zeta=alpha, mp=0, tp=null, peak=U, wd=null, state;
+      if(R<2-1e-9){
+        wd=Math.sqrt(1-alpha*alpha);
+        mp=Math.exp(-alpha*Math.PI/wd)*100;
+        tp=Math.PI/wd;
+        peak=U*(1+mp/100);
+        state='欠阻尼：过冲 '+num(mp,1)+'%，峰值 '+num(peak,2)+' V（R 越小过冲越大、振铃越久）';
+      } else if(R<=2+1e-9){
+        state='临界阻尼：过冲 0（无过冲、不振荡）';
+      } else {
+        state='过阻尼：过冲 0（单调、无过冲，但恢复慢）';
+      }
+      set('B-zeta',num(zeta,3)); set('B-wd',wd==null?'—':num(wd,3));
+      set('B-mp',R<2-1e-9?num(mp,1)+' %':'0 %（无过冲）');
+      set('B-tp',tp==null?'—':num(tp,2)+' s'); set('B-peak',num(peak,2)+' V');
+      set('B-state',state);
+      /* 波形 */
+      var pts=[], N=220, tmax=10, x0=40, x1=388, yTop=170;
+      for(var i=0;i<=N;i++){
+        var t=tmax*i/N, u=stepU(t,R,U);
+        var x=x0+(x1-x0)*i/N;
+        var y=yTop-(u/U)*110;
+        pts.push((i?'L':'M')+x.toFixed(1)+' '+y.toFixed(1));
+      }
+      var curve=el('B-curve'); if(curve) curve.setAttribute('d',pts.join(' '));
+      var steadyY=yTop-110;
+      var st=el('B-steady'); if(st){ st.setAttribute('y1',steadyY); st.setAttribute('y2',steadyY); }
+      var lbl=el('B-lbl-steady'); if(lbl) lbl.setAttribute('y',steadyY-6);
+      var dot=el('B-peakdot');
+      if(dot){ if(tp!=null && tp<=tmax){ dot.style.display=''; dot.setAttribute('cx',(x0+(x1-x0)*tp/tmax).toFixed(1)); dot.setAttribute('cy',(yTop-(peak/U)*110).toFixed(1)); } else { dot.style.display='none'; } }
+    }
+    ['B-R','B-U'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键（仅 8 道练习计入） ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-03');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkChoice=function(qid, correctVal){
+      var box=document.querySelector('[data-qid="'+qid+'"]'); if(!box) return;
+      var sel=box.querySelector('input[type="radio"]:checked'), fb=box.querySelector('.fb');
+      if(!sel){ if(fb){ fb.className='fb bad'; fb.textContent='请选择一个选项。'; } return; }
+      mark(qid, sel.value===correctVal, fb);
+    };
+    window.checkTextAny=function(id,keys,hint){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<keys.length;i++){
+        var raw=(((ins[i]||{}).value)||'').toLowerCase().replace(/\s/g,'');
+        var hit=false;
+        for(var j=0;j<keys[i].length;j++){ if(raw.indexOf(keys[i][j])>=0){ hit=true; break; } }
+        if(!hit){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint=hint||'再想想：按顺序核对每个空。';
+      mark(id,ok,fb);
+    };
+    function numOk(v,exp,tol){ var x=parseFloat(v); return !isNaN(x) && Math.abs(x-exp)<=(tol||0.02); }
+    window.checkNum1=function(){
+      var b=el('q-1'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,4,0.02) && /过阻尼/.test(ins[1].value);
+      if(fb) fb.dataset.hint='R_c=2√(1/0.25)=4Ω；R=5Ω>4Ω → 过阻尼。';
+      mark('q-1',ok,fb);
+    };
+    window.checkNum3=function(){
+      var b=el('q-3'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,2,0.02) && numOk(ins[1].value,0.5,0.02) && /临界/.test(ins[2].value);
+      if(fb) fb.dataset.hint='R_c=2√(2/2)=2Ω=R → 临界；α=R/(2L)=2/4=0.5。';
+      mark('q-3',ok,fb);
+    };
+    window.checkNum4=function(){
+      var b=el('q-4'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,0.5,0.02) && /等幅|无阻尼/.test(ins[1].value);
+      if(fb) fb.dataset.hint='R=0 → 无阻尼等幅振荡；ω₀=1/√(4×1)=0.5 rad/s。';
+      mark('q-4',ok,fb);
+    };
+    refresh();
+
+    /* ---------- 重来：重锁四门、清空一切、恢复面板默认 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display='none'; });
+      /* 面板 A */
+      aUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ['A-Rc','A-alpha','A-w0','A-delta','A-p1','A-p2','A-shape','A-form'].forEach(function(id){ set(id,'—'); });
+      el('A-R').value=3; el('A-L').value=1; el('A-C').value=1;
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', parseFloat(b.dataset.preset)===3); });
+      /* 面板 B */
+      bUnlocked=false; cheatUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      ['B-zeta','B-wd','B-mp','B-tp','B-peak','B-state'].forEach(function(id){ set(id,'—'); });
+      el('B-R').value=1; el('B-U').value=10;
+      var curve=el('B-curve'); if(curve) curve.setAttribute('d','');
+      var dot=el('B-peakdot'); if(dot) dot.style.display='none';
+    };
+  })();
+  </script>
+</body>
+</html>
