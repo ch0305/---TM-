@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>频率响应与滤波初步 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:470px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:13.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .vecA{stroke:var(--chalk-blue);stroke-width:3;fill:none}
+    .svg-diag .vecB{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .vecC{stroke:var(--chalk-yellow);stroke-width:3;fill:none}
+    .svg-diag .vecD{stroke:var(--chalk-green);stroke-width:3;fill:none}
+    .svg-diag .arc{stroke:var(--chalk-yellow);stroke-width:2;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.98rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .step-list{counter-reset:stp;list-style:none;padding:0;margin:6px 0}
+    .step-list li{position:relative;padding:4px 0 4px 30px;font-size:.9rem;line-height:1.5}
+    .step-list li::before{counter-increment:stp;content:counter(stp);position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,224,138,.18);color:var(--chalk-yellow);text-align:center;line-height:20px;font-size:.78rem;font-weight:700}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:80px}
+    /* 频响实验台 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button,.lab-tabs button,.nat-toggle button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover,.lab-tabs button:hover,.nat-toggle button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .lab-tabs button:disabled{opacity:.42;cursor:not-allowed}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:2px 0;word-break:break-word}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:6px;line-height:1.45}
+    .lab-tabs{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+    .lab-tabs button.on,.nat-toggle button.on{color:var(--chalk-yellow);border-color:var(--chalk-yellow);background:rgba(255,224,138,.1)}
+    .nat-toggle{display:flex;gap:4px;margin:2px 0 4px}
+    .sub-lab{display:none}.sub-lab.on{display:block}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .agree{font-family:var(--mono);font-size:.82rem;color:var(--chalk-green);font-weight:700;margin-top:6px}
+    .lock-note{font-size:.8rem;color:var(--chalk-pink);margin:6px 0;line-height:1.5}
+    .bode-wrap{margin-top:10px}
+    .bode-wrap svg{display:block;width:100%;height:auto;max-width:520px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">频率响应与滤波初步</span>
+    <span class="meta">教案先行 · 45 min · S2 让频率自己变</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（让频率自己变）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 网络函数 H(jω)（陈述①）</a></li>
+        <li><a href="#stage-2">2 · 推出低通 H、例10-3、揭晓预测 1</a></li>
+        <li><a href="#stage-3">3 · 截止频率与半功率点（预测 2）</a></li>
+        <li><a href="#stage-4">4 · 高通对偶（预测 3）</a></li>
+        <li><a href="#stage-5">5 · 分贝与一阶波特图（预测 4）</a></li>
+        <li><a href="#stage-6">6 · 滤波器四类、独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">上一课在<strong>固定频率</strong>下算相量与功率；本课让 ω 从低到高连续变化，问同一个 RC 电路的输出<strong>大小与相位</strong>怎么变。</div>
+      <div class="mini">因果顺序：频率改变输出 → <code>H(jω)</code> → 低通 <code>|H|/φ</code> → <code>ω_c</code> → 高通对偶 → 分贝/波特图 → 四类滤波器。不是时间安排。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-08.md</code>（邱 §11-1/§11-5/§11-6；李下 §10-1~§10-3）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-08-教案.md</code>（初审退 4 项、复审退 4 项、终审退 2 项、确认通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① <code>H(jω)</code> 只由电路结构与参数决定，<strong>与输入幅值无关</strong>；它是复数，模是幅值比、辐角是相移。</div>
+      <div class="mini">② <code>ω_c=1/RC</code> 处 <code>|H|=0.707</code> 是<strong>半功率</strong>点（功率减半），不是半电压点。</div>
+      <div class="mini">③ 高通相移 <code>φ=90°−arctan x</code> 为<strong>正</strong>（超前）；低通 <code>φ=−arctan x</code> 为负（滞后）。符号来自输出取 R 还是取 C。</div>
+    </div>
+    <div class="side-block">
+      <h4>公式速查</h4>
+      <div class="mini">低通 <code>H=1/(1+jx)</code>：<code>|H|=1/√(1+x²)</code>、<code>φ=−arctan x</code>。</div>
+      <div class="mini">高通 <code>H=jx/(1+jx)</code>：<code>|H|=x/√(1+x²)</code>、<code>φ=90°−arctan x</code>。</div>
+      <div class="mini"><code>x=ω/ω_c</code>、<code>ω_c=1/RC=1/τ</code>；<code>U_o=|H|U_i</code>、<code>ψ_o=φ+ψ_i</code>。</div>
+      <div class="mini"><code>L=20lg|H|</code>；一阶渐近线 <code>0 dB</code> / <code>−20 dB/dec</code>，折点真值 <code>−3 dB</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 让频率自己变（L2-08）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">H(jω) · ω_c · 半功率点 · 波特图 · 四类滤波器</span>
+      </div>
+      <h1>频率响应与滤波初步</h1>
+      <p class="muted">L2-07 之前我们都把正弦频率 ω 当成"给定的一个数"。<strong>这节课只解决一个问题：如果让频率从低到高连续变化，同一个 RC 电路的输出大小和相位为什么会跟着变？怎样用一个 <code>H(jω)</code> 把这种变化算出来、画成"频率—输出"的关系图，并凭它判断电路是"放行"还是"挡掉"某些频率？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">H(jω)</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">低通 |H|/φ</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">ω_c 半功率</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">高通对偶</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">分贝/波特图</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">四类滤波/练习</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉选）</div>
+        <p>场景只有一个：<strong>RC 串联电路，输出取在电容 C 两端</strong>，输入正弦电压幅度固定不变，只把频率从很低慢慢升到很高。先不翻公式，预测输出幅度怎么变。</p>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>输入幅度固定、频率从低升高，电容两端的输出幅度会？① 基本不变；② 越来越小；③ 越来越大。<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">① 基本不变</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">② 越来越小</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">③ 越来越大</button>
+          </div>
+          <p class="gate-note">选定后才解锁第 2 环节的揭晓；现在不公布。若你想答"取决于 R、C"——趋势与具体值无关，R、C 只决定"在哪儿开始降"。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 网络函数 H(jω)（陈述时刻 ①）</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">先看两个极端：频率真的在改变输出 →</button>
+        <div class="reveal" id="rev-1a">
+          <p>用 L2-05 学过的电容阻抗 <code>Z_C=1/(jωC)</code> 看两端：</p>
+          <div class="eq-line">ω=0 → Z_C→∞（C 开路）→ Ū_o ≈ Ū_i　；　ω→∞ → Z_C→0（C 短路）→ Ū_o ≈ 0</div>
+          <p>不需要新公式就看见：<strong>输入没变，光是频率变了，输出就从"几乎等于输入"掉到"几乎没有"</strong>。这才逼出下一个问题——要把这种变化精确算出来，得有一个以 ω 为自变量的函数。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1b" data-stage="1" onclick="revealBlock(this)">给"随频率变"下正式定义 →</button>
+        <div class="reveal" id="rev-1b">
+          <p>定义网络函数 <code>H(jω) = 响应相量 / 激励相量</code>。本课取同一对端口的电压比 <code>H(jω)=Ū_o/Ū_i</code>（转移电压比）。<strong>关键性质</strong>：它由电路结构与参数决定，<strong>与输入幅值无关</strong>；输入同端口时就是阻抗/导纳（驱动点函数），不同端口时是转移函数。</p>
+          <p>它是复数——模 <code>|H(jω)|</code> 是"输出幅度是输入的几倍"，辐角 <code>φ(ω)=arg H(jω)</code> 是"输出相对输入移了多少相"。</p>
+          <div class="ok-box"><strong>陈述时刻 ① · 网络函数（network function）H(jω) 与幅频 / 相频特性</strong>（正式定义 + 条件）：<code>H(jω)=Ū_o/Ū_i</code>（输出相量与输入相量之比），是描述正弦稳态下电路传输特性的复函数；其模 <code>|H(jω)|</code> 与 ω 的关系叫<strong>幅频特性</strong>，辐角 <code>φ(ω)=arg H(jω)</code> 与 ω 的关系叫<strong>相频特性</strong>，二者合起来就是电路的<strong>频率响应</strong>。条件：线性时不变、正弦稳态、输入输出须同为电压（或同为电流）相量；<code>H</code> 与输入幅值无关，只随 ω 变。〔邱 §11-1、李下 §10-2〕</div>
+          <p>由 H 求响应的配方（李下 §10-2）：<code>Ū_o=H(jω)Ū_i</code>，即 <code>U_o=|H|U_i</code>、<code>ψ_o=φ+ψ_i</code>（有效值相量写时域式时再乘 <code>√2</code>）。</p>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>图①：RC 低通电路与它的两条曲线。</strong>左图输出取在电容两端；右上 <code>|H|</code> 从 1 缓慢降到 0，右下 <code>φ</code> 从 0° 单调降到 −90°（输出始终滞后输入）。这里先看形状，下一环节才把两条曲线的公式推出来。</p>
+            <p class="muted">图是自包含的：横轴都是 ω 从低到高；不引用书内图号，不必翻书也能看懂。</p>
+          </div>
+          <div class="fig-box lg" aria-label="RC低通电路：输入经电阻R到电容C，输出取C两端；右侧两条曲线分别是幅频从1降到0与相频从0度降到负90度">
+            <svg class="svg-diag" viewBox="0 0 470 280" role="img">
+              <title>RC 低通电路与幅频、相频示意曲线</title>
+              <defs><marker id="ar1a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-dim)"/></marker></defs>
+              <text class="lbl" x="14" y="20">电路：输出取电容两端</text>
+              <line class="wire" x1="45" y1="50" x2="150" y2="50"/>
+              <rect class="box" x="110" y="42" width="40" height="16"/>
+              <text class="lbl" x="120" y="38">R</text>
+              <line class="wire" x1="150" y1="50" x2="185" y2="50"/>
+              <line class="wire" x1="185" y1="50" x2="185" y2="98"/>
+              <line class="wire" x1="168" y1="100" x2="202" y2="100"/>
+              <line class="wire" x1="168" y1="112" x2="202" y2="112"/>
+              <line class="wire" x1="185" y1="112" x2="185" y2="170"/>
+              <line class="wire" x1="45" y1="170" x2="185" y2="170"/>
+              <line class="wire" x1="45" y1="128" x2="45" y2="170"/>
+              <circle class="box" cx="45" cy="110" r="18"/>
+              <path class="wire" d="M34,110 q5,-10 11,0 q5,10 11,0"/>
+              <text class="lbl" x="14" y="96">Ū_i</text>
+              <text class="plb" x="205" y="110">Ū_o</text>
+              <text class="dim" x="168" y="132">C</text>
+              <line class="guide" x1="240" y1="30" x2="450" y2="30"/>
+              <line class="guide" x1="240" y1="105" x2="450" y2="105"/>
+              <line class="guide" x1="240" y1="30" x2="240" y2="105"/>
+              <text class="dim" x="252" y="26">|H|</text>
+              <text class="dim" x="224" y="35">1</text>
+              <text class="dim" x="224" y="108">0</text>
+              <text class="dim" x="432" y="122">ω</text>
+              <path class="vecC" d="M240,35 L275,42 L310,56 L345,66 L380,74 L415,79 L450,83"/>
+              <line class="guide" x1="240" y1="150" x2="450" y2="150"/>
+              <line class="guide" x1="240" y1="225" x2="450" y2="225"/>
+              <line class="guide" x1="240" y1="150" x2="240" y2="225"/>
+              <text class="dim" x="252" y="150">φ</text>
+              <text class="dim" x="216" y="155">0°</text>
+              <text class="dim" x="210" y="228">−90°</text>
+              <text class="dim" x="432" y="242">ω</text>
+              <path class="vecA" d="M240,155 L275,176 L310,190 L345,199 L380,204 L450,211"/>
+              <text class="dim" x="240" y="268">右两条曲线：黄=幅频 |H|，蓝=相频 φ（示意）</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：RC 低通电路 + 幅频 / 相频形状。</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 推出低通 H，带做例 10-3，揭晓预测 1</div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">用分压把低通的 H 推出来 →</button>
+        <div class="reveal" id="rev-2a">
+          <p>输出取电容两端，用分压（<code>Z_C=1/(jωC)</code>）：</p>
+          <div class="eq-line">H_LP = Z_C / (R + Z_C) = (1/jωC) / (R + 1/jωC) = 1 / (1 + jωRC)</div>
+          <p>令 <code>x = ω/ω_c</code>、<code>ω_c = 1/RC</code>，则 <code>ωRC = x</code>，于是</p>
+          <div class="eq-line">H_LP = 1/(1+jx) = [1/√(1+x²)] ∠ [−arctan x]</div>
+          <div class="eq-line">|H| = 1/√(1+x²)　，　φ = −arctan x</div>
+          <p>陈述时刻 ① 的符号式在此落地：<code>|H|</code> 随 <code>x</code> 单调下降，<code>φ</code> 从 0° 趋向 −90°——正是图①的形状。<strong>这两个公式是推出来的，不是背的。</strong></p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2b" data-stage="2" onclick="revealBlock(this)">带做：李下例 10-3（形态 A）→</button>
+        <div class="reveal" id="rev-2b">
+          <p><code>τ=RC=10⁻³ s</code> ⇒ <code>ω_c=1/τ=1000 rad/s</code>。输入 <code>u_i=2.5√2cos(500πt+30°) V</code>，<code>ω=500π≈1571 rad/s</code>，<code>x=1.571</code>。</p>
+          <div class="res-line">|H| = 1/√(1+1.571²) ≈ 0.537（书取 0.54）　；　φ = −arctan 1.571 ≈ −57.5°（书取 −57°）</div>
+          <div class="res-line">U_o = |H|U_i ≈ 0.537 × 2.5 ≈ 1.34 V（书 1.35 V）　；　ψ_o = φ + ψ_i ≈ 30° − 57.5° ≈ −27.5°（书 −27°）</div>
+          <div class="eq-line">u_o ≈ 1.35√2 cos(500πt − 27°) V</div>
+          <p class="muted"><strong>小数口径</strong>：书的 <code>0.54/−57°/1.35/−27°</code> 是"由图或式得"的读数与截断（<code>30−57=−27</code>），精确值 <code>0.537/−57.5°/1.34/−27.5°</code> 与它在图示读数精度内一致；不要把 57.5° 先四舍五入成 58° 再相减（那会得到 −28°）。〔李下 §10-3〕</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-2c" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 1：输出幅度怎么变 →</button>
+        <div class="reveal" id="rev-2c">
+          <p><strong>选②，越来越小。</strong><code>|H|=1/√(1+x²)</code> 随 <code>x</code> 单调下降：<code>ω=0</code> 时输出最大且等于输入，<code>ω→∞</code> 时输出→0——低频易通过、高频被抑制，这就是 <strong>RC 低通（滞后网络）</strong>。</p>
+          <p><strong>选③错在</strong>把它和高通搞反了：输出取在电容端才是低通；若改从电阻端取，才是频率越高输出越大（第 4 环节）。</p>
+        </div>
+
+        <div class="calc-lab">
+          <h4>频响计算台 A · 把 H(jω) 算成输出</h4>
+          <div class="lab-tabs">
+            <button id="tab-a-lp" class="on" onclick="switchPanelA('lp')">RC 低通（默认）</button>
+            <button id="tab-a-hp" onclick="switchPanelA('hp')" disabled title="预测 3 揭晓后解锁">RC 高通（预测 3 后解锁）</button>
+          </div>
+
+          <div class="sub-lab on" id="sub-a-lp">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电阻 R（Ω）<span id="A1-R-v">1000 Ω</span></label>
+                <input type="range" id="A1-R" min="100" max="10000" step="100" value="1000" />
+                <label>电容 C（µF）<span id="A1-C-v">1 µF</span></label>
+                <input type="range" id="A1-C" min="0.01" max="10" step="0.01" value="1" />
+                <label>角频率 ω（rad/s）<span id="A1-w-v">1000 rad/s</span></label>
+                <input type="range" id="A1-w" min="1" max="100000" step="1" value="1000" />
+                <label>输入有效值 U_i（V）<span id="A1-Ui-v">2.5 V</span></label>
+                <input type="range" id="A1-Ui" min="0.1" max="20" step="0.1" value="2.5" />
+                <label>输入初相 ψ_i（度）<span id="A1-psi-v">30°</span></label>
+                <input type="range" id="A1-psi" min="-180" max="180" step="1" value="30" />
+                <div class="preset"><button onclick="setA1(1000,1,1000,2.5,30)">截止点 ω=ω_c（默认）</button><button onclick="setA1(1000,1,1571,2.5,30)">李下例10-3（ω=500π）</button><button onclick="setA1(1000,1,10000,2.5,30)">高频 10ω_c</button></div>
+              </div>
+              <div class="th-panel">
+                <h5>低通结算：Ū_o = H·Ū_i</h5>
+                <div class="th-row"><span class="k">ω_c = 1/RC</span><span class="v" id="A1-wc">1000 rad/s</span></div>
+                <div class="th-row"><span class="k">x = ω/ω_c</span><span class="v" id="A1-x">1</span></div>
+                <div class="th-row"><span class="k">|H| = 1/√(1+x²)</span><span class="v" id="A1-mag">0.707</span></div>
+                <div class="th-row"><span class="k">φ = −arctan x</span><span class="v" id="A1-phi">−45°</span></div>
+                <div class="th-row"><span class="k">U_o = |H|U_i</span><span class="v" id="A1-Uo">1.77 V</span></div>
+                <div class="th-row"><span class="k">ψ_o = φ + ψ_i</span><span class="v" id="A1-psi-o">−15°</span></div>
+                <div class="res-line" id="A1-formula">Ū_o = 0.707∠(−45°) × 2.5∠(30°)</div>
+                <div class="th-eq">x=ω/ω_c=ωRC；|H|=1/√(1+x²)；φ=−arctan x；U_o=|H|U_i；ψ_o=φ+ψ_i。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-lab" id="sub-a-hp">
+            <div class="lock-note" id="A-hp-lock">此标签在预测 3 揭晓后才解锁，避免提前暴露高通相移。</div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电阻 R（Ω）<span id="A2-R-v">1000 Ω</span></label>
+                <input type="range" id="A2-R" min="100" max="10000" step="100" value="1000" />
+                <label>电容 C（µF）<span id="A2-C-v">1 µF</span></label>
+                <input type="range" id="A2-C" min="0.01" max="10" step="0.01" value="1" />
+                <label>角频率 ω（rad/s）<span id="A2-w-v">1000 rad/s</span></label>
+                <input type="range" id="A2-w" min="1" max="100000" step="1" value="1000" />
+                <label>输入有效值 U_i（V）<span id="A2-Ui-v">5 V</span></label>
+                <input type="range" id="A2-Ui" min="0.1" max="20" step="0.1" value="5" />
+                <label>输入初相 ψ_i（度）<span id="A2-psi-v">0°</span></label>
+                <input type="range" id="A2-psi" min="-180" max="180" step="1" value="0" />
+                <div class="preset"><button onclick="setA2(1000,1,1000,5,0)">截止点 ω=ω_c（默认）</button><button onclick="setA2(1000,1,10000,5,0)">高频 10ω_c</button></div>
+              </div>
+              <div class="th-panel">
+                <h5>高通结算：输出取电阻端</h5>
+                <div class="th-row"><span class="k">ω_c = 1/RC</span><span class="v" id="A2-wc">—</span></div>
+                <div class="th-row"><span class="k">x = ω/ω_c</span><span class="v" id="A2-x">—</span></div>
+                <div class="th-row"><span class="k">|H| = x/√(1+x²)</span><span class="v" id="A2-mag">—</span></div>
+                <div class="th-row"><span class="k">φ = 90° − arctan x</span><span class="v" id="A2-phi">—</span></div>
+                <div class="th-row"><span class="k">U_o = |H|U_i</span><span class="v" id="A2-Uo">—</span></div>
+                <div class="th-row"><span class="k">ψ_o = φ + ψ_i</span><span class="v" id="A2-psi-o">—</span></div>
+                <div class="res-line" id="A2-formula">揭晓预测 3 后显示。</div>
+                <div class="th-eq">x=ω/ω_c；|H|=x/√(1+x²)；φ=90°−arctan x；U_o=|H|U_i；ψ_o=φ+ψ_i。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 截止频率与半功率点（揭晓预测 2）</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">观察 |H| 与 φ：为什么偏偏是 0.707 →</button>
+        <div class="reveal" id="rev-3a">
+          <p>从公式读三个点：<code>x=0 → |H|=1</code>；<code>x=1 → |H|=1/√2≈0.707</code>；<code>x→∞ → |H|→0</code>。<code>x=1</code>（即 <code>ω=ω_c</code>）正是幅频从"近乎 1"转入"明显下降"的分界点；相频在 <code>x=1</code> 处 <code>φ=−45°</code>，并随 <code>x</code> 从 0 到 ∞ 单调从 0° 趋向 −90°。</p>
+          <p class="muted">那么"半功率点"到底指什么减半？先别看答案——功率 ∝ 电压平方这件事第 3 环节刚用过。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 2：</strong>已知 <code>ω=ω_c</code> 处输出<strong>幅度</strong>已降到 <code>1/√2≈0.707</code>。那么输出<strong>功率</strong>降到输入的多少？① 1/2；② 1/√2；③ 1/4。<strong>选项中不含答案注解，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">① 1/2</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">② 1/√2</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">③ 1/4</button>
+          </div>
+          <p class="gate-note">选定后解锁下面的定义与揭晓；现在不公布。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-3b" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 2：半功率点的含义 →</button>
+        <div class="reveal" id="rev-3b">
+          <div class="ok-box"><strong>陈述时刻 ② · 截止频率（cut-off frequency）ω_c 与半功率点</strong>（正式定义 + 条件）：<code>ω_c=1/RC=1/τ</code>，是低通电路幅频降到 <code>|H|=1/√2≈0.707</code>（相移 <code>−45°</code>）处的频率；因平均功率 ∝ 电压有效值平方，<code>P_o/P_i=|H|²=1/2</code>，故又称半功率点；<code>0~ω_c</code> 定为通频带（通带）。条件：一阶 RC 低通；对高通 <code>ω_c</code> 同式、<code>|H(ω_c)|</code> 仍 0.707（<strong>高通的相移留到第 4 环节预测 3 揭晓后再给出，此处不预告</strong>）；<code>τ=RC</code> 正是 L2-03 一阶暂态时间常数，<code>ω_c=1/τ</code> 是它在频域的倒数。〔李下 §10-3〕</div>
+          <p><strong>揭晓：选①，功率降到 1/2。</strong>因为功率 ∝ 电压²，<code>P_o/P_i=|H|²=(1/√2)²=1/2</code>——"半功率点"由此得名，指的是<strong>功率</strong>减半而不是幅度减半。</p>
+          <p><strong>选②错在</strong>把功率当成幅度（1/√2 是幅度比）；<strong>选③错在</strong>以为幅度先降到 1/2 再平方（实际幅度是 1/√2）。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 高通对偶（揭晓预测 3）</div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 3：</strong>低通在 <code>ω=ω_c</code> 相移是 <code>−45°</code>；若把输出改从<strong>电阻 R</strong> 取（C 串在信号通路里）构成高通，同一频率 <code>ω_c</code> 下输出相位是？① −45°；② 0°；③ +45°。<strong>选定后才揭晓相移推导。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① −45°</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 0°</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ +45°</button>
+          </div>
+          <p class="gate-note">先推幅值（不含相位结论）；选定后才解锁揭晓块里的相移推导。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">先只推幅值：把输出改从电阻取 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>输出取 R 上，仍用分压：</p>
+          <div class="eq-line">H_HP = R / (R + 1/jωC) = jωRC / (1 + jωRC) = jx / (1 + jx)</div>
+          <p>这一步<strong>只取模</strong>：<code>|H_HP| = x/√(1+x²)</code>。极端值 <code>x=0 → |H|=0</code>；<code>x→∞ → |H|→1</code>；<code>x=1 → |H|=0.707</code>——与低通共用同一个 <code>ω_c</code>、同一条 0.707，幅频<strong>互补</strong>。相移留到揭晓块里再算。</p>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>图②：低通 / 高通幅频对比。</strong>一条递减、一条递增，在 <code>x=1</code> 处相交于 <code>|H|=0.707</code>——这就是"共用同一个截止频率"的几何图像。</p>
+            <p class="muted">幅值互补已经看得见；相位是否也"互补"，正是预测 3 要盲测的内容。</p>
+          </div>
+          <div class="fig-box md" aria-label="低通与高通幅频曲线对比：一条递减一条递增，在x等于1、幅值0.707处相交">
+            <svg class="svg-diag" viewBox="0 0 440 280" role="img">
+              <title>低通与高通幅频曲线交于 x=1、|H|=0.707</title>
+              <line class="guide" x1="50" y1="40" x2="400" y2="40"/>
+              <line class="guide" x1="50" y1="240" x2="400" y2="240"/>
+              <line class="guide" x1="50" y1="40" x2="50" y2="240"/>
+              <path class="vecC" d="M50,40 L108,61 L167,99 L225,129 L283,151 L342,166 L400,177"/>
+              <path class="vecA" d="M50,240 L108,151 L167,99 L225,74 L283,61 L342,54 L400,50"/>
+              <line class="guide" x1="167" y1="99" x2="167" y2="240"/>
+              <line class="guide" x1="50" y1="99" x2="167" y2="99"/>
+              <circle cx="167" cy="99" r="5" fill="var(--chalk-yellow)"/>
+              <text class="ylb" x="176" y="90">x=1, |H|=0.707</text>
+              <text class="ylb" x="330" y="196">低通 |H|=1/√(1+x²)</text>
+              <text class="lbl" x="250" y="66">高通 |H|=x/√(1+x²)</text>
+              <text class="dim" x="44" y="34">|H|=1</text>
+              <text class="dim" x="44" y="244">0</text>
+              <text class="dim" x="392" y="258">x=ω/ω_c</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：低通（黄）与高通（蓝）幅频互补，交于截止点。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>推相移 + 公布预测 3（高通标签同时解锁）→</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>相移推导（<code>+45°</code> 在此首次出现）：</strong><code>H_HP=jx/(1+jx)</code> 的分子 <code>jx</code> 相角是 <code>90°</code>、分母 <code>1+jx</code> 相角是 <code>arctan x</code>，故</p>
+          <div class="eq-line">φ = 90° − arctan x　→　x=1 时 φ = 90° − 45° = +45°</div>
+          <p><code>x→0</code> 时 <code>φ→+90°</code>，<code>x→∞</code> 时 <code>φ→0°</code>。低通 <code>φ=−arctan x</code>、高通 <code>φ=90°−arctan x</code>，在 <code>x=1</code> 分别是 <code>−45°</code>、<code>+45°</code>——<strong>相位也互补</strong>。</p>
+          <div class="ok-box"><strong>陈述时刻 ③ · RC 高通电路（超前网络）</strong>（正式定义 + 条件）：输出取在电阻端的一阶 RC 电路，<code>H_HP=jωRC/(1+jωRC)</code>，<code>|H|=x/√(1+x²)</code>、<code>φ=90°−arctan x</code>，<code>ω_c=1/RC</code> 处 <code>|H|=0.707</code>、<code>φ=+45°</code>；高频易通过、低频被抑制，输出超前输入，故又称<strong>超前网络</strong>。条件：一阶 RC、输出取 R；与低通共用同一个 <code>ω_c</code>，幅频互补、相移一负一正。〔李下 §10-3〕</div>
+          <p><strong>揭晓：选③。</strong><code>+45°</code>。选①错在以为换输出端不影响相位；选②错在忽略电容引入的 90° 相移。</p>
+          <p class="muted">频响计算台 A 的"RC 高通"标签已解锁，可用默认参数核对 <code>0.707 / +45° / 3.54 V</code>。</p>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 分贝与一阶波特图（揭晓预测 4）</div>
+
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">换两把尺子：对数频率与分贝 →</button>
+        <div class="reveal" id="rev-5a">
+          <p>直接画 <code>|H|−ω</code>，ω 从 1 到 10⁵ rad/s 时低频段全挤在左端。工程上换尺子（邱 §11-5）：横轴用对数频率 <code>lg ω</code>（每十倍频等距），纵轴用分贝 <code>L(ω)=20lg|H|</code>。<code>|H|=1 → 0 dB</code>；<code>|H|=0.707 → −3 dB</code>（因为 <code>20lg 0.707≈−3</code>）；<code>ω_c</code> 正是 <code>−3 dB</code> 点。</p>
+          <p><strong>为什么是 20 而不是 10（可见地推一遍）：</strong>第 3 环节已建立 <code>P∝U²</code>，即功率比 <code>P_o/P_i=|H|²</code>。分贝的定义本来针对<strong>功率比</strong>取 <code>10lg</code>，于是</p>
+          <div class="eq-line">L = 10lg(P_o/P_i) = 10lg(|H|²) = 20lg|H|</div>
+          <p>系数 20 来自"电压平方就是功率比"，不是要背的新规则。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p4" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 4：</strong>一阶低通在 <code>ω&gt;ω_c</code> 之后，幅度按每十倍频程下降多少 dB？① −20 dB/dec；② −3 dB/dec；③ −40 dB/dec。<strong>选定后才解锁斜率推导与揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">① −20 dB/dec</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">② −3 dB/dec</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">③ −40 dB/dec</button>
+          </div>
+          <p class="gate-note">斜率规则就在下一个揭晓块里；先选再翻。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-5b" data-stage="5" onclick="revealBlock(this)" disabled>推渐近线 + 公布预测 4 →</button>
+        <div class="reveal" id="rev-5b">
+          <p><strong>一阶折线推导：</strong><code>H_LP=1/(1+jx)</code>。<code>x≪1</code> 时 <code>|H|≈1 → L≈0 dB</code>（水平线）；<code>x≫1</code> 时 <code>|H|≈1/x → L≈−20lg x</code>，即每十倍频降 20 dB（<code>−20 dB/dec</code>）。两段在 <code>x=1</code> 相交，真值 <code>−3 dB</code> 比折点低 3 dB（<strong>折线是近似</strong>）。相频在 <code>0.1ω_c~10ω_c</code> 之间近似以 <code>−45°/dec</code> 从 0° 过渡到 −90°。</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 分贝与一阶波特图渐近线</strong>（正式定义 + 条件）：幅频波特图纵轴 <code>L(ω)=20lg|H(jω)|</code>（单位 dB），横轴为对数频率 <code>lg ω</code>；一阶因子 <code>1/(1+jω/ω_c)</code> 的幅频渐近线在 <code>ω&lt;ω_c</code> 为 <code>0 dB</code>、<code>ω&gt;ω_c</code> 为 <code>−20 dB/dec</code>，折点 <code>ω_c</code> 处真值 <code>−3 dB</code>；相频渐近线在 <code>0.1ω_c~10ω_c</code> 以 <code>−45°/dec</code> 过渡。条件：一阶因子；<code>20lg</code> 用于幅值比、源于 <code>10lg(P_o/P_i)=10lg|H|²=20lg|H|</code>（功率比本身用 <code>10lg</code>）；渐近线是近似，折点附近须用真值修正。〔邱 §11-5〕</div>
+          <p><strong>揭晓：选①，<code>−20 dB/dec</code>。</strong>原因：<code>x≫1</code> 时 <code>|H|≈1/x</code>，<code>20lg(1/x)=−20lg x</code>，x 每乘 10 就降 20 dB。<strong>选②</strong>把折点的 <code>−3 dB</code> 误当斜率；<strong>选③</strong>是二阶因子的斜率（本课不讲，L2-09 后再说）。</p>
+        </div>
+
+        <div class="calc-lab">
+          <h4>波特图实验台 B · 对数轴上的一阶幅频</h4>
+          <div class="lab-tabs">
+            <button id="tab-b-lp" class="on" onclick="switchPanelB('lp')">低通曲线</button>
+            <button id="tab-b-hp" onclick="switchPanelB('hp')">高通曲线（左右翻转）</button>
+          </div>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>电阻 R（Ω）<span id="B-R-v">1000 Ω</span></label>
+              <input type="range" id="B-R" min="100" max="10000" step="100" value="1000" />
+              <label>电容 C（µF）<span id="B-C-v">1 µF</span></label>
+              <input type="range" id="B-C" min="0.01" max="10" step="0.01" value="1" />
+              <label>角频率 ω（rad/s）<span id="B-w-v">1000 rad/s</span></label>
+              <input type="range" id="B-w" min="1" max="100000" step="1" value="1000" />
+              <div class="preset"><button onclick="setB(1000,1,1000,'lp')">ω=ω_c（默认，−3.01 dB）</button><button onclick="setB(1000,1,10000,'lp')">ω=10ω_c（−20.04 dB）</button><button onclick="setB(1000,1,100000,'lp')">ω=100ω_c（−40 dB）</button></div>
+            </div>
+            <div class="th-panel">
+              <h5>分贝结算</h5>
+              <div class="th-row"><span class="k">ω_c = 1/RC</span><span class="v" id="B-wc">1000 rad/s</span></div>
+              <div class="th-row"><span class="k">x = ω/ω_c</span><span class="v" id="B-x">1</span></div>
+              <div class="th-row"><span class="k">|H|</span><span class="v" id="B-mag">0.707</span></div>
+              <div class="th-row"><span class="k">真值 L = 20lg|H|</span><span class="v" id="B-L">−3.01 dB</span></div>
+              <div class="th-row"><span class="k">渐近线 L</span><span class="v" id="B-Lasym">0 dB</span></div>
+              <div class="th-row"><span class="k">当前类型</span><span class="v" id="B-type">低通（滞后）</span></div>
+              <div class="agree" id="B-agree">✓ 折点 x=1：真值比渐近线低 3 dB</div>
+              <div class="th-eq">L=20lg|H|；低通渐近线 x≤1 为 0 dB、x&gt;1 为 −20lg x；高通左右翻转。</div>
+            </div>
+          </div>
+          <div class="bode-wrap">
+            <svg id="bode-svg" class="svg-diag" viewBox="0 0 480 290" role="img" aria-label="一阶幅频波特图：渐近线与真值曲线">
+              <title>一阶幅频波特图，横轴对数频率 ω/ω_c，纵轴分贝</title>
+              <line class="guide" x1="50" y1="40" x2="450" y2="40"/><line class="guide" x1="50" y1="110" x2="450" y2="110"/><line class="guide" x1="50" y1="180" x2="450" y2="180"/><line class="guide" x1="50" y1="250" x2="450" y2="250"/>
+              <line class="guide" x1="50" y1="40" x2="50" y2="250"/><line class="guide" x1="183.3" y1="40" x2="183.3" y2="250"/><line class="guide" x1="316.7" y1="40" x2="316.7" y2="250"/><line class="guide" x1="450" y1="40" x2="450" y2="250"/>
+              <text class="dim" x="44" y="44">0</text><text class="dim" x="38" y="114">−20</text><text class="dim" x="38" y="184">−40</text><text class="dim" x="38" y="254">−60</text>
+              <text class="dim" x="14" y="60">dB</text>
+              <text class="dim" x="42" y="270">0.1</text><text class="dim" x="175" y="270">1</text><text class="dim" x="308" y="270">10</text><text class="dim" x="440" y="270">100</text>
+              <text class="dim" x="230" y="286">x = ω/ω_c（对数轴）</text>
+              <path id="bode-asym" class="vecD" style="stroke-dasharray:7 4" d="M50,40 L183.3,40 L450,180"/>
+              <path id="bode-exact" class="vecC" d="M50,40 L450,180"/>
+              <line id="bode-vline" class="guide" x1="183.3" y1="40" x2="183.3" y2="250"/>
+              <circle id="bode-dot" cx="183.3" cy="50.5" r="5" fill="var(--chalk-yellow)"/>
+              <text id="bode-mark" class="ylb" x="192" y="56">x=1  L=−3.01 dB</text>
+              <text class="glb" x="196" y="152">真值</text><text class="glb" x="196" y="166">渐近线</text>
+            </svg>
+            <div class="fig-cap">图③：绿虚线=一阶渐近线，黄实线=真值，圆点=当前 ω；折点 x=1 真值 −3 dB，高频段 −20 dB/dec。切高通即左右翻转。</div>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 滤波器四类、独立练习与过关</div>
+
+        <button class="reveal-btn" data-target="rev-6a" data-stage="6" onclick="revealBlock(this)">工程地图：为什么 L、C 能选频 →</button>
+        <div class="reveal" id="rev-6a">
+          <p>能"按频率筛选"的网络叫<strong>滤波器</strong>：希望保留的频段是<strong>通带</strong>、希望抑制的是<strong>阻带</strong>。物理根据是 L 与 C 互补——<code>Z_L=jωL</code> 随 ω 增大，<code>Z_C=1/(jωC)</code> 随 ω 减小，搭配起来就能选频。</p>
+          <div class="ok-box"><strong>陈述时刻 ⑤ · 滤波器（filter）与四种类型</strong>（正式定义 + 条件）：滤波器是具有选频功能的网络，使通带内的频率分量顺利通过、阻带内被抑制；按通带位置分为<strong>低通、高通、带通、带阻</strong>四类。条件：本课只定量处理一阶 RC 低通 / 高通；带通 / 带阻要等 L2-09 讲了谐振才能理解其"附近"的含义；工程上 LC 无源滤波体积大，实际常用运放构成 RC 有源滤波器实现集成（邱 §11-6，设计细节不讲）。</div>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>图④：四类滤波器的通带位置。</strong>横轴是频率从低到高（对数轴），绿色=通带、暗色=阻带。一类只改"绿带放在哪儿"：</p>
+            <ul class="step-list">
+              <li>低通：<code>0~ω_c</code> 通过（本课已定量）；</li>
+              <li>高通：<code>ω_c~∞</code> 通过（本课已定量）；</li>
+              <li>带通：只过谐振点附近（L2-09 后再量化）；</li>
+              <li>带阻：只挡谐振点附近。</li>
+            </ul>
+          </div>
+          <div class="fig-box lg" aria-label="四类滤波器通带示意图：低通左侧通、高通右侧通、带通中间通、带阻中间阻">
+            <svg class="svg-diag" viewBox="0 0 470 300" role="img">
+              <title>低通、高通、带通、带阻四类滤波器的通带位置</title>
+              <rect x="110" y="24" width="170" height="24" fill="rgba(183,240,192,.28)" stroke="var(--chalk-green)"/><rect x="280" y="24" width="170" height="24" fill="rgba(255,255,255,.04)" stroke="var(--chalk-faint)"/>
+              <rect x="110" y="84" width="170" height="24" fill="rgba(255,255,255,.04)" stroke="var(--chalk-faint)"/><rect x="280" y="84" width="170" height="24" fill="rgba(183,240,192,.28)" stroke="var(--chalk-green)"/>
+              <rect x="110" y="144" width="100" height="24" fill="rgba(255,255,255,.04)" stroke="var(--chalk-faint)"/><rect x="210" y="144" width="100" height="24" fill="rgba(183,240,192,.28)" stroke="var(--chalk-green)"/><rect x="310" y="144" width="140" height="24" fill="rgba(255,255,255,.04)" stroke="var(--chalk-faint)"/>
+              <rect x="110" y="204" width="100" height="24" fill="rgba(183,240,192,.28)" stroke="var(--chalk-green)"/><rect x="210" y="204" width="100" height="24" fill="rgba(255,255,255,.04)" stroke="var(--chalk-faint)"/><rect x="310" y="204" width="140" height="24" fill="rgba(183,240,192,.28)" stroke="var(--chalk-green)"/>
+              <text class="lbl" x="12" y="42">低通</text><text class="glb" x="160" y="42">通带</text><text class="dim" x="330" y="42">阻带</text>
+              <text class="lbl" x="12" y="102">高通</text><text class="dim" x="160" y="102">阻带</text><text class="glb" x="330" y="102">通带</text>
+              <text class="lbl" x="12" y="162">带通</text><text class="glb" x="232" y="162">通带</text>
+              <text class="lbl" x="12" y="222">带阻</text><text class="dim" x="236" y="222">阻带（谐振附近）</text>
+              <line class="guide" x1="110" y1="246" x2="450" y2="246"/>
+              <text class="dim" x="106" y="264">低</text><text class="dim" x="268" y="264">中</text><text class="dim" x="436" y="264">高</text>
+              <text class="dim" x="190" y="286">频率 ω →（对数轴；谐振附近留到 L2-09）</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：四类滤波器只改变通带的位置。</div>
+          </div>
+        </div>
+
+        <p class="muted">下列 9 题全部换参数或换问法，先自己算再判定。判定后才给反馈；想不起公式回看右侧速查。</p>
+
+        <div class="qrow">
+          <div class="qt">1 · RC 串联电路，<strong>输出取在电阻 R 两端</strong>（C 串在通路里），输入幅度固定、频率从 0 升高，输出幅度如何？</div>
+          <div class="choicebox" id="q-1" data-qid="q-1" data-hint="输出端位置决定低通/高通：取 R 端是高通。" data-explain="输出取 R 端 ⇒ 高通，频率升高输出增大，选①。"><label><input type="radio" name="q-1" value="a"/> ① 增大</label><label><input type="radio" name="q-1" value="b"/> ② 减小</label><label><input type="radio" name="q-1" value="c"/> ③ 先增后减</label><button class="btn-sm" onclick="checkChoice('q-1','a')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">2 · 低通（输出在 C）：<code>R=2 kΩ</code>、<code>C=0.25 µF</code>，输入 <code>ω=2000 rad/s</code>、<code>U_i=10 V</code>。求 <code>ω_c=___ rad/s</code>、<code>x=___</code>、<code>|H|=___</code>、<code>U_o=___ V</code>。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>ω_c <input type="text" placeholder="rad/s" />，x <input type="text" placeholder="" />，|H| <input type="text" placeholder="" />，U_o <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-2',[2000,1,0.707,7.07],[1,0.01,0.005,0.05])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">3 · 低通 <code>ω_c=1000 rad/s</code>，<code>u_i=10√2cos(2000t+30°) V</code>。求 <code>|H|=___</code>、<code>φ=___°</code>、<code>U_o=___ V</code>、<code>ψ_o=___°</code>。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>|H| <input type="text" placeholder="" />，φ <input type="text" placeholder="度" />，U_o <input type="text" placeholder="V" />，ψ_o <input type="text" placeholder="度" /></label><button class="btn-sm" onclick="checkMulti('q-3',[0.447,-63.43,4.47,-33.43],[0.005,0.1,0.05,0.1])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">4 · 一张幅频波特图的渐近线为：<code>ω&lt;10³ rad/s</code> 时 <code>0 dB</code>，<code>ω&gt;10³ rad/s</code> 时以 <code>−20 dB/dec</code> 下降，折点真值 <code>−3 dB</code>。求 <code>ω_c=___ rad/s</code>，类型是___（填"低"或"高"）。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>ω_c <input type="text" placeholder="rad/s" />，类型 <input type="text" placeholder="低/高" /></label><button class="btn-sm" onclick="checkFields('q-4',[1000,'低'],[1,0])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">5 · 高通 <code>R=1 kΩ</code>、<code>C=1 µF</code>，<code>ω=1000 rad/s</code>、<code>U_i=5 V</code>。求 <code>|H|=___</code>、<code>φ=___°</code>、<code>U_o=___ V</code>。</div>
+          <div class="numcheck" id="q-5" data-qid="q-5"><label>|H| <input type="text" placeholder="" />，φ <input type="text" placeholder="度" />，U_o <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-5',[0.707,45,3.54],[0.005,0.1,0.05])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">6 · 一阶低通在 <code>ω=10ω_c</code>，求精确 <code>L=20lg|H|=___ dB</code> 与渐近线 <code>L=___ dB</code>。</div>
+          <div class="numcheck" id="q-6" data-qid="q-6"><label>精确 L <input type="text" placeholder="dB" />，渐近线 <input type="text" placeholder="dB" /></label><button class="btn-sm" onclick="checkMulti('q-6',[-20.04,-20],[0.05,0.5])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">7 · <code>H_HP=jωRC/(1+jωRC)</code>，当 <code>ω→0</code> 时相移 φ 趋于？</div>
+          <div class="choicebox" id="q-7" data-qid="q-7" data-hint="分子 jωRC 在低频趋近 0，相角趋于 +90°。" data-explain="高通 ω→0 时 φ→+90°，选②。"><label><input type="radio" name="q-7" value="a"/> ① −90°</label><label><input type="radio" name="q-7" value="b"/> ② +90°</label><label><input type="radio" name="q-7" value="c"/> ③ 0°</label><button class="btn-sm" onclick="checkChoice('q-7','b')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">8 · 某电路 <code>H(jω)=1/(1+jω/500)</code>，输入 <code>ω=500 rad/s</code>、<code>U_i=2 V</code>。求 <code>|H|=___</code>、<code>φ=___°</code>、<code>U_o=___ V</code>，并判断是低通还是高通（填"低"或"高"）。</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>|H| <input type="text" placeholder="" />，φ <input type="text" placeholder="度" />，U_o <input type="text" placeholder="V" />，类型 <input type="text" placeholder="低/高" /></label><button class="btn-sm" onclick="checkFields('q-8',[0.707,-45,1.41,'低'],[0.005,0.1,0.05,0])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">9 · RC 串联 <code>R=2 kΩ</code>、<code>C=0.5 µF</code>，<strong>电容串在信号通路、输出取在电阻两端</strong>，输入 <code>ω=500 rad/s</code>。先判断该电路是___通（填"低"或"高"），再求 <code>|H|=___</code>、<code>φ=___°</code>。</div>
+          <div class="numcheck" id="q-9" data-qid="q-9"><label>类型 <input type="text" placeholder="低/高" />，|H| <input type="text" placeholder="" />，φ <input type="text" placeholder="度" /></label><button class="btn-sm" onclick="checkFields('q-9',['高',0.447,63.43],[0,0.005,0.1])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出来才算过）</strong>
+          <ol class="step-list">
+            <li>为什么 <code>H(jω)</code> 是电路本身属性、与输入幅值无关？模和辐角各表示什么？</li>
+            <li>低通 <code>|H|</code> 从 <code>ω=0</code> 到 ∞ 怎么变？为什么 <code>ω_c</code> 处是 <code>0.707</code> 而不是 <code>0.5</code>？</li>
+            <li>低通与高通的 <code>H</code>、<code>|H|</code>、<code>φ</code> 如何对偶，<code>ω_c</code> 处相位各是多少？</li>
+            <li>由 H 求输出的配方是什么？写时域式为什么有效值要乘 <code>√2</code>？</li>
+            <li><code>L=20lg|H|</code> 为什么用 20 而非 10？<code>−3 dB</code> 与 <code>−20 dB/dec</code> 各指什么？折线为何只是近似？</li>
+            <li>四类滤波器通带/阻带如何区分，L、C 为何能互补选频？</li>
+          </ol>
+        </div>
+        <p class="muted"><strong>下一课钩子：</strong>一阶 RC 的选频是"平缓的"——幅频从 0 dB 慢慢拐下去。若把 L 和 C 一起放进来，会在某一个特定频率出现阻抗抵消、响应冲出尖峰（或陷谷），"平缓选择"升级为"尖锐选频"。下一课讲谐振入门与二阶直觉。</p>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾折叠区 ============ -->
+      <details class="appendix">
+        <summary>学习目标 / 节奏 / 来源台账（展开看）</summary>
+        <h4>学习目标</h4>
+        <p>掌握网络函数 <code>H(jω)</code> 的定义与"与输入幅值无关"的性质；会由 RC 电路写 <code>H</code>、求 <code>ω_c=1/RC</code>、<code>|H|</code>、<code>φ</code> 并写出输出时域式；理解半功率点、高通对偶、分贝与一阶波特图渐近线；能对四类滤波器作定性分类。覆盖形态 A（由 H 定量求响应）与形态 B（读频响/波特图作判断）。</p>
+        <h4>45 分钟节奏（预算不是配额）</h4>
+        <table class="mini-t">
+          <tr><th>环节</th><th>内容</th><th>分钟</th></tr>
+          <tr><td>0</td><td>核心问题、预测 1</td><td>3</td></tr>
+          <tr><td>1</td><td>网络函数 H(jω)、陈述①</td><td>8</td></tr>
+          <tr><td>2</td><td>低通 H、例10-3、揭晓预测 1、面板 A</td><td>10</td></tr>
+          <tr><td>3</td><td>ω_c 与半功率点、预测 2</td><td>7</td></tr>
+          <tr><td>4</td><td>高通对偶、预测 3</td><td>7</td></tr>
+          <tr><td>5</td><td>分贝与一阶波特图、预测 4、面板 B</td><td>8</td></tr>
+          <tr><td>6</td><td>四类滤波器、独立练习与过关</td><td>7</td></tr>
+        </table>
+        <h4>来源台账</h4>
+        <table class="mini-t">
+          <tr><th>内容</th><th>依据</th></tr>
+          <tr><td>网络函数定义、驱动点/转移函数、幅频与相频</td><td>〔书〕邱 §11-1 印刷 p.261–262（PDF 285–286）</td></tr>
+          <tr><td>分贝、对数频率横轴、一阶因子折线规则、相频 −45°/dec</td><td>〔书〕邱 §11-5 印刷 p.272–274（PDF 296–298）</td></tr>
+          <tr><td>通带/阻带、四类滤波器、L/C 互补选频、有源滤波工程说明</td><td>〔书〕邱 §11-6 印刷 p.275–276（PDF 299–300）</td></tr>
+          <tr><td>频率响应动机、输入阻抗也是频响、RC 滤波作用</td><td>〔书〕李下 §10-1~§10-2（PDF 122–128）</td></tr>
+          <tr><td>由 H 求响应配方、例10-3 低通、ω_c=1/RC、半功率点、RC 高通练习题</td><td>〔书〕李下 §10-3（PDF 130–133）</td></tr>
+          <tr><td>4 预测 + 9 练习 + 两面板全部数值</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽；例10-3 原始数值保留于正文摘录）</td></tr>
+          <tr><td>电路/曲线/波特图/四类通带示意等 SVG 几何画法</td><td>〔通识〕</td></tr>
+        </table>
+        <p class="muted">邱 PDF=印刷+24；李下印刷页码按 PDF−7 推算、以原书为准，故用章节号标注。H&amp;H 未摘正文，本课不引其章节号。邱 §11-2/§11-4 谐振细节本课不讲、只作下一课钩子，不引为教案依据。正文见 <code>书籍/摘录/L2-08.md</code>，教案见 <code>lessons/drafts/L2-08-教案.md</code>。</p>
+      </details>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-08-frequency-response';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-08 增量脚本：频响台 A + 波特图台 B + 判定 + 重锁四门 + 高通标签门 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+    function sgn(v,d){ return (v<0?'−':'') + num(Math.abs(v), d==null?2:d); }
+    function phs(v,d){ return (v>1e-9?'+':'') + sgn(v,d); } /* 相位显式带正号，便于区分超前/滞后 */
+    function fmtMag(m){ return m<0.1 ? m.toFixed(4) : m.toFixed(3); }
+    function wcOf(R,C){ return 1/(R*C*1e-6); }
+    function resp(wc,w,hp){
+      var x=w/wc;
+      if(hp) return {x:x, mag:x/Math.sqrt(1+x*x), phi:90-Math.atan(x)*180/Math.PI};
+      return {x:x, mag:1/Math.sqrt(1+x*x), phi:-Math.atan(x)*180/Math.PI};
+    }
+
+    /* ---------- 面板 A：低通 ---------- */
+    function solveA1(){
+      var R=parseFloat(el('A1-R').value), C=parseFloat(el('A1-C').value), w=parseFloat(el('A1-w').value);
+      var Ui=parseFloat(el('A1-Ui').value), psi=parseFloat(el('A1-psi').value);
+      set('A1-R-v',num(R,0)+' Ω'); set('A1-C-v',num(C,2)+' µF');
+      set('A1-w-v',num(w,0)+' rad/s'); set('A1-Ui-v',num(Ui,2)+' V'); set('A1-psi-v',phs(psi,1)+'°');
+      var wc=wcOf(R,C), r=resp(wc,w,false);
+      set('A1-wc',num(wc,0)+' rad/s');
+      set('A1-x',num(r.x,3));
+      set('A1-mag',fmtMag(r.mag));
+      set('A1-phi',phs(r.phi,1)+'°');
+      set('A1-Uo',num(r.mag*Ui,2)+' V');
+      set('A1-psi-o',phs(r.phi+psi,1)+'°');
+      set('A1-formula','Ū_o = '+fmtMag(r.mag)+'∠('+phs(r.phi,1)+'°) × '+num(Ui,2)+'∠('+phs(psi,1)+'°)');
+    }
+    window.setA1=function(r,c,w,ui,psi){ el('A1-R').value=r; el('A1-C').value=c; el('A1-w').value=w; el('A1-Ui').value=ui; el('A1-psi').value=psi; solveA1(); };
+    ['A1-R','A1-C','A1-w','A1-Ui','A1-psi'].forEach(function(id){ el(id).addEventListener('input',solveA1); });
+
+    /* ---------- 面板 A：高通（预测 3 揭晓后才解锁） ---------- */
+    var hpUnlocked=false;
+    function solveA2(){
+      if(!hpUnlocked) return; /* 揭晓前不写入任何值，避免提前暴露 +45° */
+      var R=parseFloat(el('A2-R').value), C=parseFloat(el('A2-C').value), w=parseFloat(el('A2-w').value);
+      var Ui=parseFloat(el('A2-Ui').value), psi=parseFloat(el('A2-psi').value);
+      set('A2-R-v',num(R,0)+' Ω'); set('A2-C-v',num(C,2)+' µF');
+      set('A2-w-v',num(w,0)+' rad/s'); set('A2-Ui-v',num(Ui,2)+' V'); set('A2-psi-v',phs(psi,1)+'°');
+      var wc=wcOf(R,C), r=resp(wc,w,true);
+      set('A2-wc',num(wc,0)+' rad/s');
+      set('A2-x',num(r.x,3));
+      set('A2-mag',fmtMag(r.mag));
+      set('A2-phi',phs(r.phi,1)+'°');
+      set('A2-Uo',num(r.mag*Ui,2)+' V');
+      set('A2-psi-o',phs(r.phi+psi,1)+'°');
+      set('A2-formula','Ū_o = '+fmtMag(r.mag)+'∠('+phs(r.phi,1)+'°) × '+num(Ui,2)+'∠('+phs(psi,1)+'°)');
+    }
+    window.setA2=function(r,c,w,ui,psi){ el('A2-R').value=r; el('A2-C').value=c; el('A2-w').value=w; el('A2-Ui').value=ui; el('A2-psi').value=psi; solveA2(); };
+    ['A2-R','A2-C','A2-w','A2-Ui','A2-psi'].forEach(function(id){ el(id).addEventListener('input',solveA2); });
+    window.switchPanelA=function(which){
+      if(which==='hp' && !hpUnlocked) return;
+      var lp=(which==='lp');
+      el('sub-a-lp').classList.toggle('on',lp); el('sub-a-hp').classList.toggle('on',!lp);
+      el('tab-a-lp').classList.toggle('on',lp); el('tab-a-hp').classList.toggle('on',!lp);
+    };
+    function unlockHP(){
+      hpUnlocked=true;
+      var t=el('tab-a-hp'); t.disabled=false; t.textContent='RC 高通'; t.title='';
+      if(el('A-hp-lock')) el('A-hp-lock').style.display='none';
+      solveA2();
+    }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(btn && btn.id==='gate-pred3') unlockHP();
+    };
+
+    /* ---------- 面板 B：波特图 / 分贝 ---------- */
+    var bType='lp';
+    function pxOf(lg){ return 50+(lg+1)/3*400; }
+    function pyOf(L){ return 40+(-L)*3.5; }
+    function curvePath(type){
+      var pts=[];
+      for(var i=0;i<=120;i++){
+        var lg=-1+3*i/120, x=Math.pow(10,lg);
+        var m= type==='lp' ? 1/Math.sqrt(1+x*x) : x/Math.sqrt(1+x*x);
+        pts.push(pxOf(lg).toFixed(1)+','+pyOf(20*Math.log10(m)).toFixed(1));
+      }
+      return 'M'+pts.join(' L');
+    }
+    function asymPath(type){
+      if(type==='lp') return 'M50,40 L183.3,40 L450,180';
+      return 'M50,110 L183.3,40 L450,40';
+    }
+    function drawBode(x,L,type){
+      el('bode-asym').setAttribute('d',asymPath(type));
+      el('bode-exact').setAttribute('d',curvePath(type));
+      var lg=Math.max(-1,Math.min(2,Math.log10(x))), mx=pxOf(lg), my=pyOf(L);
+      el('bode-vline').setAttribute('x1',mx.toFixed(1)); el('bode-vline').setAttribute('x2',mx.toFixed(1));
+      el('bode-dot').setAttribute('cx',mx.toFixed(1)); el('bode-dot').setAttribute('cy',my.toFixed(1));
+      var lab=el('bode-mark');
+      lab.setAttribute('x',Math.min(mx+7,352).toFixed(1));
+      lab.setAttribute('y',Math.max(my-8,52).toFixed(1));
+      lab.textContent='x='+fmtMag(x)+'  L='+num(L,2)+' dB';
+    }
+    function solveB(){
+      var R=parseFloat(el('B-R').value), C=parseFloat(el('B-C').value), w=parseFloat(el('B-w').value);
+      set('B-R-v',num(R,0)+' Ω'); set('B-C-v',num(C,2)+' µF'); set('B-w-v',num(w,0)+' rad/s');
+      var wc=wcOf(R,C), r=resp(wc,w,bType==='hp');
+      var L=20*Math.log10(r.mag);
+      var asym = bType==='lp' ? (r.x<=1?0:-20*Math.log10(r.x)) : (r.x>=1?0:20*Math.log10(r.x));
+      set('B-wc',num(wc,0)+' rad/s'); set('B-x',num(r.x,3)); set('B-mag',fmtMag(r.mag));
+      set('B-L',sgn(L,2)+' dB'); set('B-Lasym',sgn(asym,2)+' dB');
+      set('B-type',bType==='lp'?'低通（滞后）':'高通（超前）');
+      var delta=Math.abs(r.x-1)<0.005;
+      el('B-agree').className=delta?'agree':'warn-note';
+      el('B-agree').textContent=delta
+        ? '✓ 折点 x=1：真值 '+num(L,2)+' dB，比渐近线低约 3 dB'
+        : '✓ x='+num(r.x,3)+'：真值 '+num(L,2)+' dB，渐近线 '+num(asym,2)+' dB';
+      drawBode(r.x,L,bType);
+    }
+    window.setB=function(r,c,w,type){ el('B-R').value=r; el('B-C').value=c; el('B-w').value=w; bType=(type==='hp'?'hp':'lp');
+      el('tab-b-lp').classList.toggle('on',bType==='lp'); el('tab-b-hp').classList.toggle('on',bType==='hp'); solveB(); };
+    ['B-R','B-C','B-w'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+    window.switchPanelB=function(which){ bType=(which==='hp'?'hp':'lp');
+      el('tab-b-lp').classList.toggle('on',bType==='lp'); el('tab-b-hp').classList.toggle('on',bType==='hp'); solveB(); };
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L2-08-frequency-response');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,box,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'').replace(/性$/,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'；文字空填"低"或"高"）。';
+      mark(id,ok,box,fb);
+    };
+
+    solveA1(); solveB(); refresh();
+
+    /* ---------- 重来：共享 resetFlow 解锁全部后，重锁四门并清空一切 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      setA1(1000,1,1000,2.5,30);
+      hpUnlocked=false;
+      var t=el('tab-a-hp'); t.disabled=true; t.textContent='RC 高通（预测 3 后解锁）'; t.title='预测 3 揭晓后解锁';
+      if(el('A-hp-lock')) el('A-hp-lock').style.display='';
+      ['A2-wc','A2-x','A2-mag','A2-phi','A2-Uo','A2-psi-o'].forEach(function(id){ set(id,'—'); });
+      set('A2-formula','揭晓预测 3 后显示。');
+      el('A2-R').value=1000; el('A2-C').value=1; el('A2-w').value=1000; el('A2-Ui').value=5; el('A2-psi').value=0;
+      setB(1000,1,1000,'lp');
+      switchPanelA('lp'); switchPanelB('lp');
+    };
+  })();
+  </script>
+</body>
+</html>
