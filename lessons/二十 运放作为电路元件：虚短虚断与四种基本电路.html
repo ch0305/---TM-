@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>运放作为电路元件：虚短虚断与四种基本电路 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.96rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:92px}
+    .numcheck input.txtin{width:170px}
+    /* 实验台 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .mode-btns{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+    .mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:var(--chalk-dim);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.85rem}
+    .mode-btn.active{background:rgba(255,224,138,.18);color:var(--chalk-yellow);border-color:var(--chalk-yellow);font-weight:700}
+    .mode-btn[disabled]{opacity:.4;cursor:not-allowed}
+    .mode-lock{font-size:.78rem;color:var(--chalk-pink);margin:0 0 4px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">运放作为电路元件：虚短虚断与四种基本电路</span>
+    <span class="meta">教案先行 · 45 min · S3 第二课</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（理想化 → 两条规则 → 四种电路 → 边界）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 三条件与两条规则（陈述①）</a></li>
+        <li><a href="#stage-2">2 · 反相比例器（陈述②·揭晓预测 2）</a></li>
+        <li><a href="#stage-3">3 · 同相比例器与跟随器（陈述③·揭晓预测 3）</a></li>
+        <li><a href="#stage-4">4 · 加法器（陈述④·揭晓预测 4）</a></li>
+        <li><a href="#stage-5">5 · 两个实验台（比例器台 / 加法器台）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">运放内部成千上万晶体管。我们<strong>不管内部、只看外部</strong>：把运放当成用受控源建模的电路元件，用两条规则 + 在<strong>输入节点</strong>列 KCL 就把各种电路算出来。</div>
+      <div class="mini">因果顺序：理想化三条件 → 两条规则 → 反相/同相/跟随/加法 → 适用边界。<strong>不是时间安排</strong>；公式都在预测揭晓后才出现。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-02.md</code>（邱 §5-1~§5-3 正文 OCR + 校对，李上 §2-3 交叉佐证）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-02-教案.md</code>（独立审核一次通过五问 + 数值核对）。目标、节奏、台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① 输入端标 <code>+ / −</code> 只是<strong>性质标志，不是电压极性</strong>；同相端电压记 <code>u_+</code>、反相端记 <code>u_-</code>。</div>
+      <div class="mini" data-leak style="display:none;">② 虚短 <code>u_+=u_-</code>、虚断 <code>i_+=i_-=0</code> <strong>只在线性区 + 负反馈下成立</strong>；饱和时失效。虚短≠真短路、虚断≠真开路。</div>
+      <div class="mini" data-leak style="display:none;">③ 只在<strong>输入节点</strong>列 KCL，<strong>不对输出节点列</strong>（输出电流未知）。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>四种组态增益（揭晓后才用）</h4>
+      <div class="mini">反相 <code>−R₂/R₁</code> · 同相 <code>1+R₂/R₁</code> · 跟随 <code>1</code> · 加法（等阻）<code>−(u₁+…+u_n)</code>。四个预测全部揭晓后作为<strong>速查</strong>出现；正文里它们都在对应预测揭晓后才推导。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 第二课（L3-02）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">受控源模型 · 两条规则 · 四种基本电路</span>
+      </div>
+      <h1>运放作为电路元件：虚短虚断与四种基本电路</h1>
+      <p class="muted">前面学的元件都能用一两条 VCR 描述。<strong>这节课解决一件事：运放内部成千上万晶体管，能不能完全不管内部、只靠两条简单规则就把各种运放电路（反相、同相、跟随、相加）的输出算出来？这两条规则从哪里来、为什么成立、又在什么情况下会失效？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">理想化·两规则</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">反相</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">同相·跟随</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">加法器</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习/过关</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉判断）</div>
+        <p>先看运放的图形符号。它有两个输入端 <code>+ / −</code> 和一个输出端。<strong>注意：<code>+ / −</code> 只是区分两种输入端性质的标志，不是电压极性</strong>——这是今天第一大误读。</p>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <div class="speak teacher">师：从电路分析角度，我们只关心它端子上的表现：输出受两个输入端<strong>电压之差</strong>控制，<code>u_o=A(u_+−u_-)</code>，A 是很大的开环增益；差分输入记作 <code>u_d=u_+−u_-</code>。运放是单向器件——输出受输入控制，输入不受输出影响。</div>
+            <p class="muted">图中两个输入端：<code>+</code> 是同相端（电压 <code>u_+</code>）、<code>−</code> 是反相端（电压 <code>u_-</code>）。三角形指向反映"单向"。</p>
+          </div>
+          <div class="fig-box md" aria-label="运算放大器图形符号：三角形放大器，左侧两个输入端标加号和减号分别接u加与u减，右侧输出端接u输出，标注差分输入ud等于u加减u减，线性区uo等于A乘ud，底部注明加减号是输入端性质标志不是电压极性">
+            <svg class="svg-diag" viewBox="0 0 380 170" role="img">
+              <path class="wire" d="M70 34 L70 136 L170 85 Z"/>
+              <line class="wire" x1="34" y1="60" x2="70" y2="60"/>
+              <line class="wire" x1="34" y1="110" x2="70" y2="110"/>
+              <line class="wire" x1="170" y1="85" x2="250" y2="85"/>
+              <text class="ylb" x="46" y="54">+</text>
+              <text class="plb" x="46" y="104">−</text>
+              <text class="lbl" x="6" y="55">u_+</text>
+              <text class="lbl" x="6" y="105">u_-</text>
+              <text class="glb" x="256" y="89">u_o</text>
+              <text class="dim" x="196" y="36">u_d = u_+ − u_-</text>
+              <text class="dim" x="196" y="54">线性区：u_o = A·u_d</text>
+              <text class="ylb" x="14" y="158">+ / − 是输入端性质标志，不是电压极性</text>
+            </svg>
+            <div class="fig-cap">图① · 运放符号与差分输入（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>A 很大（比如 10 万倍），但输出电压被电源卡在 ±13 V 之间。假如运放停在<strong>线性放大</strong>（输出没顶到底、是个有限值），那两个输入端的电压差 <code>u_d</code> 大概是多少？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">很大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">几乎为零</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">等于输出电压</button>
+          </div>
+          <p class="gate-note">提示一下：u_o = A·u_d，A 极大而 u_o 有限。先自己选，公布只到"u_d 有多大"这一层，还不给规则的名字。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：u_d 趋近多少 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选"几乎为零"。</strong>输出 <code>u_o=A·u_d</code> 停在一个有限值，而 A 极大，所以 <code>u_d=u_o/A≈0</code>，两输入端电压几乎相等；又因为输入电阻极大，输入端几乎不取电流。</p>
+          <p class="muted">这一层只确认现象：<code>u_d≈0</code>、输入端电流≈0。至于这两条现象叫什么、凭什么敢用，下一步才给。</p>
+          <button class="reveal-btn" data-target="rev-ideal" data-stage="1" onclick="revealBlock(this)">继续：给现象命名 + 三条件与前提（陈述①） →</button>
+          <div class="reveal" id="rev-ideal">
+            <div class="speak teacher">师：把这个思想实验正式化——增益 <code>A→∞</code>、输入电阻 <code>R_i→∞</code>、输出电阻 <code>R_o→0</code>，且工作在线性区，就称<strong>理想运放</strong>。三条极限直接换来两条规则。</div>
+            <div class="side-fig-row">
+              <div class="side-text">
+                <p><strong>图②：两条规则与它们的边界。</strong>虚断来自 <code>R_i→∞</code>，虚短来自 <code>A→∞</code> 且输出有限。两个"虚"字都要盯住"不是真的"：虚短≠真短路（电流为零）、虚断≠真开路（电压可不为零）。</p>
+                <p class="warn-note">关键追问：A→∞ 意味着差一点点就把输出顶到饱和，凭什么还能停在线性区？——靠<strong>负反馈</strong>：把输出经电阻接回反相端，输出偏高就压低 <code>u_d=u_+−u_-</code>，把输出拉回来。所以 <strong>线性区 + 负反馈是前提；一旦饱和，虚短失效。</strong></p>
+              </div>
+              <div class="fig-box md" aria-label="理想运放两条规则示意：左侧虚断表示输入电流i加和i减都为零但不是真开路，右侧虚短表示u加等于u减但不是真短路，底部标注前提是线性区加负反馈饱和则失效">
+                <svg class="svg-diag" viewBox="0 0 380 180" role="img">
+                  <line class="guide" x1="190" y1="10" x2="190" y2="150"/>
+                  <text class="ylb" x="14" y="24">① 虚断（R_i→∞）</text>
+                  <text class="lbl" x="30" y="62">i_+ = 0</text>
+                  <text class="lbl" x="30" y="86">i_- = 0</text>
+                  <text class="dim" x="14" y="116">电流为零，但电压可不为零</text>
+                  <text class="dim" x="14" y="136">≠ 真开路</text>
+                  <text class="plb" x="206" y="24">② 虚短（A→∞）</text>
+                  <text class="lbl" x="222" y="62">u_+ = u_-</text>
+                  <text class="dim" x="206" y="116">电压相等，但电流为零</text>
+                  <text class="dim" x="206" y="136">≠ 真短路</text>
+                  <text class="glb" x="46" y="168">前提：线性区 + 负反馈；饱和则 u_d≠0</text>
+                </svg>
+                <div class="fig-cap">图② · 两条规则与边界（自包含示意）。</div>
+              </div>
+            </div>
+            <div class="ok-box"><strong>陈述时刻 ① · 理想运放、虚短与虚断</strong><br/><strong>全称/命名</strong>：理想运算放大器（ideal op-amp）及两条分析规则——虚短、虚断。<br/><strong>一句定义</strong>：满足 <code>A→∞、R_i→∞、R_o→0</code> 且工作在<strong>线性区（输出不饱和、有负反馈）</strong>的运放称为理想运放；由此得到两条规则——<strong>虚断</strong>：两输入端电流为零 <code>i_+=i_-=0</code>（因 R_i→∞），但输入端电压可不为零，<strong>不是真开路</strong>；<strong>虚短</strong>：两输入端电压相等 <code>u_+=u_-</code>（因 A→∞ 且 u_o 有限），但输入端电流为零，<strong>不是真短路</strong>。一端接地时另一端也≈0，称"虚地"。<strong>适用前提：线性区 + 负反馈；饱和时 u_d 不再≈0，虚短失效。</strong><br/><strong>符号式</strong>：<code>i_+=i_-=0</code>；<code>u_+=u_-</code>（即 <code>u_d=u_+−u_-=0</code>）。〔邱 §5-1 p.114–116、§5-3 p.118–119〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1（概念落地在 stage-1 的陈述①，此处无新预测） ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 三条件与两条规则（已在预测 1 揭晓内完成）</div>
+        <p class="muted">陈述时刻 ① 已在上一个环节"继续"按钮里给出：三条件 → 两条规则 → 虚地 → 适用前提。带着这两条规则往下走，看它怎么把四个电路一口气算出来。</p>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2：反相 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 反相比例器（陈述时刻② · 揭晓预测 2）</div>
+        <div class="speak teacher">师：同相端接地，输入 <code>u_i</code> 经 R₁ 接反相端，R₂ 从输出接回反相端——这就是负反馈。先看电路，再猜输出与输入同号还是反号。</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上 R₂ 是反馈电阻，把输出接回反相端；同相端接地。先只盯住"输出升高时，反馈把反相端电压怎么拉"。</p>
+          </div>
+          <div class="fig-box md" aria-label="反相比例器电路：运算放大器同相端接地，输入ui经电阻R1接反相端，反馈电阻R2从输出端接回反相端，反相端为虚地u减约等于零，底部写输入节点KCL方程ui除R1加uo除R2等于零">
+            <svg class="svg-diag" viewBox="0 0 380 200" role="img">
+              <path class="wire" d="M150 55 L150 145 L240 100 Z"/>
+              <line class="wire" x1="120" y1="70" x2="150" y2="70"/>
+              <line class="wire" x1="120" y1="70" x2="120" y2="92"/>
+              <line class="wire" x1="110" y1="92" x2="130" y2="92"/>
+              <line class="wire" x1="114" y1="97" x2="126" y2="97"/>
+              <line class="wire" x1="118" y1="102" x2="122" y2="102"/>
+              <text class="ylb" x="128" y="66">+</text>
+              <text class="plb" x="128" y="126">−</text>
+              <line class="wire" x1="40" y1="120" x2="60" y2="120"/>
+              <rect class="box" x="60" y="114" width="42" height="12"/>
+              <text class="lbl" x="70" y="108">R₁</text>
+              <line class="wire" x1="102" y1="120" x2="150" y2="120"/>
+              <text class="lbl" x="10" y="114">u_i</text>
+              <line class="wire" x1="132" y1="120" x2="132" y2="34"/>
+              <rect class="box" x="132" y="28" width="44" height="12"/>
+              <text class="lbl" x="142" y="22">R₂</text>
+              <line class="wire" x1="176" y1="34" x2="300" y2="34"/>
+              <line class="wire" x1="300" y1="34" x2="300" y2="100"/>
+              <line class="wire" x1="300" y1="100" x2="240" y2="100"/>
+              <line class="wire" x1="240" y1="100" x2="344" y2="100"/>
+              <text class="glb" x="348" y="104">u_o</text>
+              <text class="ylb" x="104" y="160">虚地 u_- ≈ 0</text>
+              <text class="dim" x="10" y="186">输入节点 KCL：u_i / R₁ + u_o / R₂ = 0</text>
+            </svg>
+            <div class="fig-cap">图③ · 反相比例器（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>这个电路里，输出 <code>u_o</code> 和输入 <code>u_i</code> 是同号还是反号？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">同号</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">反号</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">不确定</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2 + 反相增益推导（陈述②） →</button>
+        <div class="reveal" id="rev-2">
+          <p><strong>选"反号"。</strong>同相端接地 <code>u_+=0</code>，虚短给反相端 <code>u_-=0</code>（<strong>虚地</strong>）；虚断使输入端不取电流，对<strong>反相端节点</strong>列 KCL：<code>u_i/R₁ + u_o/R₂ = 0</code> → <code>u_o=−(R₂/R₁)u_i</code>。</p>
+          <div class="eq-line">u_o = −(R₂ / R₁) · u_i　（负号来自虚地节点的电流求和）</div>
+          <div class="ok-box"><strong>陈述时刻 ② · 反相比例器（倒向放大器）</strong><br/><strong>全称/命名</strong>：反相比例器（inverting amplifier）。<br/><strong>一句定义</strong>：同相端接地、输入经 R₁ 接反相端、R₂ 从输出反馈到反相端的电路；由虚短得反相端为"虚地"，在反相端节点列 KCL 即得输出电压与输入电压成固定比例、符号相反，比例只由外部电阻 R₂/R₁ 决定，与运放本身参数几乎无关。<br/><strong>符号式</strong>：<code>u_o=−(R₂/R₁)u_i</code>；负号来自虚地节点电流求和 <code>u_i/R₁+u_o/R₂=0</code>。〔邱 §5-2 p.117–118〕</div>
+          <p class="muted">精确式（§5-2）算出比值几乎只由 R₂/R₁ 决定、与 A 几乎无关——这就是工程上敢用理想模型的原因；精确式不要求记。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3：同相与跟随 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 同相比例器与电压跟随器（陈述时刻③ · 揭晓预测 3）</div>
+        <div class="speak teacher">师：把输入改接到同相端，反相端经 R₁ 接地、R₂ 仍从输出反馈回来。这次增益还是 <code>−R₂/R₁</code> 吗？先猜。</div>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>输入改接同相端后，输出大概是输入的什么范围？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">小于 1 的正数</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">大于 1 的正数</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">负数</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3 + 同相增益与跟随器（陈述③） →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选"大于 1 的正数"。</strong>虚断使反相端不取电流，R₁、R₂ 就是普通分压；虚短给 <code>u_-=u_+=u_i</code>，故 <code>u_i=R₁/(R₁+R₂)·u_o</code> → <code>u_o=(1+R₂/R₁)u_i</code>（恒 &gt;1、为正）。</p>
+          <div class="eq-line">u_o = (1 + R₂ / R₁) · u_i　；　R₂=0 时 u_o = u_i（跟随器，增益 1）</div>
+          <div class="ok-box"><strong>陈述时刻 ③ · 同相比例器与电压跟随器</strong><br/><strong>全称/命名</strong>：同相比例器（non-inverting amplifier）与电压跟随器（voltage follower）。<br/><strong>一句定义</strong>：输入接同相端、反相端经 R₁ 接地并由 R₂ 反馈的电路，增益为 <code>1+R₂/R₁</code>（恒大于 1、输出与输入同号）；当 R₂=0（R₁→∞）时退化为电压跟随器 <code>u_o=u_i</code>，增益 1，因输入电阻无限大不取电流，插在信号源与负载之间可隔离负载效应、保持原定分压值。<br/><strong>符号式</strong>：同相 <code>u_o=(1+R₂/R₁)u_i</code>；跟随器 <code>u_o=u_i</code>。〔邱 §5-3 p.119–120〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：同相比例器与跟随器隔离。</strong>左边同相增益恒 &gt;1；右边跟随器把输出直接接回反相端（<code>u_o=u_i</code>），靠 <code>R_i→∞</code> 不取电流，使负载接上来也不拉低原来的分压比。增益只有 1，价值却在"隔离"。</p>
+            </div>
+            <div class="fig-box lg" aria-label="同相比例器与电压跟随器隔离示意：左侧写同相增益公式uo等于1加R2比R1乘ui且恒大于1为正，右侧画跟随器三角形输出直接反馈到反相端输入ui输出uo，负载接输出，标注输入电阻无穷大不取电流使分压比不被负载拉低">
+              <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+                <line class="guide" x1="224" y1="10" x2="224" y2="172"/>
+                <text class="ylb" x="14" y="26">同相比例器</text>
+                <text class="lbl" x="14" y="60">u_o = (1 + R₂/R₁) u_i</text>
+                <text class="dim" x="14" y="86">输入接 u_+；虚短 u_- = u_+ = u_i</text>
+                <text class="dim" x="14" y="108">恒 &gt; 1、为正（与反相对照）</text>
+                <text class="plb" x="240" y="26">电压跟随器（R₂ = 0，增益 1）</text>
+                <path class="wire" d="M296 52 L296 148 L386 100 Z"/>
+                <line class="wire" x1="250" y1="74" x2="296" y2="74"/>
+                <text class="ylb" x="272" y="68">+</text>
+                <text class="lbl" x="226" y="69">u_i</text>
+                <line class="wire" x1="250" y1="126" x2="296" y2="126"/>
+                <text class="plb" x="272" y="122">−</text>
+                <line class="wire" x1="250" y1="126" x2="234" y2="126"/>
+                <line class="wire" x1="234" y1="126" x2="234" y2="40"/>
+                <line class="wire" x1="234" y1="40" x2="420" y2="40"/>
+                <line class="wire" x1="420" y1="40" x2="420" y2="100"/>
+                <line class="wire" x1="420" y1="100" x2="386" y2="100"/>
+                <line class="wire" x1="386" y1="100" x2="450" y2="100"/>
+                <text class="glb" x="436" y="94">u_o</text>
+                <text class="dim" x="240" y="176">u_o=u_i；R_i→∞ 不取电流 → 负载被隔离、分压比不拉低</text>
+              </svg>
+              <div class="fig-cap">图④ · 同相比例器与跟随器隔离（自包含示意）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4：加法与纪律 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 加法器（陈述时刻④ · 揭晓预测 4）</div>
+        <div class="speak teacher">师：两个输入各经一个电阻接反相端，同相端接地，反馈电阻 R_f。分析这个电路时，能不能像以前一样，也给输出节点列一条 KCL？这是今天最容易踩的坑，先表态。</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上两路输入 <code>u₁</code>、<code>u₂</code> 分别经 R₁、R₂ 汇到反相端节点，R_f 从输出接回该节点。先想想：输出那根线上的电流，你能提前写出来吗？</p>
+          </div>
+          <div class="fig-box lg" aria-label="反相加法器电路：两路输入u1和u2分别经电阻R1和R2接到运算放大器反相端节点，同相端接地，反馈电阻Rf从输出接回该节点，反相端虚地，底部写输入节点KCL方程u1除R1加u2除R2加uo除Rf等于零并注明输出节点不列KCL">
+            <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+              <path class="wire" d="M160 50 L160 150 L250 100 Z"/>
+              <line class="wire" x1="130" y1="72" x2="160" y2="72"/>
+              <line class="wire" x1="130" y1="72" x2="130" y2="94"/>
+              <line class="wire" x1="120" y1="94" x2="140" y2="94"/>
+              <line class="wire" x1="124" y1="99" x2="136" y2="99"/>
+              <text class="ylb" x="138" y="68">+</text>
+              <text class="plb" x="138" y="126">−</text>
+              <line class="wire" x1="16" y1="90" x2="48" y2="90"/>
+              <rect class="box" x="48" y="84" width="40" height="12"/>
+              <text class="lbl" x="58" y="78">R₁</text>
+              <line class="wire" x1="88" y1="90" x2="124" y2="90"/>
+              <line class="wire" x1="124" y1="90" x2="124" y2="120"/>
+              <text class="lbl" x="6" y="84">u₁</text>
+              <line class="wire" x1="16" y1="158" x2="48" y2="158"/>
+              <rect class="box" x="48" y="152" width="40" height="12"/>
+              <text class="lbl" x="58" y="146">R₂</text>
+              <line class="wire" x1="88" y1="158" x2="124" y2="158"/>
+              <line class="wire" x1="124" y1="158" x2="124" y2="120"/>
+              <text class="lbl" x="6" y="152">u₂</text>
+              <line class="wire" x1="124" y1="120" x2="160" y2="120"/>
+              <line class="wire" x1="124" y1="120" x2="124" y2="30"/>
+              <rect class="box" x="124" y="24" width="44" height="12"/>
+              <text class="lbl" x="134" y="18">R_f</text>
+              <line class="wire" x1="168" y1="30" x2="330" y2="30"/>
+              <line class="wire" x1="330" y1="30" x2="330" y2="100"/>
+              <line class="wire" x1="330" y1="100" x2="250" y2="100"/>
+              <line class="wire" x1="250" y1="100" x2="390" y2="100"/>
+              <text class="glb" x="394" y="104">u_o</text>
+              <text class="ylb" x="96" y="182">虚地 u_- ≈ 0；只在输入节点列 KCL</text>
+              <text class="dim" x="240" y="182">输出节点电流未知 → 不列 KCL</text>
+            </svg>
+            <div class="fig-cap">图⑤ · 反相加法器（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>分析这个电路时，能不能也给输出节点列一条 KCL 方程？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">能</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">不能</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">看情况</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4 + 加法式与纪律（陈述④） →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>选"不能"。</strong>输出电流由运放内部的受控源提供、事先未知，无法在输出节点写一条确定的 KCL；只能在<strong>输入（反相）节点</strong>列方程。虚地 <code>u_-≈0</code> 下：<code>u₁/R₁ + u₂/R₂ + u_o/R_f = 0</code> → <code>u_o=−R_f(u₁/R₁+u₂/R₂)</code>；等阻时 <code>u_o=−(u₁+u₂)</code>。</p>
+          <div class="eq-line">u_o = −R_f ( u₁/R₁ + u₂/R₂ )　→　等阻 R₁=R₂=R_f=R：u_o = −(u₁+u₂)</div>
+          <div class="ok-box"><strong>陈述时刻 ④ · 加法器与输出节点纪律</strong><br/><strong>全称/命名</strong>：反相加法器（summing amplifier）与运放电路的分析纪律。<br/><strong>一句定义</strong>：多路输入各经电阻接反相端、同相端接地、反馈电阻 R_f 的电路，因反相端虚地，各输入电流在输入节点汇合后经 R_f 流向输出，输出为各输入的加权和取负；分析运放电路时只在输入节点列 KCL，<strong>不对输出节点列 KCL</strong>（输出电流未知）。<br/><strong>符号式</strong>：<code>u_o=−R_f(u₁/R₁+u₂/R₂+…)</code>；等阻 <code>R₁=…=R_f=R</code> → <code>u_o=−(u₁+u₂+…)</code>。〔邱 §5-3 p.120–121〕</div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：实验台 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 两个实验台（比例器台 / 加法器台）</div>
+        <p class="muted">拖动滑块看两条规则如何把输出"算出来"；数值全部按上面推导的公式联动，改参数后与独立计算一致。</p>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · 比例器实验台（预测 2 揭晓后启用；同相/跟随在预测 3 揭晓后解锁）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 2 揭晓后解锁（此刻显示会提前泄露增益公式）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="lab-ctrl">
+              <div class="mode-btns">
+                <button class="mode-btn active" data-mode="inv" onclick="setMode('inv')">反相</button>
+                <button class="mode-btn" data-mode="non" id="mode-non" disabled onclick="setMode('non')">同相（预测 3 后解锁）</button>
+                <button class="mode-btn" data-mode="fol" id="mode-fol" disabled onclick="setMode('fol')">跟随（预测 3 后解锁）</button>
+              </div>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>R₁（kΩ）<span id="A-R1-v">2 kΩ</span></label>
+                <input type="range" id="A-R1" min="1" max="20" step="0.5" value="2" />
+                <label>R₂（kΩ）<span id="A-R2-v">10 kΩ</span></label>
+                <input type="range" id="A-R2" min="0" max="20" step="0.5" value="10" />
+                <label>输入 u_i（V）<span id="A-ui-v">1 V</span></label>
+                <input type="range" id="A-ui" min="-5" max="5" step="0.5" value="1" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（两种规则始终成立）</h5>
+                <div class="th-row"><span class="k">同相端电压 u_+</span><span class="v" id="A-up">—</span></div>
+                <div class="th-row"><span class="k">反相端电压 u_-</span><span class="v" id="A-um">—</span></div>
+                <div class="th-row"><span class="k">输入电流 i_+ = i_-</span><span class="v" id="A-ip">—</span></div>
+                <div class="th-row"><span class="k">输出 u_o</span><span class="v" id="A-uo">—</span></div>
+                <div class="th-row"><span class="k">增益 A_v = u_o/u_i</span><span class="v" id="A-av">—</span></div>
+                <div class="res-line" id="A-state">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认反相：R₁=2 kΩ、R₂=10 kΩ、u_i=1 V → u_+=u_-=0（虚地）、i_+=i_-=0、u_o=−5 V、增益 −5。切同相得 6 V（增益 +6），切跟随得 1 V（增益 1）。拖动滑块按对应模式公式联动。</p>
+          </div>
+        </div>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · 加法器实验台（预测 4 揭晓后启用；R₁=R₂=10 kΩ 固定）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 4 揭晓后解锁（此刻显示会提前泄露加法公式）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>输入 u₁（V）<span id="B-u1-v">2 V</span></label>
+                <input type="range" id="B-u1" min="-5" max="5" step="0.5" value="2" />
+                <label>输入 u₂（V）<span id="B-u2-v">−3 V</span></label>
+                <input type="range" id="B-u2" min="-5" max="5" step="0.5" value="-3" />
+                <label>反馈电阻 R_f（kΩ）<span id="B-Rf-v">10 kΩ</span></label>
+                <input type="range" id="B-Rf" min="1" max="20" step="1" value="10" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（虚地 + 输入节点 KCL）</h5>
+                <div class="th-row"><span class="k">反相端电压 u_-</span><span class="v" id="B-um">—</span></div>
+                <div class="th-row"><span class="k">输出 u_o = −R_f(u₁/R₁+u₂/R₂)</span><span class="v" id="B-uo">—</span></div>
+                <div class="res-line" id="B-eq">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认 u₁=2 V、u₂=−3 V、R_f=10 kΩ → u_o=−(10/10)×2−(10/10)×(−3)=−2+3=1 V。拖动滑块按同一公式联动（例：R_f=20 kΩ → 2 V）。注意含负数输入时符号。</p>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：独立练习 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（8 题，先作答再判定）与过关</div>
+        <p class="muted">形态一 · 读图列式与计算（1–4）；形态二 · 需求反推与适用边界辨析（5–8）。都不是例题的近邻复制。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（形态一）· 反相比例器 R₁=2 kΩ、R₂=10 kΩ、u_i=1 V。求 u_o（V）。</div>
+          <div class="numcheck" id="q-1" data-qid="q-1"><label>u_o <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-1',[-5],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 2（形态一）· 同相比例器 R₁=2 kΩ、R₂=8 kΩ、u_i=1 V。求 u_o（V）。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>u_o <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-2',[5],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 3（形态一）· 电压跟随器 u_i=3 V，求 u_o 与同相端输入电流 i_+ 两空。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>u_o <input type="text" placeholder="V" />，i_+ <input type="text" placeholder="A" /></label><button class="btn-sm" onclick="checkMulti('q-3',[3,0],[0.01,0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 4（形态一）· 加法器 R₁=R₂=R_f=10 kΩ，u₁=2 V、u₂=−3 V（注意负数），求 u_o（V）。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>u_o <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-4',[1],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 5（形态二）· 要一个增益为 −3 的反相比例器，R₁=10 kΩ，反馈电阻 R₂ 应取多少 kΩ？</div>
+          <div class="numcheck" id="q-5" data-qid="q-5"><label>R₂ <input type="text" placeholder="kΩ" /></label><button class="btn-sm" onclick="checkMulti('q-5',[30],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 6（形态二）· 关于虚短虚断，下列说法正确的是？<br/>① 虚短表示两输入端真的短接、有电流流过；② 虚断表示输入端真的开路、电压必为零；③ 虚短是 u_+=u_- 而输入电流为零（虚断），前提是线性区 + 负反馈，饱和时不成立。</div>
+          <div class="choicebox" id="q-6" data-qid="q-6" data-hint="虚短是电压相等、电流为零（不是真短路）；虚断是电流为零、电压可不为零（不是真开路）；两条规则都有线性区+负反馈前提。" data-explain="选③：①把虚短当真短路（错），②把虚断当真开路且电压必为零（错）。"><label><input type="radio" name="q-6" value="a"/> ①</label><label><input type="radio" name="q-6" value="b"/> ②</label><label><input type="radio" name="q-6" value="c"/> ③</label><button class="btn-sm" onclick="checkChoice('q-6','c')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 7（形态二 · 辨析两空）· 反相比例器里反相端"虚地"u_-≈0，流入反相端的电流去了哪里（经哪条元件到哪）？为什么分析时不对输出节点列 KCL？</div>
+          <div class="numcheck" id="q-7" data-qid="q-7"><label>电流 <input class="txtin" type="text" placeholder="如：经反馈电阻 R₂ 流向输出端" />，原因 <input class="txtin" type="text" placeholder="如：输出电流由运放内部提供、事先未知" /></label><button class="btn-sm" onclick="checkTextAny('q-7',[['反馈','r2','rf','输出'],['未知','内部','不确定','提供','事先']],'第一空：电流经反馈电阻 R₂ 流向输出端、不进运放；第二空：输出电流由运放内部提供、事先未知，故只列输入节点 KCL。')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 8（形态二 · 需求反推两空）· 一个电阻分压电路后面接了很重的负载，怕分压比被拉低，应在分压器与负载之间插入哪种运放电路？它靠什么性质起到隔离作用？</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>插入 <input class="txtin" type="text" placeholder="如：电压跟随器" />，靠 <input class="txtin" type="text" placeholder="如：输入电阻无穷大、不取电流" /></label><button class="btn-sm" onclick="checkTextAny('q-8',[['跟随'],['无穷','∞','不取电流','输入电阻','不拉低','隔离']],'插入电压跟随器；靠输入电阻 R_i→∞（不取电流、不拉低分压比）隔离负载。')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出）</strong>：① <code>+ / −</code> 为什么不是电压极性？② A→∞ 为什么逼出 u_d≈0？③ 虚短虚断为什么只在负反馈线性区成立、饱和时为何失效？④ 虚短为什么不是真短路、虚断为什么不是真开路？⑤ 四种组态增益各是什么、跟随器增益为 1 为何有用？⑥ 为什么只在输入节点列 KCL、不对输出节点列？
+        </div>
+        <div class="warn-note">下一课钩子（L3-03）：今天用"理想化条件"换来运放的虚短虚断；L2-10 已预告过二阶形态——下一课把 RLC 二阶方程的特征根与过阻尼/欠阻尼/等幅形态系统解出来，同样是"抓住模型的关键参数，就抓住电路的性格"。</div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏与来源台账（页尾资料）</summary>
+          <h4>学习目标</h4>
+          <p class="muted">形态一（读图列式与计算）：给画好的运放电路，用虚短虚断 + 在输入节点列 KCL，算反相/同相/跟随/加法电路的输出与增益。形态二（需求反推与边界辨析）：给需求（设计增益、隔离负载）选组态、反推电阻，并辨清"虚短虚断只在负反馈线性区成立、饱和失效"与"输出节点不列 KCL"两条纪律。</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 5′ · 三条件与两规则 10′ · 反相比例器 9′ · 同相与跟随 8′ · 加法与纪律 7′ · 两实验台与练习 4′ · 收尾钩子 2′。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>运放多端器件、只看外部、VCVS 模型、单向性、u_o=A(u_+−u_-)、+/− 非电压极性</td><td>〔书〕邱 §5-1 p.114–115；李上 §2-3（PDF 105–106）交叉佐证</td></tr>
+            <tr><td>外特性（线性区/饱和）、理想运放三条件、虚短虚断、虚地</td><td>〔书〕邱 §5-1 p.116、§5-3 p.118–119；李上 §2-3（PDF 107）</td></tr>
+            <tr><td>反相比例器精确式（只点名）与 u_o=−(R₂/R₁)u_i</td><td>〔书〕邱 §5-2 p.117–118；李上 §2-3 例（PDF 108）</td></tr>
+            <tr><td>同相比例器 1+R₂/R₁、跟随器隔离；加法器与输出节点纪律</td><td>〔书〕邱 §5-3 p.119–121；李上 §2-3 例 2-11/2-12、练习题 2-11/2-12（PDF 109–111）</td></tr>
+            <tr><td>线性区+负反馈前提、饱和边界</td><td>〔书〕邱 §5-1 p.116（外特性/闭环）＋〔通识〕教学边界</td></tr>
+            <tr><td>4 预测 + 8 练习 + 两实验台全部数值</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽）</td></tr>
+            <tr><td>五张运放/规则/反相/同相跟随/加法 SVG 几何画法</td><td>〔通识〕</td></tr>
+          </table>
+          <p class="muted">记号全课统一 <code>u_+/u_-</code>（邱写 b/a、李上写 +/−）、<code>u_d=u_+−u_-</code>；邱 PDF=印刷+24（§5-1 印刷 p.114 在 PDF 138）；李上印刷页码按 PDF−18 推算、以原书为准故用章节号 + PDF 页；H&H 未摘正文，不引章节号；邱 ＊§17-6 非线性应用只在"不讲"里点名作边界，不引为教案依据。正文见 <code>书籍/摘录/L3-02.md</code>，教案见 <code>lessons/drafts/L3-02-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：几乎为零；预测 2：反号（u_o=−R₂/R₁·u_i）；预测 3：大于 1 的正数（u_o=(1+R₂/R₁)u_i，跟随器 1）；预测 4：不能（输出电流未知，只在输入节点列 KCL）。练习：1 `−5`；2 `5`；3 `3 / 0`；4 `1`；5 `30`；6 `③`；7 电流经 R₂ 流向输出 / 输出电流未知故不列输出节点 KCL；8 电压跟随器 / R_i→∞ 不取电流隔离负载。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-02-op-amp-as-circuit-element';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-02 增量脚本：预测门禁 + 陈述卡 gating（在揭晓块内）+ 两实验台 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+
+    /* ---------- 门禁：面板 A/B 与模式在对应预测揭晓后解锁 ---------- */
+    var aUnlocked=false, bUnlocked=false, modesUnlocked=false, curMode='inv';
+    function unlockA(){
+      if(aUnlocked) return;
+      aUnlocked=true;
+      el('A-lock').style.display='none';
+      el('A-body').style.display='';
+      solveA();
+    }
+    function unlockModes(){
+      if(modesUnlocked) return;
+      modesUnlocked=true;
+      ['mode-non','mode-fol'].forEach(function(id){ el(id).disabled=false; el(id).textContent = (id==='mode-non'?'同相':'跟随'); });
+    }
+    function unlockB(){
+      if(bUnlocked) return;
+      bUnlocked=true;
+      el('B-lock').style.display='none';
+      el('B-body').style.display='';
+      solveB();
+    }
+    /* 速查栏里的结论（虚短虚断 / 增益 / 输出节点纪律）在全部预测揭晓后才出现，避免提前泄底 */
+    function unlockCheat(){
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display=''; });
+    }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred2') unlockA();
+      if(btn.id==='gate-pred3') unlockModes();
+      if(btn.id==='gate-pred4'){ unlockB(); unlockCheat(); }
+    };
+
+    /* ---------- 面板 A：比例器族（反相/同相/跟随） ---------- */
+    function setMode(m){
+      if(!aUnlocked) return;
+      if((m==='non'||m==='fol') && !modesUnlocked) return;
+      curMode=m;
+      document.querySelectorAll('.mode-btn').forEach(function(b){ b.classList.toggle('active', b.dataset.mode===m); });
+      solveA();
+    }
+    window.setMode=setMode;
+    function solveA(){
+      if(!aUnlocked) return;
+      var R1=parseFloat(el('A-R1').value), R2=parseFloat(el('A-R2').value), ui=parseFloat(el('A-ui').value);
+      set('A-R1-v',num(R1,1)+' kΩ'); set('A-R2-v',num(R2,1)+' kΩ'); set('A-ui-v',num(ui,1)+' V');
+      var up, um, uo, av, state;
+      if(curMode==='inv'){ up=0; um=0; uo=-(R2/R1)*ui; av=-R2/R1; state='反相：虚地 u_-≈0；负号来自输入节点 KCL'; }
+      else if(curMode==='non'){ up=ui; um=ui; uo=(1+R2/R1)*ui; av=1+R2/R1; state='同相：虚短 u_+=u_-=u_i；增益恒 >1'; }
+      else { up=ui; um=ui; uo=ui; av=1; state='跟随：u_o=u_i，增益 1；靠 R_i→∞ 隔离负载'; }
+      set('A-up',num(up,3)+' V');
+      set('A-um',num(um,3)+' V');
+      set('A-ip','0 A');
+      set('A-uo',num(uo,3)+' V');
+      set('A-av',num(av,3));
+      set('A-state',state);
+    }
+    ['A-R1','A-R2','A-ui'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：加法器（R₁=R₂=10 kΩ 固定） ---------- */
+    function solveB(){
+      if(!bUnlocked) return;
+      var u1=parseFloat(el('B-u1').value), u2=parseFloat(el('B-u2').value), Rf=parseFloat(el('B-Rf').value), R=10;
+      var uo=-(Rf/R)*u1-(Rf/R)*u2;
+      set('B-u1-v',num(u1,1)+' V'); set('B-u2-v',num(u2,1)+' V'); set('B-Rf-v',num(Rf,1)+' kΩ');
+      set('B-um','0 V');
+      set('B-uo',num(uo,3)+' V');
+      set('B-eq','u_o = −('+num(Rf,1)+'/10)×('+num(u1,1)+') − ('+num(Rf,1)+'/10)×('+num(u2,1)+') = '+num(uo,3)+' V');
+    }
+    ['B-u1','B-u2','B-Rf'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键（仅 8 道练习计入） ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-02');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,fb);
+    };
+    window.checkTextAny=function(id,keys,hint){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<keys.length;i++){
+        var raw=(((ins[i]||{}).value)||'').toLowerCase().replace(/\s/g,'');
+        var hit=false;
+        for(var j=0;j<keys[i].length;j++){ if(raw.indexOf(keys[i][j])>=0){ hit=true; break; } }
+        if(!hit){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint=hint||'再想想：按顺序核对每个空。';
+      mark(id,ok,fb);
+    };
+
+    refresh();
+
+    /* ---------- 重来：重锁四门、清空一切、恢复面板默认 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      /* 速查栏重新上锁 */
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display='none'; });
+      /* 面板 A */
+      aUnlocked=false; modesUnlocked=false; curMode='inv';
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ['A-up','A-um','A-ip','A-uo','A-av','A-state'].forEach(function(id){ set(id,'—'); });
+      el('A-R1').value=2; el('A-R2').value=10; el('A-ui').value=1;
+      document.querySelectorAll('.mode-btn').forEach(function(b){
+        b.classList.toggle('active', b.dataset.mode==='inv');
+        if(b.dataset.mode==='inv'){ b.disabled=false; }
+        else { b.disabled=true; b.textContent=(b.dataset.mode==='non'?'同相（预测 3 后解锁）':'跟随（预测 3 后解锁）'); }
+      });
+      /* 面板 B */
+      bUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      ['B-um','B-uo','B-eq'].forEach(function(id){ set(id,'—'); });
+      el('B-u1').value=2; el('B-u2').value=-3; el('B-Rf').value=10;
+    };
+  })();
+  </script>
+</body>
+</html>
