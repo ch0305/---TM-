@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>耦合电感与变压器基础 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .flux{stroke:var(--chalk-blue);stroke-width:2;fill:none;stroke-dasharray:6 4}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .svg-diag .dot{fill:var(--chalk-yellow)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.96rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:92px}
+    /* 实验台 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .agree{font-family:var(--mono);font-size:.82rem;color:var(--chalk-green);font-weight:700;margin-top:6px}
+    .k-bad{font-family:var(--mono);font-size:.82rem;color:var(--danger);font-weight:700;margin-top:6px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">耦合电感与变压器基础</span>
+    <span class="meta">教案先行 · 45 min · S3 开篇</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（互感 → 同名端 → 极限 → 变换）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 互感 M 与那个 ±（陈述①·揭晓预测 2）</a></li>
+        <li><a href="#stage-2">2 · 耦合因数 k 与 VCR（陈述②）</a></li>
+        <li><a href="#stage-3">3 · 推到极限：理想变压器（陈述③·揭晓预测 3）</a></li>
+        <li><a href="#stage-4">4 · 功率守恒与阻抗变换（陈述④·揭晓预测 4）</a></li>
+        <li><a href="#stage-5">5 · 两个实验台（互感台 / 变压器台）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">前面学的电感都是"一个线圈、自己跟自己"。本课问一件事：<strong>两个线圈靠磁场互相影响时，方程怎么改、符号怎么判；耦合推到极限又怎样变成理想变压器。</strong></div>
+      <div class="mini">因果顺序：互感 M → 同名端判符号 → k 与 VCR → 理想变压器 → 阻抗变换 → 练习。<strong>不是时间安排</strong>；公式都在预测揭晓后才出现。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-01.md</code>（邱 §10-1~§10-5 正文 OCR + 校对，李下 §11 交叉佐证）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-01-教案.md</code>（初审退 6 项已修、复审通过）。目标、节奏、台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① 互感项的正负看<strong>电流是否同时从同名端流入</strong>——同时进（或同时出）取 +，一进一出取 −。</div>
+      <div class="mini">② 变比全课只用一个口径：<code>n=N₁/N₂</code>（一次匝数 / 二次匝数）。别和别的书 <code>N₂/N₁</code> 的写法混用。</div>
+      <div class="mini">③ <code>u₁=nu₂</code> 与 <code>i₁=−i₂/n</code> 是<strong>两条独立关系</strong>，不是联立方程；理想变压器只用 n 描述，不再用 L、M。</div>
+    </div>
+    <div class="side-block">
+      <h4>前置工具（L1、L2 已学，此处不列公式）</h4>
+      <div class="mini">相量、阻抗、KVL、复功率——都在正文揭晓块里逐个出现，此处不提前列式。</div>
+      <div class="mini">本课不引入新的求解方法；唯一新东西是<strong>互感这条"跨支路"的电压项</strong>和一个<strong>理想化元件模型</strong>。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 开篇课（L3-01）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">互感与同名端 · 理想变压器 · 阻抗变换</span>
+      </div>
+      <h1>耦合电感与变压器基础</h1>
+      <p class="muted">前面学的电感都是"一个线圈、自己跟自己"。<strong>这节课解决一件事：两个线圈靠磁场互相影响时，含互感的电路方程怎么列、互感项的符号（两线圈磁场是增强还是抵消）怎么判？而当耦合做到极致时，又怎样得到一个只按某个固定比值变换电压电流、既不耗能也不储能的理想变压器，并用它做阻抗变换？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">互感 M</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">同名端判符号</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">k 与 VCR</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">理想变压器</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">阻抗变换</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习/过关</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉判断）</div>
+        <p>先给一个只用"变化的磁场"就能想明白的问题，此时黑板上<strong>没有任何互感公式</strong>。</p>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>线圈 1 接电池（电流正在变化），线圈 2 什么都没接、只放在它旁边。当线圈 1 的电流<strong>正在变化</strong>时，线圈 2 两端会不会出现电压？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">会</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">不会</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">不确定</button>
+          </div>
+          <p class="gate-note">提示一下：变化的电流会产生变化的磁场；磁场穿过旁边的线圈会怎样？先自己选，公布只到"有没有电压"这一层。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：互感电压 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选"会"。</strong>线圈 1 变化的电流产生变化的磁场，其中一部分穿过线圈 2，按法拉第电磁感应定律在线圈 2 两端感应出电压——这就是<strong>互感</strong>。两线圈不接导线也能传递电信号和能量，变压器正是靠这个原理。</p>
+          <p class="muted">这一层只确认"互感存在"。至于感应电压的正负怎么定，正是下面预测 2 要解决的。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 互感 M 与那个讨厌的 ±（陈述时刻① · 揭晓预测 2）</div>
+        <div class="speak teacher">师：从预测 1 出发写磁通链。线圈 1 的磁通链不只由自己的电流决定，还多出一项由线圈 2 电流产生的互感磁通链：<code>Ψ₁=L₁i₁ ± M i₂</code>、<code>Ψ₂=L₂i₂ ± M i₁</code>。圈出这个"<strong>±</strong>"——它是今天第一个硬骨头。</div>
+        <p>磁耦合、施感电流、自感磁通链与互感磁通链；<code>M₁₂=M₂₁=M</code>，单位亨。这个 ± 取决于两个电流是"一起增强磁场"还是"互相抵消磁场"。<strong>要给这个符号找一个好记的记号。</strong></p>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>看右边这张两线圈串联的示意图（图上只画了绕向，先不管记号）。如果把右边线圈的两根引线对调、相当于把它倒过来串，串联<strong>总电感会变大还是变小</strong>？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p class="muted">先凭"磁场是叠加还是抵消"的直觉猜。图上的两个点只是标记<strong>同一个端子对</strong>，它的含义在揭晓时才讲——现在你只需要盯住"电流从哪端进、磁场是加还是减"。</p>
+            </div>
+            <div class="fig-box md" aria-label="两线圈串联示意图：左边同向串联电流都从带点端子流入磁场增强，右边把第二线圈倒过来后电流从非点端子流入磁场抵消">
+              <svg class="svg-diag" viewBox="0 0 380 150" role="img">
+                <text class="dim" x="10" y="18">左：两电流都从"·"流入（磁场叠加）</text>
+                <path class="wire" d="M60 32 q18 11 0 22 q18 11 0 22 q18 11 0 22"/>
+                <path class="wire" d="M180 32 q18 11 0 22 q18 11 0 22 q18 11 0 22"/>
+                <circle class="dot" cx="60" cy="30" r="4.5"/>
+                <circle class="dot" cx="180" cy="30" r="4.5"/>
+                <text class="plb" x="34" y="30">i₁↓</text>
+                <text class="plb" x="154" y="30">i₂↓</text>
+                <text class="lbl" x="86" y="70">L₁</text>
+                <text class="lbl" x="206" y="70">L₂</text>
+                <text class="glb" x="112" y="112">Φ 叠加 → 变大</text>
+                <text class="dim" x="10" y="140">右：把第二线圈倒过来（一进一出 → 磁场抵消 → 变小）</text>
+              </svg>
+              <div class="fig-cap">示意图 · 关键不是点本身，而是"电流相对点是同向进还是反向进"。</div>
+            </div>
+          </div>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">变大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">变小</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">不变</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2 + 同名端与串联判据（陈述①） →</button>
+        <div class="reveal" id="rev-2">
+          <p><strong>选"变小"。</strong>把右边线圈两线对调后，原来是增磁变去磁，串联总电感从 <code>L₁+L₂+2M</code> 变成 <code>L₁+L₂−2M</code>。<strong>用来记住这个符号的记号，就叫"同名端"。</strong></p>
+          <div class="ok-box"><strong>陈述时刻 ① · 同名端（dot convention）</strong><br/><strong>全称/命名</strong>：同名端（点标记），在两线圈上各标一个"<code>·</code>"端子。<br/><strong>一句定义</strong>：当两个施感电流<strong>同时从带点端子流入（或同时流出）</strong>时，两线圈产生的磁通方向一致、互相增强（同向耦合），互感项取 +；若一个从点流入、另一个从点流出，则磁通互相削弱（反向耦合），互感项取 −。同名端由绕向和相对位置决定，与电流参考方向无关，工程上用实验判定。<br/><strong>符号式</strong>：<code>Ψ₁=L₁i₁ ± M i₂</code>、<code>Ψ₂=L₂i₂ ± M i₁</code>（同向取 +、反向取 −）；串联 <code>L=L₁+L₂±2M</code>。〔邱 §10-1 p.238–239〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图①：磁耦合与同名端。</strong>两个 "<code>·</code>" 是同名端。电流 i₁、i₂ 都从点流入 → 两磁通同向、互感项取 +；把线圈 2 倒过来（电流从非点流入）→ 互感项取 −，总电感从 +2M 掉到 −2M。</p>
+            </div>
+            <div class="fig-box md" aria-label="磁耦合与同名端示意图：两线圈各有一个点标记同名端，电流都从点流入时互感磁通与自感磁通同向增强">
+              <svg class="svg-diag" viewBox="0 0 380 190" role="img">
+                <path class="wire" d="M70 46 q19 13 0 26 q19 13 0 26 q19 13 0 26"/>
+                <path class="wire" d="M300 46 q19 13 0 26 q19 13 0 26 q19 13 0 26"/>
+                <path class="wire" d="M70 46 L70 24 M70 124 L70 148 M300 46 L300 24 M300 124 L300 148"/>
+                <circle class="dot" cx="70" cy="22" r="5"/>
+                <circle class="dot" cx="300" cy="22" r="5"/>
+                <text class="plb" x="40" y="22">i₁↓</text>
+                <text class="plb" x="270" y="22">i₂↓</text>
+                <text class="lbl" x="96" y="84">L₁</text>
+                <text class="lbl" x="326" y="84">L₂</text>
+                <path class="flux" d="M100 92 C150 44 220 44 270 92 C220 140 150 140 100 92 Z"/>
+                <text class="ylb" x="176" y="96">互感磁通 Φ₂₁</text>
+                <text class="dim" x="18" y="172">两个 · 是同名端：电流同时从 · 流入 → 磁通增强 → 互感项取 +</text>
+                <text class="dim" x="18" y="186">一进一出 → 磁通抵消 → 互感项取 −（L=L₁+L₂−2M）</text>
+              </svg>
+              <div class="fig-cap">图① · 同名端是判断互感符号的配对基准（自包含示意，不引用书内图号）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 耦合因数 k 与 VCR（陈述时刻②）</div>
+        <div class="speak teacher">师：M 最大能有多大？它跟 L₁、L₂ 是什么关系？把磁通链方程对时间求导，就得到耦合电感的电压关系。</div>
+        <button class="reveal-btn" data-target="rev-k" data-stage="3" onclick="revealBlock(this)">推导：耦合因数 k、VCR 与互感抗 →</button>
+        <div class="reveal" id="rev-k">
+          <div class="eq-line">k = M / √(L₁L₂)，0 ≤ k ≤ 1（因互感磁通链不超过自感磁通链，故 M ≤ √(L₁L₂)）</div>
+          <p>k=1 全耦合（两线圈共享全部磁通）、k=0 无耦合。改变两线圈的相对位置就改变 k，也就改变 M。</p>
+          <div class="eq-line">u₁ = L₁·di₁/dt ± M·di₂/dt　；　u₂ = L₂·di₂/dt ± M·di₁/dt</div>
+          <div class="eq-line">相量：Ū₁ = jωL₁Ī₁ ± jωMĪ₂　；　Ū₂ = jωL₂Ī₂ ± jωMĪ₁　；　互感抗 Z_M = jωM</div>
+          <div class="ok-box"><strong>陈述时刻 ② · 耦合电感的 VCR 与互感抗</strong><br/><strong>全称/命名</strong>：耦合电感电压电流关系（VCR）与互感抗。<br/><strong>一句定义</strong>：耦合电感每个线圈的端电压等于自感电压与互感电压之和；互感电压的正负由同名端决定（电流同时从同名端流入时取 +，一进一出取 −）。把磁通链方程对时间求导即得，正弦稳态下写成相量形式。<br/><strong>符号式</strong>：<code>u₁=L₁di₁/dt ± M di₂/dt</code>、<code>u₂=L₂di₂/dt ± M di₁/dt</code>；相量 <code>Ū₁=jωL₁Ī₁ ± jωMĪ₂</code>、<code>Ū₂=jωL₂Ī₂ ± jωMĪ₁</code>；互感抗 <code>Z_M=jωM</code>；耦合因数 <code>k=M/√(L₁L₂)</code>，0≤k≤1。〔邱 §10-1 p.240–241〕</div>
+          <p>由 VCR 令 i₁=i₂=i（串联）即得 <code>u=(L₁+L₂±2M)·di/dt</code>，呼应预测 2。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：同向串联 vs 反向串联。</strong>电流都从同名端流入 → 磁通叠加 → <code>L=L₁+L₂+2M</code>；把线圈 2 倒过来（一进一出）→ 磁通抵消 → <code>L=L₁+L₂−2M</code>。面板 A 可拖滑块实时看这组数。</p>
+            </div>
+            <div class="fig-box lg" aria-label="同向串联与反向串联对比图：左侧电流都从同名端流入磁通叠加取加2M，右侧一进一出磁通抵消取减2M">
+              <svg class="svg-diag" viewBox="0 0 460 190" role="img">
+                <line class="guide" x1="230" y1="16" x2="230" y2="178"/>
+                <text class="ylb" x="14" y="22">同向串联（都从 · 进）</text>
+                <path class="wire" d="M70 46 q18 12 0 24 q18 12 0 24 q18 12 0 24"/>
+                <path class="wire" d="M170 46 q18 12 0 24 q18 12 0 24 q18 12 0 24"/>
+                <circle class="dot" cx="70" cy="44" r="4.5"/>
+                <circle class="dot" cx="170" cy="44" r="4.5"/>
+                <text class="plb" x="44" y="44">i₁↓</text>
+                <text class="plb" x="144" y="44">i₂↓</text>
+                <text class="dim" x="60" y="134">Φ ↑ ＋ Φ ↑</text>
+                <text class="glb" x="22" y="164">L = L₁+L₂+2M</text>
+                <text class="plb" x="244" y="22">反向串联（一进一出）</text>
+                <path class="wire" d="M304 46 q18 12 0 24 q18 12 0 24 q18 12 0 24"/>
+                <path class="wire" d="M404 46 q18 12 0 24 q18 12 0 24 q18 12 0 24"/>
+                <circle class="dot" cx="304" cy="44" r="4.5"/>
+                <circle class="dot" cx="404" cy="118" r="4.5"/>
+                <text class="plb" x="278" y="44">i₁↓</text>
+                <text class="plb" x="378" y="44">i₂↓</text>
+                <text class="dim" x="290" y="134">Φ ↑ − Φ ↓</text>
+                <text class="glb" x="252" y="164">L = L₁+L₂−2M</text>
+              </svg>
+              <div class="fig-cap">图② · 同名端接法决定 ±2M，判错符号等效电感就错号（自包含示意）。</div>
+            </div>
+          </div>
+          <p class="warn-note">一句话点名（P2，不展开）：互感还有两个延伸话题——把二次阻抗通过磁场"反映"到一次侧（<code>Z_r=(ωM)²/Z₂₂</code>，性质相反），以及在公共节点处做"去耦等效"（不是所有电路都能用）。本课只点名，后面课程展开。〔邱 §10-2、§10-4〕</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 推到极限：理想变压器（陈述时刻③ · 揭晓预测 3）</div>
+        <div class="speak teacher">师：现在做思想实验，给耦合电感加三个条件——① 线圈无损耗 R=0；② <code>k=1</code> 全耦合；③ <code>L₁、L₂</code> 无限大，但比值固定。会发生什么？</div>
+        <p>把三个条件写在普通 VCR 相量式上：<code>k=1</code> 时方程组的系数行列式变成零，普通那套 <code>jωL</code>、<code>jωM</code> 已经描述不了它——<strong>一定冒出了新的约束关系</strong>。先预测这个约束是什么，揭晓才推导。</p>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong><code>k=1</code>、<code>L→∞</code> 之后，电压比由什么决定？① 由 <code>L₁/L₂</code> 决定；② 由互感 <code>M</code> 决定；③ 由两线圈的匝数比 <code>N₁/N₂</code> 决定。<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① L₁/L₂</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 互感 M</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ 匝数比 N₁/N₂</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 3 + 理想变压器与变比（陈述③） →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选③。</strong>先推导：全耦合时两线圈共享同一磁通，每匝感应电压相同，所以 <code>u₁/u₂=N₁/N₂</code>；三个条件下电流比 <code>i₁/i₂=−N₂/N₁</code>。L、M 都趋于无限，唯一剩下的有限比值就是匝数比。</p>
+          <div class="ok-box"><strong>陈述时刻 ③ · 理想变压器与变比</strong><br/><strong>全称/命名</strong>：理想变压器（ideal transformer）——满足①无损耗、②全耦合 <code>k=1</code>、③<code>L₁,L₂→∞</code>（比值有限）三个理想化条件的耦合电感极限模型。<br/><strong>一句定义</strong>：理想变压器只用一个参数——变比 <code>n=N₁/N₂</code>（一次对二次匝数比）——描述，把电压按 n、电流按 1/n 变换，既不耗能也不储能。<br/><strong>符号式</strong>：<code>u₁ = n·u₂</code>、<code>i₁ = −(1/n)·i₂</code>。电压比只由匝数比定、与电流无关；电流比与电压无关；两条是<strong>各自独立的关系</strong>（不是联立方程）。负号来自两电流都取"流入同名端"的参考方向。它不再用 L₁、L₂、M 描述。〔邱 §10-5 p.251–253 / 李下 §11-5~§11-6 交叉佐证〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图③：理想变压器。</strong>一次 N₁ 匝、二次 N₂ 匝，点标记同名端；<code>u₁=nu₂</code>、<code>i₁=−i₂/n</code>。电压箭头都取点端为正，电流都取流入点端，所以电流关系式带负号。理想变压器是高磁导率铁心 + 多匝数逼近的模型，不是真器件。</p>
+            </div>
+            <div class="fig-box lg" aria-label="理想变压器示意图：一次线圈N1匝二次线圈N2匝，两线圈带同名端点标记，电压u1与u2方向一致，电流i1与i2都取流入同名端，变比n等于N1比N2">
+              <svg class="svg-diag" viewBox="0 0 460 210" role="img">
+                <line class="wire" x1="150" y1="30" x2="150" y2="180"/>
+                <line class="wire" x1="160" y1="30" x2="160" y2="180"/>
+                <path class="wire" d="M62 46 q20 13 0 26 q20 13 0 26 q20 13 0 26 q20 13 0 26"/>
+                <path class="wire" d="M268 72 q20 13 0 26 q20 13 0 26"/>
+                <circle class="dot" cx="62" cy="44" r="5"/>
+                <circle class="dot" cx="268" cy="70" r="5"/>
+                <text class="plb" x="34" y="44">i₁↓</text>
+                <text class="plb" x="240" y="70">i₂↓</text>
+                <text class="ylb" x="20" y="130">u₁↑</text>
+                <text class="ylb" x="300" y="130">u₂↑</text>
+                <text class="lbl" x="90" y="92">N₁ 匝</text>
+                <text class="lbl" x="300" y="96">N₂ 匝</text>
+                <text class="dim" x="176" y="104">理想铁心</text>
+                <text class="glb" x="196" y="24">n = N₁/N₂</text>
+                <text class="dim" x="20" y="202">u₁ = n·u₂　；　i₁ = −i₂/n　（两条独立关系，不是联立方程）</text>
+              </svg>
+              <div class="fig-cap">图③ · 变比 n 是理想变压器的唯一参数；不再出现 L、M（自包含示意）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 功率守恒与阻抗变换（陈述时刻④ · 揭晓预测 4）</div>
+        <div class="speak teacher">师：把两条独立关系乘一乘看功率：<code>u₁·i₁=(n u₂)·(−i₂/n)=−u₂ i₂</code>，所以 <code>u₁i₁+u₂i₂=0</code>。<strong>两个端口功率和恒为零，说明什么？</strong>不耗能、不储能，能量全从一个端口传到另一个。此刻先不写阻抗变换公式。</div>
+
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>匝数比 <code>n=2</code>（一次匝数是二次的 2 倍），二次接 <code>5 Ω</code> 负载，从一次侧看进去的阻抗比 <code>5 Ω</code> 大还是小？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">变大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">变小</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">不变</button>
+          </div>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="5" onclick="revealBlock(this)" disabled>公布预测 4 + 功率守恒与阻抗变换（陈述④） →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>选"变大"。</strong>揭晓时才推导阻抗变换：二次接 <code>Z_L</code>，<code>Z_in=U₁/I₁=(nU₂)/(−I₂/n)=n²·(−U₂/I₂)=n²Z_L</code>（负载电流方向与 <code>i₂</code> 参考方向相反，故取正值）。代入 <code>n=2、Z_L=5 Ω</code> 得 <code>Z_in=4×5=20 Ω</code>，变<strong>大</strong>——这就是变压器做阻抗匹配的道理。</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 理想变压器的功率守恒与阻抗变换</strong><br/><strong>全称/命名</strong>：理想变压器的功率守恒性质与阻抗变换性质。<br/><strong>一句定义</strong>：由 <code>u₁=nu₂</code>、<code>i₁=−i₂/n</code> 相乘得 <code>u₁i₁+u₂i₂=0</code>（任意时刻瞬时成立）——两端口吸收功率之和恒为零，能量全部从一侧传到另一侧，自身不耗能、不储能；<strong>正弦稳态下</strong>二次侧接阻抗 <code>Z_L</code> 时，从一次侧看进去的输入阻抗为 n² 倍。<br/><strong>符号式</strong>：<code>u₁i₁+u₂i₂=0</code>；<code>Z_in = n²·Z_L</code>（正弦稳态）。〔邱 §10-5 p.253–254〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：阻抗变换。</strong>二次的 <code>Z_L</code> 折算到一次侧变成 <code>n²Z_L</code>。n&gt;1（一次匝数多）时输入阻抗变大——面板 B 可拖 n、U₁、R_L 看 Z_in 和功率守恒同时成立。</p>
+            </div>
+            <div class="fig-box md" aria-label="阻抗变换示意图：二次侧负载ZL经过理想变压器折算到一次侧变成n平方乘ZL，两侧功率相等">
+              <svg class="svg-diag" viewBox="0 0 380 170" role="img">
+                <text class="ylb" x="14" y="24">一次侧看进去</text>
+                <rect class="box" x="14" y="40" width="96" height="52" rx="6"/>
+                <text class="glb" x="28" y="72">Z_in = n²Z_L</text>
+                <path class="wire" d="M110 66 L138 66 M138 40 q18 13 0 26 q18 13 0 26 q18 13 0 26"/>
+                <circle class="dot" cx="138" cy="38" r="4.5"/>
+                <line class="wire" x1="176" y1="30" x2="176" y2="140"/>
+                <line class="wire" x1="184" y1="30" x2="184" y2="140"/>
+                <path class="wire" d="M222 40 q18 13 0 26 q18 13 0 26 q18 13 0 26 L250 66"/>
+                <circle class="dot" cx="222" cy="38" r="4.5"/>
+                <rect class="box" x="250" y="40" width="96" height="52" rx="6"/>
+                <text class="lbl" x="274" y="72">Z_L</text>
+                <text class="dim" x="176" y="158">能量全部传过去：u₁i₁ + u₂i₂ = 0</text>
+                <text class="ylb" x="120" y="128">折算 ×n²  ←</text>
+              </svg>
+              <div class="fig-cap">图④ · 不相连的负载也能改变输入阻抗（自包含示意，不引用书内图号）。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：两实验台 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 两个实验台（互感台 / 变压器台）</div>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · 互感 / 同名端实验台（预测 2 揭晓后启用）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 2 揭晓后解锁（此刻显示会提前泄露串联电感的变化）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>自感 L₁（H）<span id="A-L1-v">4 H</span></label>
+                <input type="range" id="A-L1" min="1" max="10" step="0.5" value="4" />
+                <label>自感 L₂（H）<span id="A-L2-v">9 H</span></label>
+                <input type="range" id="A-L2" min="1" max="12" step="0.5" value="9" />
+                <label>互感 M（H）<span id="A-M-v">2 H</span></label>
+                <input type="range" id="A-M" min="0" max="6" step="0.5" value="2" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（同向 / 反向串联）</h5>
+                <div class="th-row"><span class="k">耦合因数 k=M/√(L₁L₂)</span><span class="v" id="A-k">—</span></div>
+                <div class="th-row"><span class="k">同向串联 L₁+L₂+2M</span><span class="v" id="A-Ladd">—</span></div>
+                <div class="th-row"><span class="k">反向串联 L₁+L₂−2M</span><span class="v" id="A-Lsub">—</span></div>
+                <div class="res-line" id="A-kstate">—</div>
+                <div class="k-bad" id="A-kbad" style="display:none;"></div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认值 L₁=4 H、L₂=9 H、M=2 H → k=0.333、同向 17 H、反向 9 H。拖动任一滑块，三行按同一公式联动；若 M 超过 √(L₁L₂)，k&gt;1 不物理，会红字提示。</p>
+          </div>
+        </div>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · 理想变压器实验台（预测 4 揭晓后启用，口径 n=N₁/N₂）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 4 揭晓后解锁（此刻显示会提前泄露阻抗变换公式）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>变比 n=N₁/N₂<span id="B-n-v">2</span></label>
+                <input type="range" id="B-n" min="0.2" max="4" step="0.1" value="2" />
+                <label>一次电压 U₁（V，有效值）<span id="B-U1-v">20 V</span></label>
+                <input type="range" id="B-U1" min="1" max="100" step="1" value="20" />
+                <label>负载 R_L（Ω）<span id="B-RL-v">5 Ω</span></label>
+                <input type="range" id="B-RL" min="1" max="50" step="1" value="5" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（有效值口径）</h5>
+                <div class="th-row"><span class="k">二次电压 U₂=U₁/n</span><span class="v" id="B-U2">—</span></div>
+                <div class="th-row"><span class="k">二次电流 I₂=U₂/R_L</span><span class="v" id="B-I2">—</span></div>
+                <div class="th-row"><span class="k">一次电流 I₁=I₂/n</span><span class="v" id="B-I1">—</span></div>
+                <div class="th-row"><span class="k">输入阻抗 Z_in=n²R_L</span><span class="v" id="B-Zin">—</span></div>
+                <div class="agree" id="B-agree">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认值 n=2、U₁=20 V、R_L=5 Ω → U₂=10 V、I₂=2 A、I₁=1 A、Z_in=20 Ω；功率校验 20 W = 20 W。有效值口径；若题目问幅值/峰值再乘 √2。</p>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：独立练习 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（8 题，先作答再判定）与过关</div>
+        <p class="muted">形态一 · 读图列式与计算（1–4）；形态二 · 需求反推与模型边界辨析（5–8）。都不是例题的近邻复制。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（形态一）· 两线圈 L₁=4 H、L₂=9 H、M=2 H。求耦合因数 k。</div>
+          <div class="numcheck" id="q-1" data-qid="q-1"><label>k <input type="text" placeholder="如 0.333" /></label><button class="btn-sm" onclick="checkMulti('q-1',[0.333],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 2（形态一）· 上题两线圈<strong>同向串联</strong>，求等效电感 L（H）。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>L <input type="text" placeholder="H" /></label><button class="btn-sm" onclick="checkMulti('q-2',[17],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 3（形态一）· 理想变压器 n=N₁/N₂=2，一次 U₁=20 V（有效值），二次接 R_L=5 Ω。求二次电压 U₂（V）。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>U₂ <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-3',[10],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 4（形态一）· 上题求二次电流 I₂ 与一次电流 I₁ 的<strong>有效值（大小）</strong>。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>I₂ <input type="text" placeholder="A" />，I₁ <input type="text" placeholder="A" /></label><button class="btn-sm" onclick="checkMulti('q-4',[2,1],[0.01,0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 5（形态二）· 要把 8 Ω 负载折合成 2 Ω 接到信号源侧，理想变压器变比 n=N₁/N₂ 应取多少？（提示 Z_in=n²Z_L）</div>
+          <div class="numcheck" id="q-5" data-qid="q-5"><label>n <input type="text" placeholder="如 0.5" /></label><button class="btn-sm" onclick="checkMulti('q-5',[0.5],[0.01])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 6（形态二）· 关于理想变压器，下列说法正确的是？<br/>① 可以用 L₁、L₂、M 列 jωL、jωM 方程描述；② 既能储能又能耗能；③ 只用参数 n 描述，<code>u₁=nu₂</code>、<code>i₁=−i₂/n</code>，且不耗能不储能。</div>
+          <div class="choicebox" id="q-6" data-qid="q-6" data-hint="理想变压器不是普通耦合电感，它只用 n 描述；自身既不耗能也不储能。" data-explain="选③：①把理想变压器当成普通耦合电感（错），②它既不耗能也不储能（错）。"><label><input type="radio" name="q-6" value="a"/> ①</label><label><input type="radio" name="q-6" value="b"/> ②</label><label><input type="radio" name="q-6" value="c"/> ③</label><button class="btn-sm" onclick="checkChoice('q-6','c')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 7（形态二）· 两线圈 L₁=4 H、L₂=9 H、M=2 H <strong>反向串联</strong>，等效电感 L= ? H；这种接法相对同向串联，磁场是（增强/削弱）？</div>
+          <div class="numcheck" id="q-7" data-qid="q-7"><label>L <input type="text" placeholder="H" />，磁场 <input type="text" placeholder="增强/削弱" /></label><button class="btn-sm" onclick="checkFields('q-7',[9,'削弱'],[0.01,0])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 8（形态二 · 辨析）· 填空：① 普通耦合电感用哪几个参数（提示：三个，含互感）？② 理想变压器只用哪一个参数？</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>耦合电感 <input type="text" placeholder="如 L1,L2,M" />，理想变压器 <input type="text" placeholder="如 n" /></label><button class="btn-sm" onclick="check8()">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出）</strong>：① 同名端怎么判互感项的正负？为什么接反了会"变小"甚至危险？② <code>k=M/√(L₁L₂)</code> 为什么在 0~1 之间？③ 理想变压器三个理想化条件是什么，为什么 <code>k=1</code> 时普通方程失效？④ <code>u₁=nu₂</code> 与 <code>i₁=−i₂/n</code> 为什么是两条独立关系，负号从哪来？⑤ <code>Z_in=n²Z_L</code> 为什么是平方、正弦稳态条件是什么？⑥ 普通耦合电感与理想变压器各用哪套关系？
+        </div>
+        <div class="warn-note">下一课钩子（L3-02）：今天把耦合电感推到极限得到"理想变压器"这个靠理想化假设换来的好用模型；下一课用同样的"理想化元件"眼光看运算放大器，会得到"虚短、虚断"两个同样好用的咒语。主线：<strong>抓住理想化条件，就抓住模型的适用边界。</strong></div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏与来源台账（页尾资料）</summary>
+          <h4>学习目标</h4>
+          <p class="muted">形态一（读图列式与计算）：给带同名端标记的电路或给定参数，判互感项符号、算 k、算串联等效电感、算变压器电压电流与折算阻抗。形态二（需求反推与边界辨析）：给匹配需求反推变比/同名端接法，并辨清"普通耦合电感"与"理想变压器"各用哪套关系。</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 4′ · 互感与同名端 9′ · k 与 VCR 8′ · 理想变压器 12′ · 功率与阻抗变换 10′ · 两实验台与练习 5′ · 收尾钩子 2′。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>磁耦合、互感 M、同名端、磁通链、串联 ±2M</td><td>〔书〕邱 §10-1 p.238–239、§10-2 p.242</td></tr>
+            <tr><td>耦合因数 k、VCR 相量形式、互感抗 jωM</td><td>〔书〕邱 §10-1 p.240–241</td></tr>
+            <tr><td>互感传递能量、反映阻抗、去耦等效（只点名）</td><td>〔书〕邱 §10-3 p.247、§10-4 p.249、§10-2 p.243–246</td></tr>
+            <tr><td>理想变压器三条件、变比 n=N₁/N₂、u₁=nu₂、i₁=−i₂/n、功率守恒、Z_in=n²Z_L</td><td>〔书〕邱 §10-5 p.251–254；李下 §11-2/§11-5/§11-6 交叉佐证</td></tr>
+            <tr><td>4 预测 + 8 练习 + 两实验台全部数值</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽）</td></tr>
+            <tr><td>四张磁耦合/串联/变压器/阻抗变换 SVG 几何画法</td><td>〔通识〕</td></tr>
+          </table>
+          <p class="muted">邱 PDF=印刷+24；李下印刷页码按 PDF−7 推算、以原书为准故用章节号。李下变比 n=N₂/N₁ 与本课互为倒数，绝不混用；H&H 未摘正文，不引章节号。正文见 <code>书籍/摘录/L3-01.md</code>，教案见 <code>lessons/drafts/L3-01-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：会（互感存在）；预测 2：变小（同名端 + L=L₁+L₂±2M）；预测 3：③ 匝数比 N₁/N₂；预测 4：变大（Z_in=n²Z_L=20 Ω）。练习：1 `0.333`；2 `17`；3 `10`；4 `2 / 1`（有效值）；5 `0.5`；6 `③`；7 `9 / 削弱`；8 `L₁,L₂,M / n`。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-01-coupled-inductor-transformer';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-01 增量脚本：预测门禁 + 陈述卡 gating（在揭晓块内）+ 两实验台 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+
+    /* ---------- 门禁：面板 A/B 在对应预测揭晓后解锁 ---------- */
+    var aUnlocked=false, bUnlocked=false;
+    function unlockA(){
+      if(aUnlocked) return;
+      aUnlocked=true;
+      el('A-lock').style.display='none';
+      el('A-body').style.display='';
+      solveA();
+    }
+    function unlockB(){
+      if(bUnlocked) return;
+      bUnlocked=true;
+      el('B-lock').style.display='none';
+      el('B-body').style.display='';
+      solveB();
+    }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred2') unlockA();
+      if(btn.id==='gate-pred4') unlockB();
+    };
+
+    /* ---------- 面板 A：互感 / 同名端 ---------- */
+    function solveA(){
+      if(!aUnlocked) return;
+      var L1=parseFloat(el('A-L1').value), L2=parseFloat(el('A-L2').value), M=parseFloat(el('A-M').value);
+      set('A-L1-v',num(L1,1)+' H'); set('A-L2-v',num(L2,1)+' H'); set('A-M-v',num(M,1)+' H');
+      var maxM=Math.sqrt(L1*L2), k=M/maxM;
+      set('A-k',num(k,3));
+      set('A-Ladd',num(L1+L2+2*M,1)+' H');
+      set('A-Lsub',num(L1+L2-2*M,1)+' H');
+      var warn=el('A-kbad');
+      if(k>1+1e-9){ warn.style.display=''; warn.textContent='⚠ k='+num(k,3)+'>1 不物理：M 不能超过 √(L₁L₂)='+num(maxM,2)+' H。'; }
+      else { warn.style.display='none'; warn.textContent=''; }
+      set('A-kstate', k>=0.999 ? '全耦合（k≈1）：两线圈共享全部磁通' : (k<0.05 ? '几乎无耦合（k≈0）' : '部分耦合：0<k<1'));
+    }
+    ['A-L1','A-L2','A-M'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：理想变压器 ---------- */
+    function solveB(){
+      if(!bUnlocked) return;
+      var n=parseFloat(el('B-n').value), U1=parseFloat(el('B-U1').value), RL=parseFloat(el('B-RL').value);
+      var U2=U1/n, I2=U2/RL, I1=I2/n, Zin=n*n*RL, P1=U1*I1, P2=U2*I2;
+      set('B-n-v',num(n,1)); set('B-U1-v',num(U1,0)+' V'); set('B-RL-v',num(RL,0)+' Ω');
+      set('B-U2',num(U2,3)+' V');
+      set('B-I2',num(I2,3)+' A');
+      set('B-I1',num(I1,3)+' A');
+      set('B-Zin',num(Zin,2)+' Ω');
+      set('B-agree','✓ 功率守恒：U₁I₁='+num(P1,2)+' W = U₂I₂='+num(P2,2)+' W');
+    }
+    ['B-n','B-U1','B-RL'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键（仅 8 道练习计入） ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-01');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,fb);
+    };
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,fb);
+    };
+    window.check8=function(){
+      var box=el('q-8'); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb');
+      var a=((ins[0]||{}).value||'').toLowerCase().replace(/\s/g,'');
+      var b=((ins[1]||{}).value||'').toLowerCase().replace(/\s/g,'');
+      var ok = a.indexOf('l')>=0 && a.indexOf('m')>=0 && b.indexOf('n')>=0;
+      if(fb) fb.dataset.hint='再想想：第一空要同时含 L 和 M（耦合电感用 L₁,L₂,M）；第二空填 n（理想变压器唯一参数）。';
+      mark('q-8',ok,fb);
+    };
+
+    refresh();
+
+    /* ---------- 重来：重锁四门、清空一切、恢复面板默认 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      /* 面板 A */
+      aUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ['A-k','A-Ladd','A-Lsub','A-kstate'].forEach(function(id){ set(id,'—'); });
+      el('A-kbad').style.display='none'; el('A-kbad').textContent='';
+      el('A-L1').value=4; el('A-L2').value=9; el('A-M').value=2;
+      /* 面板 B */
+      bUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      ['B-U2','B-I2','B-I1','B-Zin','B-agree'].forEach(function(id){ set(id,'—'); });
+      el('B-n').value=2; el('B-U1').value=20; el('B-RL').value=5;
+    };
+  })();
+  </script>
+</body>
+</html>
