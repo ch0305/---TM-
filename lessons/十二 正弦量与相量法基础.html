@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>正弦量与相量法基础 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:470px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:13.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .sine{stroke:var(--chalk-green);stroke-width:2.8;fill:none}
+    .svg-diag .decay{stroke:var(--chalk-pink);stroke-width:2.4;stroke-dasharray:5 3;fill:none}
+    .svg-diag .vecA{stroke:var(--chalk-blue);stroke-width:3;fill:none}
+    .svg-diag .vecB{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .vecC{stroke:var(--chalk-yellow);stroke-width:3.2;fill:none}
+    .svg-diag .arc{stroke:var(--chalk-yellow);stroke-width:2;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12px}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    /* 实验台 */
+    .cplx-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .cplx-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:2px 0}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:6px;line-height:1.45}
+    .eq-line{font-family:var(--mono);font-size:1.02rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .step-list{counter-reset:stp;list-style:none;padding:0;margin:6px 0}
+    .step-list li{position:relative;padding:4px 0 4px 30px;font-size:.9rem;line-height:1.5}
+    .step-list li::before{counter-increment:stp;content:counter(stp);position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,224,138,.18);color:var(--chalk-yellow);text-align:center;line-height:20px;font-size:.78rem;font-weight:700}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:74px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">正弦量与相量法基础</span>
+    <span class="meta">教案先行 · 45 min · S2 从时域换成相量语言</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（把微分方程换成复数代数）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 稳态为什么只剩两个数</a></li>
+        <li><a href="#stage-2">2 · 三要素·相位差·有效值</a></li>
+        <li><a href="#stage-3">3 · 换语言：复数工具</a></li>
+        <li><a href="#stage-4">4 · 欧拉→相量→微分</a></li>
+        <li><a href="#stage-5">5 · KCL/KVL 相量形式</a></li>
+        <li><a href="#stage-6">6 · 独立练习与边界</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">正弦激励的稳态响应与激励<strong>同频</strong>，只剩"<strong>有效值 U</strong> + <strong>初相 ψ</strong>"两个未知量。相量就是把这两个数装进一个复数；换到复数域做加减乘除，再换回来。</div>
+      <div class="mini">因果顺序：稳态只剩两数 → 同频运算封闭 → 复数正好装两数 → 欧拉公式做翻译 → 微分变 jω → KCL/KVL 照搬。不是时间安排。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-04.md</code>（邱 §8 导读、§8-1~§8-3 及 §8-4 两句；李下 §8-1~§8-5）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-04-教案.md</code>（独立审核通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① <strong>同频</strong>才能写相量、画相量图；频率不同相位差随时间变。</div>
+      <div class="mini">② 回时域必须补 <code>√2</code> 与 <code>ω</code>：有效值相量 <code>Ẋ=X∠ψ</code> 对应 <code>x(t)=√2X cos(ωt+ψ)</code>。</div>
+      <div class="mini">③ <strong>相量 ≠ 时间函数</strong>：它只是代表正弦波的复数，不含频率。</div>
+    </div>
+    <div class="side-block">
+      <h4>四则与翻译速查</h4>
+      <div class="mini">加减用直角坐标（实部/虚部分别加减）；乘除用极坐标（模乘除、角加减）。</div>
+      <div class="mini"><code>j=1∠90°</code>：乘 j = 逆时针转 90°；幅角用 <code>atan2(b,a)</code>，a&lt;0 要按象限修正。</div>
+      <div class="mini">微分 ↔ <code>jω</code>（模乘 ω、角加 90°）；积分 ↔ <code>1/(jω)</code>。</div>
+      <div class="mini">KCL：<code>ΣĪ=0</code>；KVL：<code>ΣŪ=0</code>；正负号仍按参考方向。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 从时域换到相量语言（L2-04）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">三要素 · 有效值 · 相量 · KCL/KVL</span>
+      </div>
+      <h1>正弦量与相量法基础</h1>
+      <p class="muted">上一课看的是"换路后怎么从一种稳态走到另一种稳态"，过渡项 <code>e<sup>−t/τ</sup></code> 最终会消失。若接的是正弦电源，留下来的稳态仍是<strong>同频正弦波</strong>。<strong>这节课只解决一个问题：已知几个同频正弦电压/电流——有时给时域表达式、有时给相量图——怎么不被三角函数拖住，像学直流电路那样用 KCL/KVL 加复数代数算出未知的正弦量，并且说清谁超前谁？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">稳态只剩两数</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">三要素·有效值</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">复数工具</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">相量翻译·jω</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">KCL/KVL 相量</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习</span>
+      </div>
+      <div class="flow-note">上方链条是推导的<strong>因果顺序</strong>：先说清正弦量，再证明换语言不丢信息，然后才有相量与复数代数。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉选）</div>
+        <p class="qbig">两个同频正弦波相加，峰值是不是直接相加？<code>u₁=20cos(ωt−30°)</code>、<code>u₂=40cos(ωt+60°)</code>——它们的峰值分别在<strong>不同时刻</strong>出现。<strong>先猜，后面的推导会给你答案。</strong></p>
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1：</strong><code>u₁+u₂</code> 是什么？① <code>60cos(ωt+…)</code>（幅值直接加）；② 幅值约 <code>44.7cos(ωt+…)</code>；③ 不是正弦波了。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred0')">① 60（直接相加）</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred0')">② 约 44.7</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred0')">③ 不再是正弦波</button>
+          </div>
+          <p class="gate-note">选定后，第 5 环节的答案区才会解锁；现在不公布。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 正弦稳态：过渡结束后为什么只剩两个数</div>
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">从上一次的暂态解推出"只剩两个数" →</button>
+        <div class="reveal" id="rev-1a">
+          <p>上一课 RC 接正弦电源，全响应 = 瞬态项 <code>Ke<sup>−t/τ</sup></code> + 稳态正弦项。过 <code>(4~5)τ</code> 瞬态衰减掉，留下来的稳态与激励<strong>同频</strong>；频率 <code>ω</code> 是已知的，未知的只剩<strong>幅度</strong>和<strong>初相</strong>。可书里求这两个量要展开 <code>cos(ωt+ψ)</code> 解待定系数，很繁〔李下 §8-1〕。</p>
+          <div class="ok-box"><strong>陈述时刻 ① · 正弦稳态</strong>（全称 + 一句定义 + 符号式，可抄笔记）：线性电路在单一频率正弦激励下，过渡过程结束后所有电压、电流都是与激励<strong>同频率</strong>的正弦量，它们只在有效值（或振幅）与初相上不同〔邱 §8 导读；李下 §8-1〕。<br>符号式：<code>x(t)=√2 X cos(ωt+ψ<sub>x</sub>)</code>。</div>
+          <div class="side-fig-row" style="margin-top:8px;">
+            <div class="side-text">
+              <p class="muted">图里两条虚线是衰减的<strong>过渡包络</strong>，绿色曲线是留下来的<strong>稳态正弦</strong>。大约 <code>4~5τ</code> 之后包络贴平，波形就是纯正弦了——这正是相量法能上场的地方。</p>
+            </div>
+            <div class="fig-box md" aria-label="正弦稳态与衰减的包络示意图">
+              <svg class="svg-diag" viewBox="0 0 390 190" role="img">
+                <title>过渡项衰减后只剩与激励同频的稳态正弦</title>
+                <line class="guide" x1="35" y1="95" x2="375" y2="95"/>
+                <line class="guide" x1="35" y1="20" x2="35" y2="170"/>
+                <path class="decay" d="M35,30 C95,32 175,72 280,84"/>
+                <path class="decay" d="M35,160 C95,158 175,118 280,106"/>
+                <polyline class="sine" points="35,95 46,75 56,67 67,75 77,95 88,115 98,123 109,115 119,95 130,75 140,67 151,75 161,95 172,115 182,123 193,115 203,95 214,75 224,67 235,75 245,95 256,115 266,123 277,115 287,95 298,75 308,67 319,75 329,95 340,115 350,123 361,115 371,95"/>
+                <line class="guide" x1="280" y1="20" x2="280" y2="170"/>
+                <text class="plb" x="44" y="26">过渡包络 Ke^(−t/τ)</text>
+                <text class="glb" x="292" y="60">稳态正弦（同频）</text>
+                <text class="dim" x="284" y="180">≈4~5τ</text>
+                <text class="dim" x="370" y="112">t</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：过渡项衰减，稳态留下一个同频正弦波。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 三要素、相位差与有效值</div>
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">把"一个正弦波"拆成三个数 →</button>
+        <div class="reveal" id="rev-2a">
+          <p><code>I<sub>m</sub></code> 是波峰；<code>ω=2πf=2π/T</code> 是相位变化的角速度（工频 50 Hz → <code>ω≈314 rad/s</code>）；<code>ψ</code> 是 <code>t=0</code> 时的相位，参考方向一反，<code>ψ</code> 加 180°。同频时相位差 <code>φ=ψ₁−ψ₂</code> 是与时间无关的常数，<code>φ&gt;0</code> 说"前者超前"〔邱 §8-2；李下 §8-1〕。</p>
+          <p><strong>有效值不是"峰值打折"的规定，是算出来的</strong>：把 <code>i=I<sub>m</sub>cos(ωt+ψ)</code> 代入均方根定义，用 <code>cos²θ=(1+cos2θ)/2</code>，一个周期内 <code>cos2θ</code> 积分为 0，得 <code>I=I<sub>m</sub>/√2≈0.707I<sub>m</sub></code>。铭牌与交流表读数都是有效值〔邱 §8-2 式(8-2)〕。</p>
+          <div class="ok-box"><strong>陈述时刻 ② · 有效值（均方根值）</strong>（全称 + 定义 + 符号式）：周期量的有效值等于瞬时值平方在一个周期内平均值的平方根，即 <code>I=√[(1/T)∫<sub>0</sub><sup>T</sup> i²(t) dt]</code>；对正弦量有 <code>I=I<sub>m</sub>/√2</code>〔邱 §8-2 式(8-2)〕。<br>边界：均方根定义对<strong>任何</strong>周期量成立，<code>I<sub>m</sub>/√2</code> 只对正弦波成立。</div>
+          <p class="muted"><strong>封闭性（换语言的前提）</strong>：同频正弦量乘常数、微分、积分、代数和，结果还是同频正弦量〔邱 §8-2〕。所以换到复数域不会把问题变成另一种波形。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 2：</strong><code>u=220√2 sin(314t−20°) V</code>。若用"<strong>有效值作模</strong>、<strong>余弦为基准时的初相</strong>"这两个数来记它，该选哪一组？（此时还没学极坐标记号与相量，先只用"模/初相"想。）</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">A　模 220√2、初相 −20°</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">B　模 220、初相 −110°</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">C　模 220、初相 −20°</button>
+          </div>
+          <p class="gate-note">先选；第 4 环节才给出相量写法并揭晓。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 为什么能换语言：复数工具</div>
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">看复数怎样装下"有效值 + 初相" →</button>
+        <div class="reveal" id="rev-3a">
+          <p>复数的模装有效值，辐角装初相：<code>F=a+jb=|F|(cosφ+j sinφ)=|F|e<sup>jφ</sup>=|F|∠φ</code>，其中 <code>|F|=√(a²+b²)</code>，<code>φ=atan2(b,a)</code>。若只写 <code>arctan(b/a)</code>，当 <code>a&lt;0</code> 时必须按象限修正 ±180°——例如 <code>−4.33+j2.5</code> 的辐角是 <strong>150°</strong> 而不是 −30°〔邱 §8-1；李下 §8-3〕。</p>
+          <div class="eq-line">加减用直角坐标：实部/虚部分别相加减　·　乘除用极坐标：模相乘除、角相加减</div>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 3：</strong>复数乘以 <code>j</code>，在复平面上是什么效果？（旋转规则还没讲，先猜。）</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">A　模乘 j、角不变</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">B　模不变、逆时针转 90°</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">C　模不变、顺时针转 90°</button>
+          </div>
+          <p class="gate-note">作答后，下面的旋转规则与示意图才会出现。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-3b" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3 与旋转规则 →</button>
+        <div class="reveal" id="rev-3b">
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>答案是 B。</strong><code>j=1∠90°=e<sup>j90°</sup></code>，乘 <code>j</code> 就是模不变、辐角加 90°（逆时针转 90°）；除以 <code>j</code> 等于乘 <code>−j</code>，顺时针转 90°。这就是"旋转因子"〔邱 §8-1〕。</p>
+              <p class="muted">下一环节的 <code>jω</code> 正是同一件事：模乘 <code>ω</code>、角加 90°。先在这里把旋转看熟，后面就不会觉得 <code>jω</code> 突然冒出来。</p>
+            </div>
+            <div class="fig-box md" aria-label="复数乘以 j 的旋转示意图">
+              <svg class="svg-diag" viewBox="0 0 390 250" role="img">
+                <title>复数 A 乘以 j 后在复平面上逆时针旋转 90 度</title>
+                <defs><marker id="arwj" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker></defs>
+                <line class="wire" x1="25" y1="150" x2="365" y2="150"/>
+                <line class="wire" x1="150" y1="235" x2="150" y2="15"/>
+                <text class="dim" x="360" y="168">Re</text>
+                <text class="dim" x="155" y="24">Im</text>
+                <text class="dim" x="138" y="168">0</text>
+                <line class="vecA" x1="150" y1="150" x2="210" y2="70" marker-end="url(#arwj)"/>
+                <line class="vecA" x1="150" y1="150" x2="210" y2="70" marker-end="url(#arwj)" style="stroke:var(--chalk-blue)"/>
+                <line class="vecB" x1="150" y1="150" x2="70" y2="90" marker-end="url(#arwj)" style="stroke:var(--chalk-pink)"/>
+                <path class="arc" d="M210,70 A100,100 0 0 0 70,90" marker-end="url(#arwj)"/>
+                <text class="lbl" x="216" y="66">A=10∠53.1°</text>
+                <text class="plb" x="18" y="82">jA=10∠143.1°</text>
+                <text class="ylb" x="128" y="42">+90°（逆时针）</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：乘 j = 模不变、角加 90°。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="cplx-lab">
+          <h4>互动面板 A · 复数实验台（加减用直角、乘除用极坐标）</h4>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>A 实部 <span id="A-ar-v">6.00</span></label><input type="range" id="A-ar" min="-10" max="10" step="0.01" value="6">
+              <label>A 虚部 <span id="A-ai-v">8.00</span></label><input type="range" id="A-ai" min="-10" max="10" step="0.01" value="8">
+              <label>B 实部 <span id="A-br-v">−4.33</span></label><input type="range" id="A-br" min="-10" max="10" step="0.01" value="-4.33">
+              <label>B 虚部 <span id="A-bi-v">2.50</span></label><input type="range" id="A-bi" min="-10" max="10" step="0.01" value="2.5">
+              <div class="preset"><button onclick="setLabA(6,8,-4.33,2.5)">恢复课本例：6+j8 / −4.33+j2.5</button></div>
+              <p class="gate-note">默认取李下 §8-3 例8-1；拖动滑块，右侧五项结果立即重算。</p>
+            </div>
+            <div class="th-panel">
+              <h5>实时结果</h5>
+              <div class="res-line" id="A-a">A = …</div>
+              <div class="res-line" id="A-b">B = …</div>
+              <div class="th-row"><span class="k">A + B</span><span class="v" id="A-add">…</span></div>
+              <div class="th-row"><span class="k">A − B</span><span class="v" id="A-sub">…</span></div>
+              <div class="th-row"><span class="k">A · B</span><span class="v" id="A-mul">…</span></div>
+              <div class="th-row"><span class="k">A / B</span><span class="v" id="A-div">…</span></div>
+              <div class="th-row"><span class="k">j·A</span><span class="v" id="A-j">…</span></div>
+              <div class="th-eq">加减：实部虚部分别算；乘除：模相乘除、角相加减；jA：模不变、角加 90°。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 欧拉公式做翻译：相量与 jω（揭晓预测 2）</div>
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">从 cos 的复指数表示推出相量 →</button>
+        <div class="reveal" id="rev-4a">
+          <p><code>e<sup>jωt</sup>=cosωt+j sinωt</code> ⇒ <code>cosωt=Re[e<sup>jωt</sup>]</code> ⇒ <code>u(t)=√2 U cos(ωt+ψ)=Re[√2·U e<sup>jψ</sup>·e<sup>jωt</sup>]=Re[√2 Ū e<sup>jωt</sup>]</code>，其中 <code>Ū=U∠ψ</code>。<strong>√2 不能丢</strong>：相量的模是有效值，时域振幅是它的 √2 倍。振幅相量 <code>Ū<sub>m</sub>=U<sub>m</sub>∠ψ</code> 是另一口径（<code>u(t)=Re[Ū<sub>m</sub>e<sup>jωt</sup>]</code>），两种口径差 √2，不可混用〔邱 §8-3；李下 §8-4〕。</p>
+          <div class="ok-box"><strong>陈述时刻 ③ · 相量（phasor）</strong>（全称 + 定义 + 符号式）：与正弦量 <code>x(t)=√2 X cos(ωt+ψ<sub>x</sub>)</code> 对应的复数是 <code>Ẋ=X∠ψ<sub>x</sub></code>，其模为有效值、辐角为初相；翻译式为 <code>x(t)=Re[√2 Ẋ e<sup>jωt</sup>]</code>〔邱 §8-3；李下 §8-4〕。<br>三条纪律：相量<strong>不等于</strong>时间函数；相量<strong>不含频率</strong> ω，反变换必须补 √2 与 ω；相量运算只在<strong>同频</strong>正弦量之间成立。</div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 2 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>选 B（模 220、初相 −110°）。</strong><code>sin θ=cos(θ−90°)</code>，先统一成余弦：<code>u=220√2 cos(314t−110°) V</code> ⇒ <code>Ū=220∠−110° V</code>。A 把振幅当模又漏了 −90°，C 只漏了 sin→cos 的 −90°。<strong>这就是相量写法第一次出场：模放有效值，角放余弦基准下的初相。</strong></p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4c" data-stage="4" onclick="revealBlock(this)">微分、积分怎么翻译 →</button>
+        <div class="reveal" id="rev-4c">
+          <p><code>dx/dt = d Re[√2 Ẋ e<sup>jωt</sup>]/dt = Re[√2·jω Ẋ e<sup>jωt</sup>]</code>，所以微分把相量乘 <code>jω</code>（模乘 ω、角加 90°），积分则除以 <code>jω</code>。微分方程因此真的变成了复代数方程——这就是下一课 <code>Z<sub>L</sub>=jωL</code>、<code>Z<sub>C</sub>=1/(jωC)</code> 的直接来源〔邱 §8-3 例8-3〕。</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 微分/积分的相量对应</strong>（符号式 + 条件）：若 <code>x(t) ↔ Ẋ</code>，则 <code>dx/dt ↔ jωẊ</code>，<code>∫x dt ↔ Ẋ/(jω)</code>（积分常数另计）。条件：同频正弦稳态。</div>
+        </div>
+
+        <div class="cplx-lab">
+          <h4>互动面板 B · 时域 ↔ 相量转换器（默认 220 V / 30° / 50 Hz / cos）</h4>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>有效值 U <span id="B2-U-v">220 V</span></label><input type="range" id="B2-U" min="1" max="400" step="1" value="220">
+              <label>初相 ψ <span id="B2-psi-v">30°</span></label><input type="range" id="B2-psi" min="-180" max="180" step="1" value="30">
+              <label>频率 f <span id="B2-f-v">50 Hz</span></label><input type="range" id="B2-f" min="1" max="400" step="1" value="50">
+              <label style="justify-content:flex-start;gap:14px;">波形
+                <label style="display:inline-flex;gap:4px;align-items:center;"><input type="radio" name="B2-wave" value="cos" checked> cos</label>
+                <label style="display:inline-flex;gap:4px;align-items:center;"><input type="radio" name="B2-wave" value="sin"> sin</label>
+              </label>
+              <div class="preset"><button onclick="setConv(220,30,50,'cos')">恢复默认（220 V / 30° / 50 Hz / cos）</button></div>
+            </div>
+            <div class="th-panel">
+              <h5>两种语言对照</h5>
+              <div class="th-row"><span class="k">相量（cos 基准）</span><span class="v" id="B2-ph">Ū = 220∠30° V</span></div>
+              <div class="th-row"><span class="k">时域表达式</span><span class="v" id="B2-time">u = 220√2 cos(314.2t+30°) V</span></div>
+              <div class="th-row"><span class="k">角频率</span><span class="v" id="B2-omega">ω = 2πf = 314.2 rad/s</span></div>
+              <div class="th-eq" id="B2-note">cos 基准：相量模＝有效值、角＝初相；反变换补 √2 与 ω。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · KCL/KVL 相量形式与相量图（揭晓预测 1）</div>
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">把 KCL/KVL 搬进相量域 →</button>
+        <div class="reveal" id="rev-5a">
+          <p>时域 KCL <code>Σ i<sub>k</sub>(t)=0</code>，各支路同频 ⇒ <code>Σ Re[√2 Ī<sub>k</sub>e<sup>jωt</sup>]=Re[√2(ΣĪ<sub>k</sub>)e<sup>jωt</sup>]=0</code> ⇒ <code>ΣĪ<sub>k</sub>=0</code>（相量的线性性质）。KVL 同理。参考方向的<strong>正负号完全照时域规定</strong>，只是加减的数变成复数〔李下 §8-5；邱 §8-4 结论句〕。</p>
+          <div class="ok-box"><strong>陈述时刻 ⑤ · KCL/KVL 的相量形式</strong>（全称 + 符号式 + 条件）：正弦稳态下，任一节点同频正弦电流相量的代数和为零 <code>ΣĪ=0</code>；任一回路同频正弦电压相量的代数和为零 <code>ΣŪ=0</code>。条件：全部正弦量<strong>同频</strong>；正负号按各自参考方向。</div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred0" data-gate data-target="rev-5b" data-stage="5" onclick="revealBlock(this)" disabled>公布预测 1 与带做例题 →</button>
+        <div class="reveal" id="rev-5b">
+          <p><strong>带做例题 A（揭晓预测 1，选 B）</strong>〔李下 §8-5 例8-4〕：<code>u₁=20cos(ωt−30°)</code>、<code>u₂=40cos(ωt+60°)</code>。有效值相量 <code>Ù₁=14.14∠−30°=12.25−j7.07</code>，<code>Ù₂=28.28∠60°=14.14+j24.50</code>；<code>Ù=26.39+j17.42=31.62∠33.43°</code>；回时域 <code>u=√2×31.62 cos(ωt+33.43°)=44.72cos(ωt+33.43°) V</code>。<strong>不是 60：因为两波峰不在同一时刻。</strong></p>
+          <p><strong>带做例题 B（KCL，节点求第三支路）</strong>〔李下 §8-5 例8-5〕：两支路 <code>i₁=10√2 cos(ωt+60°)</code>、<code>i₂=5√2 sin ωt</code> 流入，求流出的 <code>i₃</code>。<code>Ī₁=10∠60°=5+j8.66</code>；<code>i₂</code> 先化余弦 <code>=5√2 cos(ωt−90°)</code>，<code>Ī₂=5∠−90°=−j5</code>；<code>Ī₃=Ī₁+Ī₂=5+j3.66=6.2∠36.2° A</code> ⇒ <code>i₃=6.2√2 cos(ωt+36.2°) A</code>。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p class="muted"><strong>相量图怎么读超前/滞后</strong>：把 <code>Ī₁</code>、<code>Ī₂</code> 当邻边作平行四边形，对角线就是 <code>Ī₃</code>。复平面上<strong>逆时针方向为相位超前</strong>：从 <code>Ī₂</code>（−90°）转到 <code>Ī₃</code>（36.2°）是逆时针，所以 <code>Ī₃</code> 超前 <code>Ī₂</code> 126.2°。同频时相量图静止，夹角在任何时刻不变，不必再画波形图。</p>
+            </div>
+            <div class="fig-box md" aria-label="KCL 相量图平行四边形示意图">
+              <svg class="svg-diag" viewBox="0 0 320 280" role="img">
+                <title>KCL 相量图：两支路相量为邻边，第三支路为对角线</title>
+                <defs><marker id="ark" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker></defs>
+                <line class="wire" x1="20" y1="190" x2="300" y2="190"/>
+                <line class="wire" x1="60" y1="270" x2="60" y2="30"/>
+                <text class="dim" x="292" y="208">Re</text><text class="dim" x="65" y="40">Im</text>
+                <line class="vecA" x1="60" y1="190" x2="120" y2="86" marker-end="url(#ark)"/>
+                <line class="vecB" x1="60" y1="190" x2="60" y2="250" marker-end="url(#ark)"/>
+                <line class="vecC" x1="60" y1="190" x2="120" y2="146" marker-end="url(#ark)"/>
+                <line class="guide" x1="120" y1="86" x2="120" y2="146"/>
+                <line class="guide" x1="60" y1="250" x2="120" y2="250"/>
+                <text class="lbl" x="126" y="82">Ī₁=10∠60°</text>
+                <text class="plb" x="66" y="266">Ī₂=5∠−90°</text>
+                <text class="ylb" x="126" y="140">Ī₃=6.2∠36.2°</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：平行四边形对角线 = 相量和。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（8 题，覆盖核心难点，非例题近邻复制）</div>
+        <p class="muted">先独立作答再点"看依据"；数值题按顺序填空，概念题选择。每题判定后给出依据提示。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（sin 化 cos）：<code>u=220√2 sin(314t+120°) V</code>，有效值相量的模 = ____ V，初相 = ____ °。</div>
+          <div class="numcheck" id="q-1" data-qid="q-1"><label>模 <input type="text" placeholder="V" /> V，初相 <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-1',[220,30],[0.5,0.5])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e1" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e1"><p><strong>220 V，30 °</strong>。<code>sin(314t+120°)=cos(314t+30°)</code>，模取有效值 220。错因：直接把 120° 当初相，或把振幅 220√2 当模。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 2（相量回时域）：<code>Ū=100∠−45° V</code>、<code>f=50 Hz</code>，写回时域 <code>u=____√2 cos(____ t−45°) V</code>（填两个数）。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>u = <input type="text" placeholder="100" /> √2 cos( <input type="text" placeholder="314" /> t − 45°) V</label><button class="btn-sm" onclick="checkMulti('q-2',[100,314.16],[0.5,0.5])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e2" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e2"><p><strong>100，314（≈314.16）</strong>：<code>u=100√2 cos(314t−45°) V</code>，<code>ω=2πf=314.16 rad/s</code>。错因：漏 √2，或把 50 Hz 直接当 ω（差一个 2π）。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 3（复数乘除，面板默认值的迁移）：<code>C=3−j4=5∠−53.1°</code>、<code>D=2∠60°</code>。<code>C·D</code> 的模 = ____、辐角 = ____ °；<code>C/D</code> 的模 = ____、辐角 = ____ °。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>C·D：<input type="text" placeholder="模" /> ∠ <input type="text" placeholder="°" /> °　；C/D：<input type="text" placeholder="模" /> ∠ <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-3',[10,6.9,2.5,-113.1],0.15)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e3" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e3"><p><strong>C·D=10∠6.9°</strong>（模 5×2=10、角 −53.1+60=6.9°）；<strong>C/D=2.5∠−113.1°</strong>（模 5/2=2.5、角 −53.1−60=−113.1°）。错因：把角也做除法，或忘记负象限。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 4（KVL 相减 + 负角 sin，核心难点）：回路 <code>u₁=u₂+u₃</code>，<code>u₁=10√2 cos(ωt+30°)</code>、<code>u₂=8√2 sin(ωt−45°)</code> V。求 <code>u₃</code> 的有效值 = ____ V、初相 = ____ °；<code>u₃</code> 超前 <code>u₂</code> ____ °。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>有效值 <input type="text" placeholder="V" /> V，初相 <input type="text" placeholder="°" /> °，超前 <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-4',[17.85,36.7,171.7],0.3)">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e4" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e4"><p><code>Ù₁=10∠30°=8.660+j5.000</code>；<code>u₂=8√2 cos(ωt−135°)</code> ⇒ <code>Ù₂=8∠−135°=−5.657−j5.657</code>；<code>Ù₃=Ù₁−Ù₂=14.317+j10.657=<strong>17.85∠36.66°</strong></code>。故有效值 <strong>17.85 V</strong>、初相 <strong>36.7 °</strong>，<code>u₃=17.85√2 cos(ωt+36.7°)</code>；超前 <code>u₂</code> 约 <strong>171.7 °</strong>。错因：<code>u₂</code> 漏化 cos 的 −90°，或把相减做成相加。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 5（频率边界）：<code>uₐ=cos ωt</code>、<code>u<sub>b</sub>=cos 2ωt</code>，能否把二者画进同一相量图做复数相加？</div>
+          <div class="choicebox" id="q-5" data-qid="q-5" data-hint="相量图里夹角必须静止；先问自己频率是否相同。"><label><input type="radio" name="q-5" value="a"/> A　能</label><label><input type="radio" name="q-5" value="b"/> B　不能</label><button class="btn-sm" onclick="checkChoice('q-5','b')">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e5" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e5"><p><strong>B，不能。</strong>频率不同，相位差随时间变，相量图不会静止，二者相加也不是单一正弦量，相量代数失效。错因：只看到"都是余弦"就动手加。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 6（微分 ↔ jω）：<code>i=2√2 cos(100t+60°) A</code>，<code>di/dt</code> 相量的模 = ____ A/s、辐角 = ____ °。</div>
+          <div class="numcheck" id="q-6" data-qid="q-6"><label>模 <input type="text" placeholder="A/s" /> A/s，角 <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-6',[200,150],[0.5,0.5])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e6" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e6"><p><code>jωĪ</code>：模 <code>ω·I=100×2=<strong>200</strong> A/s</code>，角 <code>60+90=<strong>150</strong> °</code>（时域 <code>di/dt=200√2 cos(100t+150°)</code>）。错因：只加 90° 忘了乘 ω，或把 ω 写成 f。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 7（相量里没有的信息）：相量 <code>Ū=100∠30° V</code> 不含下列哪项？</div>
+          <div class="choicebox" id="q-7" data-qid="q-7" data-hint="相量的模和角分别装了什么？频率藏在哪？"><label><input type="radio" name="q-7" value="a"/> A　有效值</label><label><input type="radio" name="q-7" value="b"/> B　初相</label><label><input type="radio" name="q-7" value="c"/> C　角频率 ω</label><button class="btn-sm" onclick="checkChoice('q-7','c')">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e7" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e7"><p><strong>C。</strong>相量只装有效值与初相；<code>ω</code> 是反变换时必须另给的公共参数。错因：以为角频率藏在"∠30°"里。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 8（读相量图，形态 B）：下图给出同频两相量 <code>Ūₐ=10∠−75° V</code>、<code>Ū<sub>b</sub>=5∠35° V</code>。不计算，从图上回答：____ 超前 ____，超前 ____ °。</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <div class="numcheck" id="q-8" data-qid="q-8"><label>____ <input type="text" placeholder="如 Ū_b" /> 超前 <input type="text" placeholder="如 Ū_a" />，<input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkEx8('q-8')">判定</button><div class="fb"></div></div>
+            </div>
+            <div class="fig-box sm" aria-label="练习 8 相量图">
+              <svg class="svg-diag" viewBox="0 0 300 250" role="img">
+                <title>相量图：Ua 为负 75 度，Ub 为 35 度</title>
+                <defs><marker id="arx" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker></defs>
+                <line class="wire" x1="20" y1="140" x2="285" y2="140"/>
+                <line class="wire" x1="70" y1="240" x2="70" y2="30"/>
+                <text class="dim" x="278" y="158">Re</text><text class="dim" x="75" y="40">Im</text>
+                <line class="vecA" x1="70" y1="140" x2="91" y2="217" marker-end="url(#arx)"/>
+                <line class="vecB" x1="70" y1="140" x2="103" y2="117" marker-end="url(#arx)"/>
+                <text class="lbl" x="96" y="235">Ūₐ=10∠−75°</text>
+                <text class="ylb" x="110" y="108">Ū_b=5∠35°</text>
+              </svg>
+              <div class="fig-cap">相量图：逆时针为超前。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-e8" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e8"><p><strong>Ū_b 超前 Ūₐ，110 °</strong>：<code>35−(−75)=110°</code>。相量图上逆时针方向为超前，<code>Ū_b</code> 在第一象限、<code>Ūₐ</code> 在第四象限。错因：按模大小判超前（模大不代表超前），或把角度相加。〔我编的题〕</p></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:12px;"><strong>过关自检</strong>（不看笔记能说出）：① 三要素与相位差，有效值为什么是 <code>I<sub>m</sub>/√2</code>、这个 √2 的适用条件；② 相量定义、翻译式 <code>x(t)=Re[√2 Ẋ e<sup>jωt</sup>]</code> 与三条纪律；③ 加减用直角、乘除用极坐标、<code>j</code> 是旋转 90°、辐角要按象限修正；④ 微分 ↔ <code>jω</code> 的来源与条件；⑤ KCL/KVL 相量形式、参考方向正负号、相量图读超前滞后；⑥ 频率不同为什么相量法失效。</div>
+
+        <p class="muted" style="margin-top:14px;"><strong>下一课钩子</strong>：今天把微分方程变成了复数代数方程，但题目里若出现 L、C，相量方程里它们该写成什么"电阻"？下一课就把 <code>jωL</code> 和 <code>1/(jωC)</code> 请上台——阻抗与导纳。</p>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：正弦稳态；三要素、ω=2πf、初相与相位差；有效值均方根定义与正弦特例；同频运算封闭性；复数直角/极坐标与四则、j 是旋转因子、辐角象限修正；欧拉公式与有效值相量、振幅相量差 √2；相量三条纪律；微分 ↔ jω、积分 ↔ 1/(jω)；KCL/KVL 相量形式；相量图读超前滞后；频率不同方法失效。</p>
+          <p class="mini"><strong>不讲</strong>：元件 VCR 相量形式 <code>Z<sub>R</sub>=R</code>、<code>Z<sub>L</sub>=jωL</code>、<code>Z<sub>C</sub>=1/(jωC)</code> 与阻抗/导纳（L2-05）；用相量模型完整解电路、戴维南推广（L2-06）；正弦稳态功率 P/Q/S（L2-07）；暂态求解细节（L2-03 已学）；傅里叶与非正弦稳态。H&amp;H 未做正文摘录，本课不引用其章节号。</p>
+        </details>
+        <details><summary>学习目标（学完能独立做什么）</summary>
+          <ol class="mini">
+            <li>把同频正弦量在时域与相量之间双向转换（sin 先化 cos、补 √2 与 ω）。</li>
+            <li>用复数四则算同频正弦量的和/差/微分，并说清每一步为什么用直角或极坐标。</li>
+            <li>用 KCL/KVL 相量形式求未知支路的正弦表达式。</li>
+            <li>从相量图判断谁超前谁、超前多少度。</li>
+            <li>看到不同频率立即判定相量法不适用。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">核心问题与预测 1 约 4′ / 稳态只剩两数 6′ / 三要素·相位差·有效值与预测 2 约 9′ / 复数工具与预测 3 约 8′ / 欧拉·相量·jω 与两个面板约 10′ / KCL/KVL 相量形式与两道带做例题约 6′ / 独立练习 4′。45′ 是预算不是配额：复数四则与相量翻译必须讲透，相量图读图在练习 8 落任务。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>正弦稳态定义、微分方程求特解困难、相量法动机</td><td>邱 §8 导读 p.192；李下 §8-1</td></tr>
+            <tr><td>三要素、ω=2πf、工频 50Hz、初相主值、参考方向反转改 π</td><td>邱 §8-2 p.196–197；李下 §8-1 式(8-1)~(8-5)</td></tr>
+            <tr><td>有效值均方根定义、正弦 I=Im/√2、表计读有效值</td><td>邱 §8-2 p.198 式(8-2)</td></tr>
+            <tr><td>相位差=初相之差、超前/滞后/同相/正交/反相</td><td>邱 §8-2 p.198–199</td></tr>
+            <tr><td>同频正弦运算封闭性</td><td>邱 §8-2 p.197</td></tr>
+            <tr><td>复数表示与四则、j=旋转因子、共轭有理化</td><td>邱 §8-1 p.192–196；李下 §8-3 式(8-20)~(8-23)</td></tr>
+            <tr><td>例 A=6+j8、B=5∠150° 四则数值</td><td>李下 §8-3 例8-1</td></tr>
+            <tr><td>欧拉公式、相量定义、相量≠时间函数、相量不含 ω、振幅相量差 √2</td><td>邱 §8-3 p.199–202；李下 §8-4 式(8-24)~(8-26)</td></tr>
+            <tr><td>微分 ↔ jω、积分 ↔ 1/(jω)</td><td>邱 §8-3 p.202 例8-3</td></tr>
+            <tr><td>相量线性性质、KCL/KVL 相量形式</td><td>李下 §8-5 式(8-27)~(8-29)；邱 §8-4 p.202 结论句</td></tr>
+            <tr><td>20cos(ωt−30°)+40cos(ωt+60°)=44.72cos(ωt+33.43°)</td><td>李下 §8-5 例8-4</td></tr>
+            <tr><td>节点 i₁=10∠60°、i₂=5∠−90° → i₃=6.2∠36.2°</td><td>李下 §8-5 例8-5</td></tr>
+            <tr><td>变换三步（变换→求解→反变换）、"虚拟世界"类比</td><td>李下 §8-2</td></tr>
+            <tr><td>三个预测题、八道练习、两个面板与四张示意图的数值</td><td>通识 / 我编的题（已逐个验算自洽）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H 未摘正文，不引用其章节号。李下印刷页码按 PDF−7 推算、以原书为准，故用章节号标注。所有书证见 <code>书籍/摘录/L2-04.md</code>。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-04-phasor-basics';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-04 增量脚本：预测门 + 复数实验台 + 时域/相量转换 + 多空判定 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+
+    /* ---------- 小工具 ---------- */
+    function sgn(v,d){ return (v<0?'−':'') + Math.abs(v).toFixed(d); }
+    function magStr(m){ return (Math.abs(m-Math.round(m))<0.005) ? String(Math.round(m)) : m.toFixed(2); }
+    function rectStr(z){ return sgn(z.re,2) + (z.im<0?' − j':' + j') + Math.abs(z.im).toFixed(2); }
+    function polStr(z){ var m=Math.hypot(z.re,z.im), a=Math.atan2(z.im,z.re)*180/Math.PI; return magStr(m)+'∠'+sgn(a,1)+'°'; }
+    function bothStr(z){ return rectStr(z)+' ＝ '+polStr(z); }
+    var add=function(a,b){return {re:a.re+b.re,im:a.im+b.im};};
+    var sub=function(a,b){return {re:a.re-b.re,im:a.im-b.im};};
+    var mul=function(a,b){return {re:a.re*b.re-a.im*b.im,im:a.re*b.im+a.im*b.re};};
+    var div=function(a,b){var d=b.re*b.re+b.im*b.im; return {re:(a.re*b.re+a.im*b.im)/d,im:(a.im*b.re-a.re*b.im)/d};};
+    var tim=function(a){return {re:-a.im,im:a.re};};
+
+    /* ---------- 面板 A：复数实验台 ---------- */
+    function renderA(){
+      var ar=parseFloat(document.getElementById('A-ar').value)||0;
+      var ai=parseFloat(document.getElementById('A-ai').value)||0;
+      var br=parseFloat(document.getElementById('A-br').value)||0;
+      var bi=parseFloat(document.getElementById('A-bi').value)||0;
+      var A={re:ar,im:ai}, B={re:br,im:bi};
+      document.getElementById('A-ar-v').textContent=sgn(ar,2);
+      document.getElementById('A-ai-v').textContent=sgn(ai,2);
+      document.getElementById('A-br-v').textContent=sgn(br,2);
+      document.getElementById('A-bi-v').textContent=sgn(bi,2);
+      document.getElementById('A-a').textContent='A = '+bothStr(A);
+      document.getElementById('A-b').textContent='B = '+bothStr(B);
+      var d=B.re*B.re+B.im*B.im;
+      document.getElementById('A-add').textContent=bothStr(add(A,B));
+      document.getElementById('A-sub').textContent=bothStr(sub(A,B));
+      document.getElementById('A-mul').textContent=bothStr(mul(A,B));
+      document.getElementById('A-div').textContent= d<1e-9 ? 'B≈0，不能除' : bothStr(div(A,B));
+      document.getElementById('A-j').textContent=bothStr(tim(A));
+    }
+    window.setLabA=function(ar,ai,br,bi){
+      document.getElementById('A-ar').value=ar; document.getElementById('A-ai').value=ai;
+      document.getElementById('A-br').value=br; document.getElementById('A-bi').value=bi;
+      renderA();
+    };
+    ['A-ar','A-ai','A-br','A-bi'].forEach(function(id){ document.getElementById(id).addEventListener('input',renderA); });
+
+    /* ---------- 面板 B：时域 ↔ 相量转换器 ---------- */
+    function renderB2(){
+      var U=parseFloat(document.getElementById('B2-U').value)||0;
+      var psi=parseFloat(document.getElementById('B2-psi').value)||0;
+      var f=parseFloat(document.getElementById('B2-f').value)||0;
+      var wave=(document.querySelector('input[name="B2-wave"]:checked')||{}).value||'cos';
+      var omega=2*Math.PI*f;
+      var eff=(wave==='sin') ? psi-90 : psi;
+      eff=((eff+180)%360+360)%360-180;
+      document.getElementById('B2-U-v').textContent=U+' V';
+      document.getElementById('B2-psi-v').textContent=sgn(psi,0)+'°';
+      document.getElementById('B2-f-v').textContent=f+' Hz';
+      document.getElementById('B2-ph').textContent='Ū = '+U+'∠'+sgn(eff,0)+'° V';
+      document.getElementById('B2-time').textContent='u = '+U+'√2 '+wave+'('+omega.toFixed(1)+'t '+(psi<0?'−':'+')+Math.abs(psi)+'°) V';
+      document.getElementById('B2-omega').textContent='ω = 2πf = '+omega.toFixed(1)+' rad/s';
+      document.getElementById('B2-note').textContent = (wave==='sin')
+        ? 'sin→cos 要减 90°：'+sgn(psi,0)+'° → '+sgn(eff,0)+'°；相量按 cos 基准写，反变换补 √2 与 ω。'
+        : 'cos 基准：相量模＝有效值、角＝初相；反变换补 √2 与 ω。';
+    }
+    window.setConv=function(U,psi,f,wave){
+      document.getElementById('B2-U').value=U; document.getElementById('B2-psi').value=psi;
+      document.getElementById('B2-f').value=f;
+      document.querySelectorAll('input[name="B2-wave"]').forEach(function(r){ r.checked=(r.value===wave); });
+      renderB2();
+    };
+    ['B2-U','B2-psi','B2-f'].forEach(function(id){ document.getElementById(id).addEventListener('input',renderB2); });
+    document.querySelectorAll('input[name="B2-wave"]').forEach(function(r){ r.addEventListener('change',renderB2); });
+
+    /* ---------- 多空判定：与 lesson.js 用同一个 localStorage 键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L2-04-phasor-basics');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=document.getElementById('ex-bar'), txt=document.getElementById('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,box,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空，注意 sin→cos、补 √2 与 ω、象限修正。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=document.getElementById(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.01);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：本页按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+    window.checkEx8=function(id){
+      var box=document.getElementById(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb');
+      var a=(ins[0]?ins[0].value:'').toLowerCase().replace(/\s/g,'');
+      var b=(ins[1]?ins[1].value:'').toLowerCase().replace(/\s/g,'');
+      var deg=parseFloat((ins[2]||{}).value);
+      var ok=(a.indexOf('b')>=0 && a.indexOf('a')<0) && (b.indexOf('a')>=0) && !isNaN(deg) && Math.abs(deg-110)<0.5;
+      if(fb) fb.dataset.hint='再想想：逆时针为超前，两个初相相减（35−(−75)）。第一空填 Ū_b，第二空填 Ū_a。';
+      mark(id,ok,box,fb);
+    };
+
+    renderA(); renderB2(); refresh();
+
+    /* ---------- 重来：共享 resetFlow 会解锁所有按钮；这里重锁预测门并清空一切 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      setLabA(6,8,-4.33,2.5);
+      setConv(220,30,50,'cos');
+    };
+  })();
+  </script>
+</body>
+</html>
