@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>正弦稳态电路分析与相量图 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:470px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:13.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .vecA{stroke:var(--chalk-blue);stroke-width:3;fill:none}
+    .svg-diag .vecB{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .vecC{stroke:var(--chalk-yellow);stroke-width:3.2;fill:none}
+    .svg-diag .vecD{stroke:var(--chalk-green);stroke-width:3;fill:none}
+    .svg-diag .arc{stroke:var(--chalk-yellow);stroke-width:2;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.98rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .step-list{counter-reset:stp;list-style:none;padding:0;margin:6px 0}
+    .step-list li{position:relative;padding:4px 0 4px 30px;font-size:.9rem;line-height:1.5}
+    .step-list li::before{counter-increment:stp;content:counter(stp);position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,224,138,.18);color:var(--chalk-yellow);text-align:center;line-height:20px;font-size:.78rem;font-weight:700}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:80px}
+    /* 求解器 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button,.lab-tabs button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover,.lab-tabs button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:2px 0;word-break:break-word}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:6px;line-height:1.45}
+    .lab-tabs{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+    .lab-tabs button.on{color:var(--chalk-yellow);border-color:var(--chalk-yellow);background:rgba(255,224,138,.1)}
+    .sub-lab{display:none}.sub-lab.on{display:block}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .agree{font-family:var(--mono);font-size:.82rem;color:var(--chalk-green);font-weight:700;margin-top:6px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">正弦稳态电路分析与相量图</span>
+    <span class="meta">教案先行 · 45 min · S2 把整套方法搬进相量域</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（方法照搬，方程变复数）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 方法为什么能搬 + 相量图总则</a></li>
+        <li><a href="#stage-2">2 · 网孔法与节点法（预测 2）</a></li>
+        <li><a href="#stage-3">3 · 四法同解与揭晓</a></li>
+        <li><a href="#stage-4">4 · 有效值与 10+10≠20</a></li>
+        <li><a href="#stage-5">5 · 相量图、电压三角形（预测 4）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与边界</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">邱 §9-3 一句话：KCL <code>Σİ=0</code>、KVL <code>ΣŪ=0</code>、VCR <code>Ū=Zİ</code> 与电阻电路同形，所以串并联、分压分流、节点、网孔、叠加、戴维南<strong>整体可迁移</strong>；差别只是方程为<strong>复数</strong>代数方程。</div>
+      <div class="mini">因果顺序：方法可迁移 → 网孔用 Z / 节点用 Y → 四法同解 → 有效值解释电表 → 相量图统一几何 → 频率边界。不是时间安排。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-06.md</code>（邱 §9-2/§9-3；李下 §8-9~§8-13）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-06-教案.md</code>（初审退 7 项、复审退 1 项、终审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① 同频且<strong>先统一 sin/cos</strong> 才能取相量：<code>sin(ωt)=cos(ωt−90°)</code>。</div>
+      <div class="mini">② <strong>电表读有效值（标量），KCL/KVL 约束的是相量</strong>：10 A + 10 A 可能等于 14.1 A。</div>
+      <div class="mini">③ 等效相量模型<strong>只在指定频率有效</strong>，不能拿它写微分方程求全响应。</div>
+    </div>
+    <div class="side-block">
+      <h4>公式速查</h4>
+      <div class="mini">网孔：<code>自Z=回路ΣZ，互Z=公共支路Z</code>；节点：<code>自Y=节点ΣY，互Y=支路Y取负</code>。</div>
+      <div class="mini">有效值：<code>I=√[(1/T)∫i²dt]=Iₘ/√2</code>（正弦）；<code>Ū=U∠ψ</code>，<code>Ūₘ=√2 Ū</code>。</div>
+      <div class="mini">相量图：串联以 <code>İ</code> 为参考、并联以 <code>Ū</code> 为参考；夹角用元件 VCR，求和用 KCL/KVL。</div>
+      <div class="mini"><code>G=R/(R²+X²)</code>、<code>B=−X/(R²+X²)</code>；一般 <code>G≠1/R</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 方法照搬，方程变复数（L2-06）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">相量图 · 网孔/节点 · 叠加/戴维南 · 有效值</span>
+      </div>
+      <h1>正弦稳态电路分析与相量图</h1>
+      <p class="muted">L2-05 已经能把每个元件写成阻抗/导纳，可一旦电路里同时有两个电源、两条回路，光靠串并联化简就不够了。<strong>这节课只解决一个问题：已知一个含多个 R/L/C 元件（可含受控源）、由同频正弦电源激励的稳态电路，怎么把阻抗/导纳装进相量模型，套用节点法、网孔法、叠加与戴维南把未知相量解出来，并用相量图检查"数值与相位是否自洽"——尤其是当电表读的是有效值时，为什么 10 A + 10 A 不等于 20 A？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">方法可迁移</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">网孔/节点</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">四法同解</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">有效值</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">相量图·边界</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习</span>
+      </div>
+      <div class="flow-note">上方链条是<strong>因果顺序</strong>：先确认方法可迁移，才能放心写复数方程；算出相量后要解释电表读数，必须补上有效值的定义；相量图把两者统一成几何，最后收口频率边界。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉选）</div>
+        <p class="qbig">并联两条支路：一条是电阻，电流表 A₁ 读 10 A；另一条是电容，电流表 A₂ 读 10 A（都是有效值）。<strong>干路电流表 A 读多少？先猜，第 4 环节用有效值与相量图揭晓。</strong></p>
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1：</strong>① 20 A（两表相加）；② 14.1 A（相量合成）；③ 0 A（互相抵消）。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">① 20 A</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">② 14.1 A</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">③ 0 A</button>
+          </div>
+          <p class="gate-note">选定后，第 4 环节给出有效值定义才揭晓；现在不公布。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 方法为什么能搬 + 相量图总则</div>
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">从 KCL/KVL/VCR 的相量形式推出"方法可迁移" →</button>
+        <div class="reveal" id="rev-1a">
+          <p>邱 §9-3 先立"宪法"：相量形式的 KCL <code>Σİ=0</code>、KVL <code>ΣŪ=0</code>、VCR <code>Ū=Zİ</code> 或 <code>İ=YŪ</code>，与电阻电路<strong>完全同形</strong>。所以电阻电路的各种分析方法和电路定理——串并联等效、分压分流、节点法、网孔法、叠加、戴维南/诺顿——都可以推广到正弦稳态；<strong>差别只在方程是复数代数方程、运算是复数运算</strong>。〔邱 §9-3 印刷 p.217〕</p>
+          <div class="eq-line">方法照搬，方程变复数：电阻电路会什么，相量电路就用什么</div>
+          <div class="ok-box"><strong>陈述时刻 ① · 相量图（phasor diagram）</strong>（全称 + 定义 + 条件）：在复平面上以<strong>参考相量</strong>（为画图先选定的、初相置为 0° 的相量）为起点，按元件 VCR 确定各相量夹角，再按 KCL/KVL 用平移求和画出相量多边形的图。串联取电流为参考画电压多边形，并联取电压为参考画电流多边形。作用：直观显示相位关系、辅助求解与校验。条件：同频正弦稳态。</div>
+          <p class="muted">铺垫：L2-05 已经知道 R 同相、L 电压超前电流 90°、C 电流超前电压 90°。相量图没有新公式，只是把这些已知关系<strong>画出来</strong>，再按 KCL/KVL 首尾相接。</p>
+          <div class="side-fig-row" style="margin-top:8px;">
+            <div class="side-text">
+              <p class="muted">左图串联：以电流为参考，电阻电压同向、电感电压逆时针转 90°、电容电压顺时针转 90°，三段首尾相接得到电源电压 <code>Ū_s</code>。右图并联：以电压为参考，电阻电流同向、电容电流超前 90°、电感电流滞后 90°，用 KCL 求和。</p>
+            </div>
+            <div class="fig-box lg" aria-label="相量图总则：串联取电流为参考、并联取电压为参考">
+              <svg class="svg-diag" viewBox="0 0 470 215" role="img">
+                <title>串联取电流为参考画电压多边形，并联取电压为参考画电流多边形</title>
+                <defs><marker id="ar1a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker><marker id="ar1b" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-blue)"/></marker></defs>
+                <text class="lbl" x="18" y="22">串联 · 以 İ 为参考 → 画电压多边形</text>
+                <line class="guide" x1="25" y1="150" x2="210" y2="150"/>
+                <line class="vecA" x1="30" y1="150" x2="78" y2="150" marker-end="url(#ar1b)"/>
+                <text class="lbl" x="36" y="143">İ 参考</text>
+                <line class="vecA" x1="30" y1="150" x2="100" y2="150" marker-end="url(#ar1a)"/>
+                <text class="ylb" x="52" y="166">Ū_R 同相</text>
+                <line class="vecC" x1="100" y1="150" x2="100" y2="80" marker-end="url(#ar1a)"/>
+                <text class="ylb" x="106" y="86">Ū_L +90°</text>
+                <line class="vecB" x1="100" y1="80" x2="60" y2="80" marker-end="url(#ar1a)"/>
+                <text class="plb" x="104" y="108">Ū_C −90°</text>
+                <line class="vecD" x1="30" y1="150" x2="60" y2="80" marker-end="url(#ar1b)"/>
+                <text class="glb" x="28" y="70">Ū_s = ΣŪ</text>
+                <text class="dim" x="22" y="198">KVL：三段首尾相接，起点到终点是电源电压。</text>
+                <text class="lbl" x="248" y="22">并联 · 以 Ū 为参考 → 画电流多边形</text>
+                <line class="guide" x1="252" y1="150" x2="448" y2="150"/>
+                <line class="vecD" x1="258" y1="150" x2="316" y2="150" marker-end="url(#ar1b)"/>
+                <text class="glb" x="262" y="143">Ū 参考</text>
+                <line class="vecA" x1="258" y1="150" x2="330" y2="150" marker-end="url(#ar1a)"/>
+                <text class="ylb" x="278" y="166">İ_R 同相</text>
+                <line class="vecC" x1="258" y1="150" x2="258" y2="80" marker-end="url(#ar1a)"/>
+                <text class="ylb" x="264" y="86">İ_C +90°</text>
+                <line class="vecB" x1="258" y1="150" x2="258" y2="208" marker-end="url(#ar1a)"/>
+                <text class="plb" x="264" y="204">İ_L −90°</text>
+                <text class="dim" x="248" y="196">KCL：各支路电流相量相加。</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：参考相量 + 元件夹角 + KCL/KVL 求和，就是相量图三步骤。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 网孔法与节点法在相量域（预测 2 在此提出）</div>
+        <div class="pred" data-pred="q-p1" style="margin-top:6px;">
+          <p class="ask"><strong>先预测 2：</strong>同一个电路，用节点法和网孔法解出的支路电流会不会一致？① 一定一致；② 一般不一致；③ 只在电阻电路一致。<strong>先选，推导完下一环节才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">① 一定一致</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">② 一般不一致</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">③ 只在电阻电路一致</button>
+          </div>
+          <p class="gate-note">选定后解锁下一环节的"四法对照"；本环节不公布答案。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">画出例题电路与相量模型 →</button>
+        <div class="reveal" id="rev-2a">
+          <p>双网孔梯形电路：底边是参考节点。左侧电压源 <code>Ū₁=10∠0° V</code>，右侧电压源 <code>Ū₂=5∠0° V</code>；<code>Z₁=2+j2 Ω</code>（<code>R₁=2 Ω</code>、<code>L=1 H</code>、<code>ω=2 rad/s</code>，故 <code>ωL=1×2=2</code>），<code>Z₃=2−j2 Ω</code>（<code>R₃=2 Ω</code>、<code>C=0.25 F</code>、<code>ω=2 rad/s</code>，故 <code>1/(ωC)=1/(2×0.25)=2</code>），中间公共支路 <code>R₂=2 Ω</code>。〔通识/我编的题，用来展示四法〕</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p class="muted">注意两网孔电流 <code>İ₁</code>、<code>İ₂</code> 都<strong>向下</strong>流过公共电阻 <code>R₂</code>，所以公共支路电流是 <code>İ_R₂=İ₁+İ₂</code>（不是相减）。这个方向约定决定了公共项的正负号。</p>
+            </div>
+            <div class="fig-box md" aria-label="双网孔梯形电路的相量模型示意图">
+              <svg class="svg-diag" viewBox="0 0 390 240" role="img">
+                <title>双网孔梯形电路：U1=10∠0V、U2=5∠0V、Z1=2+j2、Z3=2−j2、R2=2Ω</title>
+                <line class="wire" x1="30" y1="215" x2="360" y2="215"/>
+                <line class="wire" x1="30" y1="215" x2="30" y2="45"/>
+                <line class="wire" x1="30" y1="45" x2="95" y2="45"/>
+                <rect class="box" x="95" y="35" width="60" height="20"/><text class="dim" x="99" y="30">Z₁=2+j2</text>
+                <line class="wire" x1="155" y1="45" x2="200" y2="45"/>
+                <rect class="box" x="188" y="90" width="24" height="60"/><text class="ylb" x="218" y="112">R₂=2</text>
+                <line class="wire" x1="200" y1="45" x2="285" y2="45"/>
+                <rect class="box" x="235" y="35" width="60" height="20"/><text class="dim" x="238" y="30">Z₃=2−j2</text>
+                <line class="wire" x1="295" y1="45" x2="360" y2="45"/>
+                <line class="wire" x1="360" y1="45" x2="360" y2="215"/>
+                <text class="lbl" x="34" y="130">↑Ū₁=10∠0°</text>
+                <text class="plb" x="330" y="130">↑Ū₂=5∠0°</text>
+                <text class="dim" x="108" y="70">节点 A</text>
+                <text class="dim" x="188" y="70">节点 B</text>
+                <text class="dim" x="290" y="70">节点 C</text>
+                <text class="glb" x="100" y="185">网孔电流 İ₁（顺时针）</text>
+                <text class="glb" x="222" y="165">İ₂（逆时针）</text>
+                <text class="dim" x="30" y="235">两电流都向下流过 R₂ ⇒ İ_R₂ = İ₁ + İ₂。</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：双网孔梯形电路，公共支路电流为两网孔电流之和。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2b" data-stage="2" onclick="revealBlock(this)">列出网孔方程并求解 →</button>
+        <div class="reveal" id="rev-2b">
+          <p>网孔法用<strong>阻抗</strong>作系数：<code>(Z₁+R₂)İ₁+R₂İ₂=Ū₁</code>、<code>R₂İ₁+(Z₃+R₂)İ₂=Ū₂</code>。代入 <code>(4+j2)İ₁+2İ₂=10</code>、<code>2İ₁+(4−j2)İ₂=5</code>。行列式 <code>D=(4+j2)(4−j2)−2×2=20−4=16</code>，于是 <code>İ₁=(30−j20)/16=1.875−j1.25=2.254∠−33.69° A</code>，<code>İ₂=j0.625=0.625∠90° A</code>，<code>İ_R₂=İ₁+İ₂=1.875−j0.625=1.976∠−18.43° A</code>。〔我编的题〕</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-2c" data-stage="2" onclick="revealBlock(this)">列出节点方程（只解一个未知节点）→</button>
+        <div class="reveal" id="rev-2c">
+          <p>节点法用<strong>导纳</strong>作系数。以底边为参考，节点 A 电位就是 <code>Ū₁</code>、节点 C 就是 <code>Ū₂</code>，只有节点 B 的电压 <code>V_B</code> 未知。KCL：<code>(V_B−Ū₁)/Z₁+(V_B−Ū₂)/Z₃+V_B/R₂=0</code>。先算导纳 <code>1/Z₁=0.25−j0.25</code>、<code>1/Z₃=0.25+j0.25</code>、<code>1/R₂=0.5</code>，自导纳之和恰为 <code>1</code>（虚部抵消），故 <code>V_B=Ū₁/Z₁+Ū₂/Z₃=3.75−j1.25 V</code>，<code>İ_R₂=V_B/R₂=1.875−j0.625 A</code>。两种方法算出的相量是否相同，留到下一环节的四法对照统一揭晓。</p>
+          <div class="ok-box"><strong>陈述时刻 ② · 相量域网孔方程与节点方程</strong>（系数规则 + 条件）：网孔自阻抗 = 回路各 Z 之和、互阻抗 = 公共支路 Z（符号由网孔方向定）；节点自导纳 = 节点各支路 Y 之和、互导纳 = 节点间支路 Y 取负；右端为相量源。条件：同频正弦稳态、参考方向一致；含受控源时保留受控项。〔邱 §9-3；李下 §8-10〕</div>
+          <p class="muted">为什么节点法这里更省事？因为未知节点只有一个。一般规律：<strong>节点少用节点法、网孔少用网孔法</strong>，和直流课完全一样。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 同一电流，四种方法（揭晓预测 2）</div>
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">用叠加与戴维南再算一遍 →</button>
+        <div class="reveal" id="rev-3a">
+          <p><strong>叠加</strong>：只留 <code>Ū₁</code>（<code>Ū₂=0</code> 即右源短路）时 <code>İ_R₂′=1.25−j1.25 A</code>；只留 <code>Ū₂</code> 时 <code>İ_R₂″=0.625+j0.625 A</code>；相加 <code>İ_R₂=1.875−j0.625 A</code>。<strong>戴维南</strong>：去掉 <code>R₂</code> 后开路电压 <code>V_oc=(Ū₁/Z₁+Ū₂/Z₃)/(1/Z₁+1/Z₃)=7.5−j2.5 V</code>，等效阻抗 <code>Z_o=Z₁∥Z₃=1/(1/Z₁+1/Z₃)=2 Ω</code>，接回 <code>R₂</code> 得 <code>İ_R₂=V_oc/(Z_o+R₂)=(7.5−j2.5)/4=1.875−j0.625 A</code>。四种方法给出同一个相量。</p>
+          <p>邱 §9-3 例 9-8 把节点、网孔、叠加、戴维南用在<strong>同一题</strong>上，结果都是 <code>İ₃=10∠30° A</code>——这是"方法可迁移"最硬的证据。〔邱 §9-3 印刷 p.217–221〕</p>
+          <div class="ok-box"><strong>陈述时刻 ③ · 相量域叠加与戴维南</strong>（内容 + 条件）：叠加定理、戴维南/诺顿定理对线性正弦稳态电路照搬，只是电压、电流、阻抗都是复数/相量；含受控源时<strong>独立源置零、受控源保留</strong>，可用开路电压 + 加源求 <code>Z_o</code>、短路电流 <code>Z_o=Ū_oc/İ_sc</code> 或外特性一步法。条件：线性电路、同频稳态。〔邱 §9-3 例 9-7/9-8〕</div>
+          <p><strong>入口检查：先统一 sin/cos。</strong><code>u=10√2 sin(2t) V</code> 要先写成 <code>10√2 cos(2t−90°) V</code>，有效值相量才是 <code>Ū=10∠−90° V</code>（振幅相量 <code>10√2∠−90° V</code>）；若直接把 <code>−30°</code> 写进去，初相全错。教材例 9-8 原式是 <code>10√2 sin(2t+60°)=10√2 cos(2t−30°) V</code>，所以书中 <code>Ū_s=10∠−30° V</code> 是对的——OCR 曾漏掉 <code>+60°</code>，已按后文相量补回。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-3b" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 2：四法是否一致 →</button>
+        <div class="reveal" id="rev-3b">
+          <p><strong>选①，一定一致。</strong>不是巧合：KCL/KVL/VCR 的相量形式与电阻电路同形，四种方法只是<strong>同一组方程的不同写法</strong>，解自然相同。选②的学生通常担心"复数运算会不一致"，选③的学生则误以为迁移只在实数域成立。四法对照的价值正在于此：算完一遍，可以用另一种方法交叉验证。〔邱 §9-3〕</p>
+        </div>
+
+        <div class="calc-lab">
+          <h4>互动面板 A · 四法求解器（四种方法算同一支路电流）</h4>
+          <div class="lab-tabs">
+            <button id="m-mesh" class="on" onclick="switchMethod('mesh')">网孔法</button>
+            <button id="m-node" onclick="switchMethod('node')">节点法</button>
+            <button id="m-super" onclick="switchMethod('super')">叠加</button>
+            <button id="m-thev" onclick="switchMethod('thev')">戴维南</button>
+          </div>
+          <div class="lab-grid">
+            <div class="lab-ctrl">
+              <label>角频率 ω <span id="A-w-v">2 rad/s</span></label><input type="range" id="A-w" min="0.5" max="10" step="0.1" value="2">
+              <label>Ū₁ 振幅 <span id="A-U1-v">10 V</span></label><input type="range" id="A-U1" min="1" max="20" step="0.5" value="10">
+              <label>Ū₂ 振幅 <span id="A-U2-v">5 V</span></label><input type="range" id="A-U2" min="0.5" max="20" step="0.5" value="5">
+              <label>公共电阻 R₂ <span id="A-R2-v">2 Ω</span></label><input type="range" id="A-R2" min="0.5" max="10" step="0.1" value="2">
+              <div class="preset"><button onclick="setPanelA(2,10,5,2)">恢复默认值（ω=2 / U₁=10 / U₂=5 / R₂=2）</button></div>
+              <p class="gate-note">固定 L=1 H、C=0.25 F、R₁=R₃=2 Ω。默认应见 <code>İ_R₂=1.875−j0.625=1.976∠−18.43° A</code> 四种方法完全一致；拖动滑块后仍一致。</p>
+            </div>
+            <div class="th-panel">
+              <h5 id="A-title">网孔法结果</h5>
+              <div id="A-lines"></div>
+              <div class="agree" id="A-agree">四法一致：İ_R₂ = 1.976∠−18.43° A</div>
+              <div class="th-eq" id="A-eq">Z₁=R₁+jωL，Z₃=R₃+1/(jωC)；İ_R₂=İ₁+İ₂。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 有效值与「10 A + 10 A ≠ 20 A」（揭晓预测 1、提出并揭晓预测 3）</div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:6px;">
+          <p class="ask"><strong>先预测 3：</strong>日常说的"交流 220 V"，这个 220 指什么？① 振幅（峰值）；② 有效值；③ 一周期平均值。<strong>先选，定义推导完才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① 振幅</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 有效值</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ 平均值</button>
+          </div>
+          <p class="gate-note">选定后解锁本环节的揭晓按钮；先别翻答案。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">从"作功能力等效"推导有效值 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>电表读的既不是振幅也不是平均值，而是<strong>有效值</strong>。它来自一个物理问题：周期电流 <code>i</code> 与直流电流 <code>I</code> 通过相同电阻 R，一周期耗能相等时，这个直流值 <code>I</code> 就代表周期电流的"有效"大小。<code>∫₀ᵀ R i² dt = R I² T</code>，于是 <code>I=√[(1/T)∫₀ᵀ i² dt]</code>。〔李下 §8-12 式 8-81/8-82〕</p>
+          <div class="eq-line">有效值（方均根）：I = √[(1/T)∫₀ᵀ i² dt]　—　由能量等效推导，不是人为规定</div>
+          <p>把正弦 <code>i=Iₘcos(ωt+ψ)</code> 代进去，一周期 <code>cos²</code> 的平均值是 1/2，所以 <code>I=Iₘ/√2=0.707 Iₘ</code>、<code>U=Uₘ/√2</code>。<strong>这是正弦波的特例</strong>，方均根定义本身对任意周期波形都成立。日常 220 V 是有效值，振幅是 <code>220√2≈311 V</code>。</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 有效值（effective value，方均根值）</strong>（正式定义 + 条件）：周期电流的有效值等于瞬时值平方在一周期内平均值的平方根 <code>I=√[(1/T)∫i²dt]</code>，物理意义是"与同值直流在电阻上作功能力等效"；正弦时 <code>I=Iₘ/√2</code>。条件：周期量（正弦只是特例）。〔李下 §8-12〕</div>
+          <div class="ok-box"><strong>陈述时刻 ⑤ · 有效值相量</strong>（正式定义 + 条件）：<code>Ū=U∠ψ</code>，模为有效值、辐角为初相；与振幅相量相差常数 <code>√2</code>（<code>Ūₘ=√2 Ū</code>）。因为只差一个常数，KCL <code>Σİ=0</code>、KVL <code>ΣŪ=0</code>、<code>Ū=Zİ</code>、<code>İ=YŪ</code> 对有效值相量仍成立，相量图可用有效值相量绘制。条件：<strong>进来什么口径、出去什么口径</strong>，同一题中不能混用。〔李下 §8-12 式 8-87~8-92 及脚注〕</div>
+          <p class="muted">两种口径地位相同：我国教材以有效值相量为主、美国教材多用振幅相量（GB 8445—87 / IEC 1972 均认可）。本课前面各环节的 <code>10∠0° V</code> 都是有效值口径，与教材例 9-8 的 <code>Ūₛ=10∠−30° V</code> 一致。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 3：220 V 是什么值 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>选②，有效值。</strong>③平均值对正弦一周期是 0（正负半周抵消），不可能是 220；①振幅是 <code>220√2≈311 V</code>。电表（交流电压表/电流表）绝大多数测有效值，因为它对应发热、做功这类可测效应。〔李下 §8-12〕</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-4c" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 1：为什么 10 A + 10 A = 14.1 A →</button>
+        <div class="reveal" id="rev-4c">
+          <p><strong>选②，14.1 A。</strong>设并联端电压 <code>Ū=U∠0°</code> 作参考：电阻电流 <code>İ_R=10∠0° A</code>（同相），电容电流 <code>İ_C=j10 A=10∠90°</code>（超前 90°）。KCL 约束的是<strong>相量</strong>：<code>İ=İ_R+İ_C=10+j10=10√2∠45° A</code>，干路电流表读它的有效值 <strong>14.1 A</strong>。〔李下 §8-13 例 8-23〕</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>错因诊断：</strong>把电表的读数（有效值，标量）直接代入 KCL 相加。有效值只是相量的模，<strong>模不满足 KCL</strong>；只有相量满足。图上两条相量互相垂直，平行四边形的对角线是 <code>√(10²+10²)</code>，不是 <code>10+10</code>。</p>
+              <p class="muted">再看一个陷阱：若把电容换成电感，<code>İ_L=−j10 A</code>，干路 <code>10−j10</code>，有效值仍是 14.1 A，但相位变成 <code>−45°</code>。模相同而相位相反——这正是"光看电表读数不够"的证据。</p>
+            </div>
+            <div class="fig-box md" aria-label="电流表平行四边形：10∠0° 加 10∠90° 等于 14.1∠45°">
+              <svg class="svg-diag" viewBox="0 0 390 235" role="img">
+                <title>电流表陷阱：有效值相量按平行四边形求和，干路 14.1 A</title>
+                <defs><marker id="ar4a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker><marker id="ar4b" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-blue)"/></marker><marker id="ar4c" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-pink)"/></marker></defs>
+                <line class="guide" x1="40" y1="190" x2="350" y2="190"/>
+                <line class="vecA" x1="40" y1="190" x2="190" y2="190" marker-end="url(#ar4b)"/>
+                <text class="lbl" x="72" y="182">İ_R = 10∠0° A</text>
+                <line class="vecC" x1="40" y1="190" x2="40" y2="40" marker-end="url(#ar4c)"/>
+                <text class="plb" x="46" y="60">İ_C = 10∠90° A</text>
+                <line class="guide" x1="190" y1="190" x2="190" y2="40"/>
+                <line class="guide" x1="40" y1="40" x2="190" y2="40"/>
+                <line class="vecD" x1="40" y1="190" x2="190" y2="40" marker-end="url(#ar4a)"/>
+                <text class="ylb" x="150" y="98">İ = 14.1∠45° A</text>
+                <path class="arc" d="M82,190 A42,42 0 0,1 70,158"/>
+                <text class="ylb" x="84" y="168">45°</text>
+                <text class="dim" x="40" y="220">错误：10 + 10 = 20 A（把模当相量加）</text>
+                <text class="glb" x="40" y="233">正确：√(10²+10²) = 14.1 A</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：KCL 在相量图上是矢量和，不是电表读数的算术和。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="calc-lab">
+          <h4>互动面板 B · 相量校验台（电流表 / RC 分压，切标签）</h4>
+          <div class="lab-tabs">
+            <button id="tab-amp" class="on" onclick="switchCheck('amp')">电流表：为什么不是 20 A</button>
+            <button id="tab-rc" onclick="switchCheck('rc')">RC 分压：相位与模值</button>
+          </div>
+          <div class="sub-lab on" id="sub-amp">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电阻支路电流 I_R <span id="B-IR-v">10 A</span></label><input type="range" id="B-IR" min="0" max="20" step="0.5" value="10">
+                <label>电容支路电流 I_C <span id="B-IC-v">10 A</span></label><input type="range" id="B-IC" min="0" max="20" step="0.5" value="10">
+                <div class="preset"><button onclick="setAmp(10,10)">恢复默认值（10 A / 10 A）</button></div>
+                <p class="gate-note">以并联电压为参考，R 电流同相、C 电流超前 90°。默认应见 <code>14.1∠45° A</code>。</p>
+              </div>
+              <div class="th-panel">
+                <h5>KCL 的两种加法</h5>
+                <div class="th-row"><span class="k">相量和 İ = I_R + j I_C</span><span class="v" id="B-amp-sum">10 + j10 A</span></div>
+                <div class="th-row"><span class="k">极坐标（干路读数）</span><span class="v" id="B-amp-polar">14.14∠45.0° A</span></div>
+                <div class="th-row"><span class="k">相位</span><span class="v" id="B-amp-phase">超前电压 45.0°</span></div>
+                <div class="warn-note" id="B-amp-wrong">✗ 错误算术和 I_R + I_C = 20 A（有效值标量不满足 KCL）</div>
+                <div class="th-eq">I = √(I_R² + I_C²)，∠İ = atan(I_C / I_R)。拖拽滑块后与独立计算核对。</div>
+              </div>
+            </div>
+          </div>
+          <div class="sub-lab" id="sub-rc">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电阻 R <span id="B-R-v">10 Ω</span></label><input type="range" id="B-R" min="1" max="50" step="0.5" value="10">
+                <label>电容 C <span id="B-C-v">0.02 F</span></label><input type="range" id="B-C" min="0.005" max="0.1" step="0.005" value="0.02">
+                <label>角频率 ω <span id="B-w-v">5 rad/s</span></label><input type="range" id="B-w" min="0.5" max="30" step="0.5" value="5">
+                <div class="preset"><button onclick="setRC(10,0.02,5)">恢复默认值（R=10 / C=0.02 / ω=5）</button></div>
+                <p class="gate-note">RC 串联、输出取电阻两端。默认 ωRC=1：超前 45°、U_o/U_s=0.707。第 5 环节推导。</p>
+              </div>
+              <div class="th-panel">
+                <h5>RC 分压：相位与模</h5>
+                <div class="th-row"><span class="k">ωRC</span><span class="v" id="B-rc-k">1.00</span></div>
+                <div class="th-row"><span class="k">超前角 φ = atan[1/(ωRC)]</span><span class="v" id="B-rc-phi">45.0°</span></div>
+                <div class="th-row"><span class="k">U_o/U_s = ωRC/√(1+(ωRC)²)</span><span class="v" id="B-rc-ratio">0.707</span></div>
+                <div class="th-row"><span class="k">结论</span><span class="v" id="B-rc-lead">u_o 超前 u_s</span></div>
+                <div class="warn-note">✗ 别写成 1/√(1+(ωRC)²)——那是<strong>电容</strong>电压之比，输出取电阻时分子是 ωRC。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 相量图作图法、电压三角形与频率边界（揭晓预测 4）</div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:6px;">
+          <p class="ask"><strong>先预测 4：</strong>RC 串联电路，输出取<strong>电阻</strong>两端，`u_o` 相对 `u_s` 的相位？① 超前 0~90°；② 滞后 0~90°；③ 同相。<strong>先选，画完图 + 解析法才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">① 超前 0~90°</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">② 滞后 0~90°</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">③ 同相</button>
+          </div>
+          <p class="gate-note">选定后解锁揭晓按钮；先别看下面的图。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">按三步骤画 RC 串联相量图，再用解析法核对 →</button>
+        <div class="reveal" id="rev-5a">
+          <p>李下 §8-13 例 8-22 给出画法：<strong>①串联从电流下手</strong>，把 <code>İ</code> 画在正实轴作参考相量；<strong>②用元件 VCR 定夹角</strong>，<code>Ū_R=Rİ</code> 与 <code>İ</code> 同相，<code>Ū_C=İ/(jωC)</code> 滞后 <code>İ</code> 90°；<strong>③按 KVL 平移求和</strong>，<code>Ū_s=Ū_R+Ū_C</code>。</p>
+          <div class="eq-line">tanφ = U_C/U_R = (1/ωC)/R = 1/(ωRC)　⇒　φ = arctan[1/(ωRC)] ∈ (0°, 90°)</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><code>Ū_o=Ū_R</code> 与电流同相，而 <code>Ū_s</code> 是 <code>Ū_R</code> 与 <code>Ū_C</code> 的合相量（在第四象限），所以 <code>Ū_o</code> 比 <code>Ū_s</code> <strong>超前</strong> φ。解析法核对：<code>Ū_o/Ū_s = R/(R+1/(jωC))</code>，化为极坐标后辐角正是 <code>arctan[1/(ωRC)]</code>，模是 <code>ωRC/√(1+(ωRC)²)</code>。〔李下 §8-13〕</p>
+              <p class="muted">极限自检：<code>ω→∞</code> 时容抗趋零，输出≈输入，φ→0°；<code>ω→0</code> 时容抗极大、输出很小且几乎与电流同相，φ→90°。两种极限与面板 B 的 RC 标签一致。</p>
+            </div>
+            <div class="fig-box md" aria-label="RC 串联相量图：以电流为参考，电阻电压同相，电容电压滞后九十度，电源电压为二者合成">
+              <svg class="svg-diag" viewBox="0 0 390 225" role="img">
+                <title>RC 串联相量图：输出电压超前输入电压 φ</title>
+                <defs><marker id="ar5a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker><marker id="ar5b" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-blue)"/></marker><marker id="ar5c" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-pink)"/></marker></defs>
+                <line class="guide" x1="35" y1="70" x2="350" y2="70"/>
+                <line class="vecA" x1="40" y1="70" x2="95" y2="70" marker-end="url(#ar5b)"/>
+                <text class="lbl" x="44" y="62">İ 参考</text>
+                <line class="vecD" x1="40" y1="70" x2="270" y2="70" marker-end="url(#ar5a)"/>
+                <text class="ylb" x="130" y="62">Ū_o = Ū_R（同相）</text>
+                <line class="vecB" x1="270" y1="70" x2="270" y2="170" marker-end="url(#ar5c)"/>
+                <text class="plb" x="276" y="140">Ū_C 滞后 90°</text>
+                <line class="vecC" x1="40" y1="70" x2="270" y2="170" marker-end="url(#ar5a)"/>
+                <text class="ylb" x="90" y="152">Ū_s = Ū_R + Ū_C</text>
+                <path class="arc" d="M92,70 A52,52 0 0,1 88,100"/>
+                <text class="ylb" x="96" y="104">φ</text>
+                <text class="dim" x="35" y="205">Ū_o（电阻电压）超前 Ū_s 角 φ。</text>
+                <text class="glb" x="35" y="220">陷阱：Ū_s 是 R+C 组合电压，电流超前它不是 90°。</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：串联以电流为参考，先画同相的 Ū_R，再从其末端画滞后 90° 的 Ū_C。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-5b" data-stage="5" onclick="revealBlock(this)" disabled>公布预测 4：超前还是滞后 →</button>
+        <div class="reveal" id="rev-5b">
+          <p><strong>选①，超前 0~90°。</strong>关键陷阱：<code>u_s</code> 是<strong>电阻+电容串联组合</strong>两端的电压，不是电容自身电压。"电容电流超前电压 90°"只对<strong>电容自身</strong>成立；组合端电压与电流夹角被电阻"拉回"到 0~90° 之间。李下 §8-13 例 8-24 的并联版本同理：并联电路以 <code>Ū</code> 为参考时，<code>İ_C</code> 虽超前 <code>Ū</code>，却不是 90°，只能确定它落在第一象限。〔李下 §8-13〕</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-5c" data-stage="5" onclick="revealBlock(this)">带做：从三个电压表读数反推线圈的 R、L →</button>
+        <div class="reveal" id="rev-5c">
+          <p>形态 B 的第二类任务：<strong>只有电表读数（三个模），要反推参数</strong>。线圈（R、L）与已知电阻 <code>R₁=25 Ω</code> 串联接正弦电源，电压表读线圈 80 V、<code>R₁</code> 50 V、电源 100 V（有效值），<code>ω=314 rad/s</code>。〔李下 §8-13 例 8-25〕</p>
+          <ol class="step-list">
+            <li>电流 <code>I=U_{R₁}/R₁=50/25=<strong>2 A</strong></code>，以 <code>İ</code> 为参考相量（画在正实轴）。</li>
+            <li>画 <code>ŌB=50 V</code> 与 <code>İ</code> 同相；以 O、B 为圆心，分别以 100 V、80 V 为半径作弧交于 A，得电压三角形 <code>ŌB+BĀ=ŌA</code>。</li>
+            <li>余弦定理：<code>80²=100²+50²−2×100×50 cosφ</code> ⇒ <code>cosφ=<strong>0.61</strong></code>，<code>φ=<strong>52.4°</strong></code>。</li>
+            <li>投影：<code>OC=100×0.61=61 V</code> ⇒ 线圈电阻电压 <code>BC=61−50=11 V</code> ⇒ <code>R=11/2=<strong>5.5 Ω</strong></code>。</li>
+            <li>垂直分量：<code>CA=100×sin52.4°=79.23 V</code> ⇒ <code>ωL=79.23/2=39.62 Ω</code> ⇒ <code>L≈<strong>126 mH</strong></code>。</li>
+          </ol>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>为什么不能算术加减？</strong>线圈电压 80 V 与电阻电压 50 V 不同相，电源电压 100 V 不是它们的和（130 V）也不是差（30 V）。三个模满足三角形不等式，必须相量合成。</p>
+              <p class="muted">图中的线段只标<strong>有效值的大小</strong>，<strong>不是相量模型也不是时域模型</strong>；角度要靠余弦定理从三个模算出来。练习 8 会用全新参数迁移这一步。</p>
+            </div>
+            <div class="fig-box md" aria-label="线圈电压三角形：五十伏、八十伏、一百伏与投影">
+              <svg class="svg-diag" viewBox="0 0 390 235" role="img">
+                <title>电压三角形：50 V 电阻电压、80 V 线圈电压、100 V 电源电压</title>
+                <defs><marker id="ar5d" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-pink)"/></marker></defs>
+                <line class="guide" x1="35" y1="200" x2="355" y2="200"/>
+                <line class="vecD" x1="45" y1="200" x2="225" y2="200" marker-end="url(#ar5d)"/>
+                <text class="glb" x="100" y="192">ŌB = 50 V（与 İ 同相）</text>
+                <line class="vecB" x1="225" y1="200" x2="318" y2="80" marker-end="url(#ar5d)"/>
+                <text class="plb" x="255" y="128">BĀ = 80 V（线圈）</text>
+                <line class="vecC" x1="45" y1="200" x2="318" y2="80" marker-end="url(#ar5d)"/>
+                <text class="ylb" x="108" y="110">ŌA = 100 V（电源）</text>
+                <line class="guide" x1="273" y1="200" x2="273" y2="80"/>
+                <line class="guide" x1="45" y1="80" x2="318" y2="80"/>
+                <text class="dim" x="228" y="188">C</text>
+                <text class="dim" x="278" y="150">CA = 79.2 V</text>
+                <text class="dim" x="46" y="92">OC = 61 V</text>
+                <text class="dim" x="228" y="218">BC = 11 V</text>
+                <path class="arc" d="M85,200 A40,40 0 0,1 79,174"/>
+                <text class="ylb" x="88" y="180">φ = 52.4°</text>
+                <text class="dim" x="35" y="232">仅标模；角度由余弦定理解出。</text>
+              </svg>
+              <div class="fig-cap">自包含示意图：电压三角形与投影，从三个电表读数反推 R=5.5 Ω、L≈126 mH。</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-5d" data-stage="5" onclick="revealBlock(this)">收口：等效相量模型的频率边界 →</button>
+        <div class="reveal" id="rev-5d">
+          <div class="ok-box"><strong>陈述时刻 ⑥ · 等效相量模型的频率边界</strong>（换算公式 + 条件）：<code>Z=R+jX</code> 与 <code>Y=G+jB</code> 互换时 <code>G=R/(R²+X²)</code>、<code>B=−X/(R²+X²)</code>，反向 <code>R=G/(G²+B²)</code>、<code>X=−B/(G²+B²)</code>；一般 <code>G≠1/R</code>、<code>X≠−1/B</code>。<code>R/G/X/B</code> 都是 <code>ω</code> 的函数，<strong>等效只对指定频率的正弦稳态有效，不能据以列微分方程求全响应</strong>。〔李下 §8-11 式 8-74/8-75/8-77〕</div>
+          <p class="muted">这条边界与 L2-05 的 <code>Z↔Y</code> 换算一脉相承：换算本身没错，错在把"某一频率下的等效"当成"任何时刻、任何波形都成立"。若真要求全响应，回到 L2-03 的时域微分方程，相量模型只能给你其中的稳态特解。</p>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（8 题：5 数值 + 2 选择 + 1 数值/文字混合）</div>
+        <p class="muted">先独立作答再点"判定"；每题都可展开"看依据与错因"。这些题换参数、换元件、换问法，不是例题的近邻复制。</p>
+
+        <div class="qrow">
+          <div class="qt">练习 1（形态 B 迁移，改元件）：并联 R 支路电流 6 A、L 支路电流 8 A（电感电流滞后端电压 90°），干路电流表读数？</div>
+          <div class="choicebox" id="q-1" data-qid="q-1" data-hint="相量是 6−j8，先算模再想 effective value。"><label><input type="radio" name="q-1" value="a"/> ① 14 A（算术相加）</label><label><input type="radio" name="q-1" value="b"/> ② 10 A（相量和的模）</label><label><input type="radio" name="q-1" value="c"/> ③ 2 A（相减）</label><button class="btn-sm" onclick="checkChoice('q-1','b')">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e1" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e1"><p><code>İ=6−j8 A</code>，模 <code>√(36+64)=<strong>10 A</strong></code>。错因：①把有效值标量当相量加；③以为电感电流与电阻电流反相（其实差 90°，不是 180°）。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 2（承上，相位方向）：练习 1 的干路电流辐角 = ____ °（超前端电压为正、滞后为负）。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>∠İ = <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-2',[-53.13],[0.5])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e2" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e2"><p><code>atan2(−8,6)=<strong>−53.13°</strong></code>，负号表示干路电流<strong>滞后</strong>端电压——感性负载。错因：只算模不算角，或把电感的 −90° 错记成 +90°。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 3（形态 A 入口）：<code>u=10√2 sin(2t) V</code> 的<strong>有效值相量</strong>辐角 = ____ °。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>∠Ū = <input type="text" placeholder="°" /> °</label><button class="btn-sm" onclick="checkMulti('q-3',[-90],[0.5])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e3" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e3"><p><code>sin(2t)=cos(2t−90°)</code>，故 <code>Ū=10∠<strong>−90°</strong> V</code>。错因：没统一 sin/cos 就取相量；教材例 9-8 原式带 <code>+60°</code>，所以那里才是 <code>−30°</code>。〔通识 + 邱 §9-3 例 9-8〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 4（复数方程，全新右端）：网孔方程 <code>(4+j2)İ₁+2İ₂=8∠0°</code>、<code>2İ₁+(4−j2)İ₂=2∠0°</code>。求行列式 D、İ₁ 实部、İ₁ 虚部。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>D = <input type="text" placeholder="实数" />，İ₁ 实部 = <input type="text" placeholder="实部" />，虚部 = <input type="text" placeholder="虚部" /></label><button class="btn-sm" onclick="checkMulti('q-4',[16,1.75,-1],[0.05,0.05,0.05])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e4" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e4"><p>系数与例题相同，故 <code>D=(4+j2)(4−j2)−4=<strong>16</strong></code>；<code>İ₁=[8(4−j2)−2×2]/16=(28−j16)/16=<strong>1.75−j1</strong></code>。错因：算行列式时把互阻抗相乘写成 <code>2×2j</code>，或分子里漏了右端源相量。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 5（单节点，一源置零）：节点 <code>Ū_A=8∠0° V</code>、C 接地，<code>Z₁=2+j2 Ω</code>、<code>Z₃=2−j2 Ω</code>、<code>R₂=2 Ω</code>，求 <code>V_B</code> 实部、虚部与模。</div>
+          <div class="numcheck" id="q-5" data-qid="q-5"><label>V_B 实部 = <input type="text" placeholder="实部" />，虚部 = <input type="text" placeholder="虚部" />，|V_B| = <input type="text" placeholder="模" /></label><button class="btn-sm" onclick="checkMulti('q-5',[2,-2,2.83],[0.05,0.05,0.05])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e5" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e5"><p>右源置零 ⇒ <code>V_B=Ū_A/Z₁ ÷ (1/Z₁+1/Z₃+1/R₂)=8(0.25−j0.25)/1=<strong>2−j2 V</strong></code>，<code>|V_B|=√8≈<strong>2.83 V</strong></code>。错因：把 <code>Z₁</code> 的共轭当成导纳，或忘记分母里还有 <code>1/R₂</code>。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 6（频率边界）：判断"等效相量模型可用来列微分方程求原电路全响应"。</div>
+          <div class="choicebox" id="q-6" data-qid="q-6" data-hint="等效相量模型只在指定频率的正弦稳态成立。"><label><input type="radio" name="q-6" value="a"/> ① 对</label><label><input type="radio" name="q-6" value="b"/> ② 错</label><button class="btn-sm" onclick="checkChoice('q-6','b')">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e6" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e6"><p><strong>错。</strong><code>R/G/X/B</code> 都是 <code>ω</code> 的函数，等效只对<strong>指定频率的正弦稳态</strong>有效；全响应要回时域写微分方程，相量模型只能给稳态特解。〔李下 §8-11〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 7（RC 分压迁移）：<code>R=20 Ω</code>、<code>C=0.05 F</code>、<code>ω=2 rad/s</code>，输出取电阻两端。求 φ = ____ °、<code>U_o/U_s</code> = ____。</div>
+          <div class="numcheck" id="q-7" data-qid="q-7"><label>φ = <input type="text" placeholder="°" /> °，U_o/U_s = <input type="text" placeholder="比值" /></label><button class="btn-sm" onclick="checkMulti('q-7',[26.57,0.894],[0.5,0.005])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e7" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e7"><p><code>ωRC=2×20×0.05=<strong>2</strong></code>，<code>φ=arctan(1/2)=<strong>26.57°</strong></code>（超前），<code>U_o/U_s=2/√5≈<strong>0.894</strong></code>。错因：把比值写成 <code>1/√(1+(ωRC)²)</code>（那是电容电压之比），或忘记 <code>ωRC</code> 要三个数相乘。〔我编的题〕</p></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">练习 8（电压三角形，全新参数）：线圈电压 80 V、已知电阻 <code>R₁</code> 上电压 40 V、电源 100 V（有效值），<code>R₁=20 Ω</code>、<code>ω=314 rad/s</code>。求 φ = ____ °、线圈 <code>R</code> = ____ Ω、<code>L</code> = ____ mH、线圈呈 ____ 性（填"感"或"容"）。</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>φ = <input type="text" placeholder="°" /> °，R = <input type="text" placeholder="Ω" /> Ω，L = <input type="text" placeholder="mH" /> mH，呈 <input type="text" placeholder="感/容" /> 性</label><button class="btn-sm" onclick="checkFields('q-8',[49.46,12.5,121,'感'],[0.5,0.2,3,0])">判定</button><div class="fb"></div></div>
+          <button class="reveal-btn" data-target="rev-e8" data-stage="6" onclick="revealBlock(this)">看依据与错因 →</button>
+          <div class="reveal" id="rev-e8"><p><code>I=40/20=<strong>2 A</strong></code>；余弦定理 <code>cosφ=(100²+40²−80²)/(2×100×40)=0.65</code> ⇒ <code>φ=<strong>49.46°</strong></code>；投影 <code>OC=65 V</code>，<code>BC=65−40=25 V</code> ⇒ <code>R=25/2=<strong>12.5 Ω</strong></code>；<code>CA=100sin49.46°=76.0 V</code> ⇒ <code>ωL=76/2=38 Ω</code> ⇒ <code>L≈<strong>121 mH</strong></code>，线圈为<strong>感</strong>性。错因：把三个电压表读数直接加减。〔李下 §8-13 例 8-25 的迁移〕</p></div>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-self" data-stage="6" onclick="revealBlock(this)">过关自检：合上笔记能说出这 6 条吗 →</button>
+        <div class="reveal" id="rev-self">
+          <ol class="step-list">
+            <li>为什么电阻电路的方法能整体搬到相量域（KCL/KVL/VCR 同形，差别是复数运算）。</li>
+            <li>网孔用 Z、节点用 Y 的方程系数规则与正负号来源。</li>
+            <li>四法同解的证据，以及取相量前必须统一 sin/cos。</li>
+            <li>有效值的能量等效定义、两种相量口径、为什么 10 A + 10 A ≠ 20 A。</li>
+            <li>相量图三步骤与两个陷阱（标量不能 KCL、"超前 90°"不能套到组合端口）。</li>
+            <li>等效相量模型只对指定频率有效，不能写微分方程求全响应。</li>
+          </ol>
+        </div>
+
+        <div class="ok-box" style="margin-top:12px;"><strong>下一课钩子：</strong>本课只算了稳态响应与相位校验，还没算<strong>功率</strong>——电感电容不耗能却让电流变大，电表读的有效值怎么进入 <code>P=UIcosφ</code>？下一课 S2 转向正弦稳态功率与功率因数。</div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <details>
+        <summary>学习目标（学完能独立做什么）</summary>
+        <ul>
+          <li>给出一个同频正弦稳态电路，能先查"同频 + 统一 sin/cos"，搭出相量模型。</li>
+          <li>能写出相量域网孔方程（自阻抗/互阻抗）与节点方程（自导纳/互导纳），并用叠加、戴维南交叉验证。</li>
+          <li>能解释有效值的能量等效定义，说明为什么电表读数不能直接 KCL 相加。</li>
+          <li>能用相量图三步骤定性判断相位，能从三个电压表读数用电压三角形反推线圈 R、L。</li>
+          <li>能说出等效相量模型的频率边界，不把它误用于全响应微分方程。</li>
+        </ul>
+      </details>
+
+      <details>
+        <summary>讲什么 / 不讲什么（本课边界）</summary>
+        <p><strong>讲：</strong>相量图三步骤；电阻方法整体迁移；相量域网孔/节点/叠加/戴维南；有效值与有效值相量；频率边界；电流表陷阱、RC 分压相位、电压三角形。</p>
+        <p><strong>不讲：</strong>正弦稳态功率 P/Q/S、复功率、功率因数、最大功率传输（L2-07）；谐振、频率响应、三相电路（S3）；耦合电感（后续）；非正弦周期信号傅里叶分解；全响应微分方程细节（L2-03 已学）。</p>
+      </details>
+
+      <details>
+        <summary>45 分钟节奏（预算，不是配额）</summary>
+        <table class="mini-t"><tr><th>环节</th><th>内容</th><th>预算</th></tr>
+          <tr><td>0</td><td>核心问题 + 预测 1</td><td>3′</td></tr>
+          <tr><td>1</td><td>方法可迁移 + 相量图总则</td><td>7′</td></tr>
+          <tr><td>2</td><td>网孔/节点（预测 2 提出）</td><td>9′</td></tr>
+          <tr><td>3</td><td>四法同解与揭晓</td><td>7′</td></tr>
+          <tr><td>4</td><td>有效值与 10+10≠20（预测 1、3 揭晓）</td><td>8′</td></tr>
+          <tr><td>5</td><td>相量图、电压三角形、频率边界（预测 4 揭晓）</td><td>7′</td></tr>
+          <tr><td>6</td><td>独立练习与过关</td><td>4′</td></tr>
+        </table>
+        <p class="muted">因果链完整前提下可压缩低增益重复，不为凑时长加料。</p>
+      </details>
+
+      <details>
+        <summary>来源台账（哪些是书，哪些是我补的）</summary>
+        <table class="mini-t"><tr><th>内容</th><th>依据</th></tr>
+          <tr><td>相量图三步骤、串联取电流/并联取电压为参考</td><td>邱 §9-2 印刷 p.216（例 9-3/9-4）</td></tr>
+          <tr><td>方法整体迁移、KCL/KVL/VCR 相量形式</td><td>邱 §9-3 印刷 p.217</td></tr>
+          <tr><td>四法同解、sin/cos 统一、戴维南含受控源</td><td>邱 §9-3 印刷 p.217–221（例 9-7/9-8）</td></tr>
+          <tr><td>网孔/节点相量方程写法</td><td>李下 §8-10（例 8-15/8-16）；邱 §9-3 例 9-8</td></tr>
+          <tr><td>有效值定义、有效值相量、两种口径</td><td>李下 §8-12 式 8-81~8-92 及脚注</td></tr>
+          <tr><td>Z↔Y 一般公式、倒数陷阱、频率边界</td><td>李下 §8-11 式 8-69~8-77、例 8-18</td></tr>
+          <tr><td>电流表陷阱、RC 分压相位、线圈电压三角形</td><td>李下 §8-13 例 8-22~8-25</td></tr>
+          <tr><td>四个预测题、8 道练习、两个面板数值</td><td>通识 / 我编的题（全部用复数运算独立验算自洽）</td></tr>
+        </table>
+        <p class="muted">邱 PDF=印刷+24；李下印刷页码按 PDF−7 推算、以原书为准，故用章节号 + 式号标注。H&amp;H 未摘正文，本课不引其章节号。正文见 <code>书籍/摘录/L2-06.md</code>。</p>
+      </details>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-06-phasor-analysis';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-06 增量脚本：四法求解器 + 相量校验台 + 多空/混合判定 + 重锁预测门 ===== */
+  (function(){
+    window.enableGate = function(id){ var b = document.getElementById(id); if(b) b.disabled = false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+
+    /* ---------- 复数工具 ---------- */
+    function C(re,im){ return {re:re,im:im}; }
+    function cadd(a,b){ return C(a.re+b.re,a.im+b.im); }
+    function csub(a,b){ return C(a.re-b.re,a.im-b.im); }
+    function cmul(a,b){ return C(a.re*b.re-a.im*b.im, a.re*b.im+a.im*b.re); }
+    function cdiv(a,b){ var d=b.re*b.re+b.im*b.im; return C((a.re*b.re+a.im*b.im)/d,(a.im*b.re-a.re*b.im)/d); }
+    function cinv(a){ return cdiv(C(1,0),a); }
+    function cscale(a,k){ return C(a.re*k,a.im*k); }
+    function cabs(a){ return Math.hypot(a.re,a.im); }
+    function carg(a){ return Math.atan2(a.im,a.re)*180/Math.PI; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?3:d)));
+    }
+    function sgn(v,d){ return (v<0?'−':'') + (d==null?num(Math.abs(v),3):Math.abs(v).toFixed(d)); }
+    function complexStr(a){
+      var f=function(v){ return num(v).replace('-','−'); };
+      if(Math.abs(a.im)<1e-9) return f(a.re);
+      if(Math.abs(a.re)<1e-9) return (a.im<0?'−j':'j')+f(Math.abs(a.im));
+      return f(a.re)+(a.im<0?' − j':' + j')+f(Math.abs(a.im));
+    }
+    function ang(v){
+      var t=Math.abs(v).toFixed(2);
+      return (v<0?'−':'')+t.replace(/\.?0+$/,'');
+    }
+    function polar(a){ return num(cabs(a))+'∠'+ang(carg(a))+'°'; }
+    function line(label,val){ return '<div class="res-line">'+label+' = '+val+'</div>'; }
+
+    /* ---------- 面板 A：四法求解器 ---------- */
+    var method='mesh';
+    function solveA(){
+      var w=parseFloat(el('A-w').value), U1=parseFloat(el('A-U1').value), U2=parseFloat(el('A-U2').value), R2=parseFloat(el('A-R2').value);
+      set('A-w-v',num(w)+' rad/s'); set('A-U1-v',num(U1)+' V');
+      set('A-U2-v',num(U2)+' V'); set('A-R2-v',num(R2)+' Ω');
+      var Z1=C(2,w*1), Z3=C(2,-1/(w*0.25));
+      var Y1=cinv(Z1), Y3=cinv(Z3), Y2=C(1/R2,0);
+      var E1=C(U1,0), E2=C(U2,0);
+      /* 网孔 */
+      var a11=cadd(Z1,C(R2,0)), a12=C(R2,0), a21=C(R2,0), a22=cadd(Z3,C(R2,0));
+      var D=csub(cmul(a11,a22),cmul(a12,a21));
+      var I1=cdiv(csub(cmul(E1,a22),cmul(a12,E2)),D);
+      var I2=cdiv(csub(cmul(a11,E2),cmul(E1,a21)),D);
+      var IRmesh=cadd(I1,I2);
+      /* 节点 */
+      var Ysum=cadd(cadd(Y1,Y3),Y2);
+      var VB=cdiv(cadd(cmul(E1,Y1),cmul(E2,Y3)),Ysum);
+      var IRnode=cscale(VB,1/R2);
+      /* 叠加 */
+      var VB1=cdiv(cmul(E1,Y1),Ysum), VB2=cdiv(cmul(E2,Y3),Ysum);
+      var IR1=cscale(VB1,1/R2), IR2p=cscale(VB2,1/R2);
+      var IRsuper=cadd(IR1,IR2p);
+      /* 戴维南 */
+      var Voc=cdiv(cadd(cmul(E1,Y1),cmul(E2,Y3)),cadd(Y1,Y3));
+      var Zo=cinv(cadd(Y1,Y3));
+      var IRthev=cdiv(Voc,cadd(Zo,C(R2,0)));
+      var out='';
+      if(method==='mesh'){
+        out=line('行列式 D',num(D.re))+line('İ₁',complexStr(I1)+' A = '+polar(I1)+' A')
+           +line('İ₂',complexStr(I2)+' A = '+polar(I2)+' A')
+           +line('İ_R₂ = İ₁ + İ₂',complexStr(IRmesh)+' A = '+polar(IRmesh)+' A');
+        set('A-eq','网孔：(Z₁+R₂)İ₁+R₂İ₂=Ū₁；R₂İ₁+(Z₃+R₂)İ₂=Ū₂；公共支路电流 İ_R₂=İ₁+İ₂。');
+      }else if(method==='node'){
+        out=line('Y₁ = 1/Z₁',complexStr(Y1)+' S')+line('Y₃ = 1/Z₃',complexStr(Y3)+' S')
+           +line('V_B',complexStr(VB)+' V')+line('İ_R₂ = V_B/R₂',complexStr(IRnode)+' A = '+polar(IRnode)+' A');
+        set('A-eq','节点：(V_B−Ū₁)/Z₁+(V_B−Ū₂)/Z₃+V_B/R₂=0；自导纳 = ΣY，互导纳 = 支路 Y 取负。');
+      }else if(method==='super'){
+        out=line('Ū₂=0 时 İ_R₂′',complexStr(IR1)+' A')+line('Ū₁=0 时 İ_R₂″',complexStr(IR2p)+' A')
+           +line('İ_R₂ = İ_R₂′ + İ_R₂″',complexStr(IRsuper)+' A = '+polar(IRsuper)+' A');
+        set('A-eq','叠加：独立电压源置零＝短路；响应是各源单独作用响应之和（相量相加）。');
+      }else{
+        out=line('开路电压 V_oc',complexStr(Voc)+' V')+line('等效阻抗 Z_o',complexStr(Zo)+' Ω')
+           +line('İ_R₂ = V_oc/(Z_o+R₂)',complexStr(IRthev)+' A = '+polar(IRthev)+' A');
+        set('A-eq','戴维南：去掉 R₂ 求 V_oc；Z_o=1/(Y₁+Y₃)；接回 R₂ 得电流。');
+      }
+      el('A-lines').innerHTML=out;
+      set('A-title',({mesh:'网孔法结果',node:'节点法结果',super:'叠加法结果',thev:'戴维南法结果'})[method]);
+      set('A-agree','四法一致：İ_R₂ = '+polar(IRmesh)+' A');
+      return IRmesh;
+    }
+    window.switchMethod=function(which){
+      method=which;
+      ['mesh','node','super','thev'].forEach(function(m){ var b=el('m-'+m); if(b) b.classList.toggle('on',m===which); });
+      solveA();
+    };
+    window.setPanelA=function(w,u1,u2,r2){
+      el('A-w').value=w; el('A-U1').value=u1; el('A-U2').value=u2; el('A-R2').value=r2; solveA();
+    };
+    ['A-w','A-U1','A-U2','A-R2'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：电流表 + RC 分压 ---------- */
+    function renderAmp(){
+      var IR=parseFloat(el('B-IR').value), IC=parseFloat(el('B-IC').value);
+      set('B-IR-v',num(IR)+' A'); set('B-IC-v',num(IC)+' A');
+      var mag=Math.hypot(IR,IC), phi=IC>0||IR>0?Math.atan2(IC,IR)*180/Math.PI:0;
+      set('B-amp-sum',num(IR)+' + j'+num(IC)+' A');
+      set('B-amp-polar',mag.toFixed(2)+'∠'+ang(phi)+'° A');
+      set('B-amp-phase',phi<0?'滞后电压 '+Math.abs(phi).toFixed(1)+'°':'超前电压 '+phi.toFixed(1)+'°');
+      set('B-amp-wrong','✗ 错误算术和 I_R + I_C = '+num(IR+IC)+' A（有效值标量不满足 KCL）');
+    }
+    function renderRC(){
+      var R=parseFloat(el('B-R').value), C=parseFloat(el('B-C').value), w=parseFloat(el('B-w').value);
+      set('B-R-v',num(R)+' Ω'); set('B-C-v',num(C)+' F'); set('B-w-v',num(w)+' rad/s');
+      var k=w*R*C, phi=Math.atan2(1,k)*180/Math.PI, ratio=k/Math.hypot(1,k);
+      set('B-rc-k',k.toFixed(2));
+      set('B-rc-phi',phi.toFixed(1)+'°');
+      set('B-rc-ratio',ratio.toFixed(3));
+      set('B-rc-lead','u_o 超前 u_s');
+    }
+    window.setAmp=function(ir,ic){ el('B-IR').value=ir; el('B-IC').value=ic; renderAmp(); };
+    window.setRC=function(r,c,w){ el('B-R').value=r; el('B-C').value=c; el('B-w').value=w; renderRC(); };
+    window.switchCheck=function(which){
+      var amp=(which==='amp');
+      el('sub-amp').classList.toggle('on',amp); el('sub-rc').classList.toggle('on',!amp);
+      el('tab-amp').classList.toggle('on',amp); el('tab-rc').classList.toggle('on',!amp);
+    };
+    ['B-IR','B-IC'].forEach(function(id){ el(id).addEventListener('input',renderAmp); });
+    ['B-R','B-C','B-w'].forEach(function(id){ el(id).addEventListener('input',renderRC); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L2-06-phasor-analysis');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,box,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'').replace(/性$/,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'；文字空填"感"或"容"）。';
+      mark(id,ok,box,fb);
+    };
+
+    solveA(); renderAmp(); renderRC(); refresh();
+
+    /* ---------- 重来：共享 resetFlow 解锁全部后，重锁四个预测门并清空一切 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      setPanelA(2,10,5,2);
+      setAmp(10,10);
+      setRC(10,0.02,5);
+      switchMethod('mesh');
+      switchCheck('amp');
+    };
+  })();
+  </script>
+</body>
+</html>
