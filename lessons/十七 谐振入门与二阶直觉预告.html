@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>谐振入门与二阶直觉预告 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:470px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:13px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .vecA{stroke:var(--chalk-blue);stroke-width:3;fill:none}
+    .svg-diag .vecB{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .vecC{stroke:var(--chalk-yellow);stroke-width:3;fill:none}
+    .svg-diag .vecD{stroke:var(--chalk-green);stroke-width:3;fill:none}
+    .svg-diag .arc{stroke:var(--chalk-yellow);stroke-width:2;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11.5px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.98rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:82px}
+    /* 谐振实验台 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button,.lab-tabs button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover,.lab-tabs button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .lab-tabs button:disabled{opacity:.42;cursor:not-allowed}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:2px 0;word-break:break-word}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:6px;line-height:1.45}
+    .lab-tabs{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+    .lab-tabs button.on{color:var(--chalk-yellow);border-color:var(--chalk-yellow);background:rgba(255,224,138,.1)}
+    .sub-lab{display:none}.sub-lab.on{display:block}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .agree{font-family:var(--mono);font-size:.82rem;color:var(--chalk-green);font-weight:700;margin-top:6px}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .sel-wrap{margin-top:10px}
+    .sel-wrap svg{display:block;width:100%;height:auto;max-width:520px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">谐振入门与二阶直觉预告</span>
+    <span class="meta">教案先行 · 45 min · S2 二阶与选频</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（平缓筛选 → 尖锐选频）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 谐振条件 ω₀（陈述①·揭晓预测 1）</a></li>
+        <li><a href="#stage-2">2 · 串联四特征与 Q（陈述②·揭晓预测 2）</a></li>
+        <li><a href="#stage-3">3 · 并联对偶（陈述③·揭晓预测 3）</a></li>
+        <li><a href="#stage-4">4 · 选择性与带宽（陈述④·揭晓预测 4）</a></li>
+        <li><a href="#stage-5">5 · 稳态谐振 vs 暂态振铃（陈述⑤）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">上一课让频率连续变化，看到一阶 RC 的输出<strong>平缓</strong>下降。本课把 L 和 C 放一起，问：为什么<strong>偏偏某一个频率</strong>让电路突然像纯电阻、电流或电压冲到极大？</div>
+      <div class="mini">因果顺序：电抗过零 → <code>ω₀</code> → 串联四特征 → <code>Q</code> → 并联对偶 → 带宽 → 稳态/暂态两条线。<strong>不是时间安排</strong>；公式都在预测揭晓后才出现。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-09.md</code>（邱 §11-2/§11-3 片段/§11-4；李下 §10-6）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-09-教案.md</code>（初审退 6 项、复审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① 谐振的共同判据是<strong>端口电压电流同相</strong>；串联表现为电抗为零、并联表现为电纳为零，<strong>不是</strong>"L、C 电压为零"。</div>
+      <div class="mini">② <code>Q</code> 是<strong>品质因数</strong>（无量纲），不是 L2-07 的<strong>无功功率 Q</strong>（var）；字母相同、含义不同。</div>
+      <div class="mini">③ 稳态谐振的过压/过流会持续存在；换路后的暂态过冲会衰减。<strong>两者机理不同，Q 公式只用于前者。</strong></div>
+    </div>
+    <div class="side-block">
+      <h4>前置工具（L2-05 / L2-08）</h4>
+      <div class="mini"><code>Z_L=jωL</code> 随 ω 增大；<code>Z_C=1/(jωC)</code> 随 ω 减小——两者互补，是谐振与选频的根。</div>
+      <div class="mini">半功率点：电流降到谐振值的 <code>1/√2</code>、功率减半、<code>−3 dB</code>（L2-08 的尺子，本课复用）。</div>
+      <div class="mini">具体公式揭晓后才出现在正文各环节的陈述时刻 ①–⑤；此处不提前给出。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 二阶与选频（L2-09）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">ω₀ · 串联/并联谐振 · Q · 带宽 · 稳态 vs 暂态</span>
+      </div>
+      <h1>谐振入门与二阶直觉预告</h1>
+      <p class="muted">L2-08 让频率连续变化，看到一阶 RC 的输出平缓下降。<strong>这节课只解决一个问题：把 L 和 C 放进同一个电路，为什么偏偏在某一个特定频率上，电路突然表现得像一个纯电阻、电流或电压冲到极大？这个频率由什么决定，冲得多高、多"尖"又由什么决定？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">ω₀ 过零</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">串联四特征/Q</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">并联对偶</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">带宽/选择性</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">稳态 vs 暂态</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习/过关</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉选）</div>
+        <p>场景只有一个：<strong>RLC 串联电路</strong>接在频率可调的正弦电压源上，R、L、C 固定，只把频率从很低慢慢升到很高。先用 L2-05 学过的 <code>Z_L=jωL</code>、<code>Z_C=1/(jωC)</code> 预判总电抗怎么变——<strong>先不写出任何谐振频率公式</strong>。</p>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>总电抗 <code>X=ωL−1/ωC</code> 随 ω 从低到高会怎样？① 一直增大；② 一直减小；③ 先为负、中间过零、再为正。<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">① 一直增大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">② 一直减小</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">③ 先负后正、中间过零</button>
+          </div>
+          <p class="gate-note">若你想答"看 L、C 谁大"——肯定这个直觉：低频时 <code>1/ωC</code> 占优、高频时 <code>ωL</code> 占优。追问一句：从低到高<strong>连续</strong>变化时，中间那一点一定存在吗？选定后才解锁揭晓，现在不公布。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 谐振条件与 ω₀（陈述时刻 ① · 揭晓预测 1）</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">先看两个极端：电抗真的从负变正 →</button>
+        <div class="reveal" id="rev-1a">
+          <p>用学过的两个阻抗看两端：</p>
+          <div class="eq-line">ω 很低 → 1/(ωC) 占优 → X ≈ −1/(ωC) &lt; 0（容性）　；　ω 很高 → ωL 占优 → X ≈ ωL &gt; 0（感性）</div>
+          <p><code>X(ω)</code> 连续，从负到正<strong>必然过零</strong>。不需要任何新公式就能预判：存在唯一一点让感抗与容抗完全抵消。<strong>这才逼出"那个特定频率"的问题。</strong></p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1b" data-stage="1" onclick="revealBlock(this)" disabled>推过零条件 + 公布预测 1（陈述①）→</button>
+        <div class="reveal" id="rev-1b">
+          <p><strong>选③。</strong>写出输入阻抗 <code>Z(jω)=R+j(ωL−1/ωC)</code>（邱 §11-2、李下 §10-6），令电抗为零：</p>
+          <div class="eq-line">X(jω₀)=ω₀L − 1/(ω₀C)=0 ⇒ ω₀²=1/(LC) ⇒ ω₀=1/√(LC)，f₀=1/(2π√(LC))</div>
+          <p>选①错在只看高频段，选②错在只看低频段。<strong>关键点：ω₀ 只由 L、C 决定，与 R 无关</strong>——R 管谐振峰有多高、多尖，不管峰在哪。</p>
+          <div class="ok-box"><strong>陈述时刻 ① · 谐振（resonance）与谐振频率 ω₀</strong>（正式定义 + 条件）：端口电压与电流同相的工作状态称为谐振；串联时表现为总电抗为零，并联时表现为总电纳为零（环节 3 才展开，此处只记住"电压电流同相"这一共同判据）。发生谐振的角频率 <code>ω₀=1/√(LC)</code>、频率 <code>f₀=1/(2π√(LC))</code>，只由 L、C 决定，与 R 无关，故又称电路的<strong>固有频率</strong>。条件：理想串联 RLC、线性元件、正弦稳态，外施频率须与 ω₀ 相同（"合拍"）。实际电感线圈带损耗电阻时，并联谐振频率会偏移（<code>ω₀=√(1/LC−R²/L²)</code>，邱 §11-4 点名不推导）、"端电压最大"判据也不再严格成立——本课一律按理想元件计算。〔邱 §11-2、李下 §10-6〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图①：串联 RLC 与电抗过零。</strong>左为电路；右为 <code>X(jω)=ωL−1/ωC</code> 随频率的走向——低频在容性区（负），高频在感性区（正），虚线标出的过零点就是 <code>ω₀</code>。图自包含，不引用书内图号。</p>
+            </div>
+            <div class="fig-box lg" aria-label="串联RLC电路与电抗过零曲线：低频电抗为负呈容性，高频为正呈感性，中间过零点为谐振频率">
+              <svg class="svg-diag" viewBox="0 0 460 210" role="img">
+                <title>串联 RLC 电路与电抗 X 过零曲线</title>
+                <defs><marker id="ar1" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-dim)"/></marker></defs>
+                <text class="lbl" x="12" y="18">串联 RLC（变频电压源）</text>
+                <circle class="box" cx="42" cy="115" r="17"/>
+                <path class="wire" d="M32,115 q5,-11 10,0 q5,11 10,0"/>
+                <line class="wire" x1="42" y1="98" x2="42" y2="52"/>
+                <line class="wire" x1="42" y1="52" x2="62" y2="52"/>
+                <rect class="box" x="62" y="44" width="30" height="16"/>
+                <text class="dim" x="70" y="40">R</text>
+                <line class="wire" x1="92" y1="52" x2="108" y2="52"/>
+                <path class="wire" d="M108,52 q6,-13 12,0 q6,-13 12,0 q6,-13 12,0"/>
+                <text class="dim" x="120" y="38">L</text>
+                <line class="wire" x1="144" y1="52" x2="160" y2="52"/>
+                <line class="wire" x1="160" y1="40" x2="160" y2="64"/>
+                <line class="wire" x1="172" y1="40" x2="172" y2="64"/>
+                <line class="wire" x1="172" y1="52" x2="190" y2="52"/>
+                <text class="dim" x="162" y="34">C</text>
+                <line class="wire" x1="190" y1="52" x2="190" y2="168"/>
+                <line class="wire" x1="190" y1="168" x2="42" y2="168"/>
+                <line class="wire" x1="42" y1="168" x2="42" y2="132"/>
+                <text class="plb" x="10" y="140">u_s(ω)</text>
+                <line class="guide" x1="228" y1="105" x2="448" y2="105"/>
+                <line class="guide" x1="290" y1="26" x2="290" y2="184"/>
+                <text class="dim" x="434" y="122">ω</text>
+                <text class="dim" x="296" y="30">X</text>
+                <text class="dim" x="262" y="100">0</text>
+                <path class="vecC" d="M238,170 L268,158 L298,140 L330,118 L362,92 L394,64 L424,38"/>
+                <line class="guide" x1="326" y1="30" x2="326" y2="184"/>
+                <text class="ylb" x="316" y="22">ω₀</text>
+                <text class="plb" x="238" y="188">容性 X&lt;0</text>
+                <text class="lbl" x="380" y="42">感性 X&gt;0</text>
+              </svg>
+              <div class="fig-cap">过零处 X=0、Z=R，电路"像纯电阻"——谐振。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 串联谐振四特征与 Q（陈述时刻 ② · 揭晓预测 2）</div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">ω=ω₀ 时电路发生什么（先不谈数值）→</button>
+        <div class="reveal" id="rev-2a">
+          <p>把 <code>X=0</code> 代进去，四条特征逐条落下来（邱 §11-2、李下 §10-6）：</p>
+          <table class="mini-t">
+            <tr><th>#</th><th>特征</th><th>为什么</th></tr>
+            <tr><td>①</td><td>电压电流同相</td><td><code>φ=arg Z=0</code></td></tr>
+            <tr><td>②</td><td><code>Z(jω₀)=R</code> 是 |Z| 极小 → 电流极大</td><td><code>|Z|=√[R²+X²]</code> 在 X=0 取最小，<code>I_max=U/R</code></td></tr>
+            <tr><td>③</td><td><code>U_L+U_C=0</code>、L、C 串联端相当于短路</td><td><code>ω₀L=1/(ω₀C)</code>，两个电抗电压等大反相、<strong>各自不为零</strong></td></tr>
+            <tr><td>④</td><td>无功 <code>Q_L+Q_C=0</code></td><td>能量在 L、C 间往复交换；故串联谐振又称<strong>电压谐振</strong></td></tr>
+          </table>
+          <p>第③条最反直觉：总和为零<strong>不等于各自为零</strong>。那各自有多大？先预测。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>取 <code>R=2 Ω</code>、<code>L=25 mH</code>、<code>C=10 µF</code>、<code>U_s=10 V</code>、<code>ω=2000 rad/s</code>（正好是 ω₀）。电感电压 <code>U_L</code> 相对外施 <code>U_s=10 V</code> 会？① 等于 10 V；② 小于 10 V（被电阻分走）；③ 远大于 10 V（可达很多倍）。<strong>选定后才解锁揭晓，选项不含放大倍数的数值。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">① 等于 10 V</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">② 小于 10 V</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">③ 远大于 10 V</button>
+          </div>
+          <p class="gate-note">别用电阻分压的直觉套电抗电压：L、C 上的电压与电流差 90°，不是简单按 R 分。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2b" data-stage="2" onclick="revealBlock(this)" disabled>复算谐振电压 + 定义 Q + 公布预测 2（陈述②）→</button>
+        <div class="reveal" id="rev-2b">
+          <p><strong>选③。</strong>现场复算（李下例 10-10）：</p>
+          <div class="res-line">X_L = ω₀L = 2000 × 0.025 = 50 Ω　；　X_C = 1/(2000 × 10×10⁻⁶) = 50 Ω　→ 相消</div>
+          <div class="res-line">Z = 2∠0° Ω　；　İ = U_s/R = 10/2 = 5∠0° A</div>
+          <div class="res-line">U̇_L = İ(j50) = j250 V　；　U̇_C = İ(−j50) = −j250 V　→　u_L=250√2cos(2000t+90°) V，u_C=250√2cos(2000t−90°) V</div>
+          <p>比值 <code>U_L/U_s=250/10=25</code>。选①错在把"总和为零"当成"各自为零"；选②错在用电阻分压直觉。</p>
+          <div class="eq-line">Q ≡ ω₀L/R = 1/(ω₀CR) = U_L/U_s = U_C/U_s　⇒　U_L = U_C = Q·U_s</div>
+          <div class="ok-box"><strong>陈述时刻 ② · 串联谐振、品质因数 Q 与电压谐振</strong>（正式定义 + 条件）：RLC 串联谐振时 <code>Z=R</code> 最小、<code>I=U/R</code> 最大，<code>U_L</code> 与 <code>U_C</code> 等大反相而抵消、但各自可达外施电压的 Q 倍，故又名<strong>电压谐振</strong>；品质因数 <code>Q=ω₀L/R=1/(ω₀CR)</code>，是谐振时 L（或 C）电压与外施电压之比，刻画电压放大与峰的尖锐程度。条件：正弦稳态、ω=ω₀、理想元件；<code>Q&gt;1</code> 才过电压（电力防患、无线电利用）。<strong>此 Q 无量纲，是品质因数，不是 L2-07 的无功功率 Q（var）；字母相同、含义不同，不可混用。</strong>〔邱 §11-2、李下 §10-6〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：串联谐振的电压相量。</strong><code>U_L</code> 向上、<code>U_C</code> 向下，各 250 V、正好抵消；只剩同相的 <code>U_R=U_s=10 V</code>。这就是"局部高压不违反能量守恒"的相量图像：<strong>L、C 储能此消彼长，电源只补 R 的损耗</strong>。</p>
+              <p class="muted">相量长度不按比例（否则 10 V 会缩成一点），数值以标注为准；图自包含。</p>
+            </div>
+            <div class="fig-box md" aria-label="串联谐振电压相量图：UL向上250伏、UC向下250伏相互抵消，UR与Us同为10伏同相">
+              <svg class="svg-diag" viewBox="0 0 390 200" role="img">
+                <title>串联谐振电压相量图</title>
+                <defs><marker id="ar2" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-dim)"/></marker></defs>
+                <line class="guide" x1="60" y1="100" x2="350" y2="100"/>
+                <line class="guide" x1="150" y1="20" x2="150" y2="185"/>
+                <circle cx="150" cy="100" r="3" fill="var(--chalk)"/>
+                <line class="vecA" x1="150" y1="100" x2="150" y2="28"/>
+                <line class="vecB" x1="150" y1="100" x2="150" y2="172"/>
+                <line class="vecC" x1="150" y1="100" x2="270" y2="100"/>
+                <text class="lbl" x="158" y="34">U_L = j250 V</text>
+                <text class="plb" x="158" y="178">U_C = −j250 V</text>
+                <text class="ylb" x="200" y="92">U_R = U_s = 10 V</text>
+                <text class="dim" x="276" y="116">İ 同相</text>
+                <text class="glb" x="196" y="24">U_L + U_C = 0</text>
+                <text class="dim" x="16" y="192">长度不按比例；标注为有效值</text>
+              </svg>
+              <div class="fig-cap">相量图来源：邱 §11-2 例、李下例 10-10。</div>
+            </div>
+          </div>
+
+          <div class="calc-lab" id="lab-a">
+            <h4>谐振实验台 A · 串联 / 并联对偶</h4>
+            <div id="A-lock">
+              <div class="lock-note">🔒 面板 A 在预测 2 揭晓后解锁（此刻显示数值会提前泄露 250 V）。先完成上面的预测。</div>
+            </div>
+            <div id="A-body" style="display:none">
+              <div class="lab-tabs">
+                <button id="tab-a-ser" class="on" onclick="switchPanelA('ser')">串联 RLC（默认）</button>
+                <button id="tab-a-par" onclick="switchPanelA('par')" disabled title="预测 3 揭晓后解锁">并联 GLC（预测 3 后解锁）</button>
+              </div>
+              <div class="sub-lab on" id="sub-a-ser">
+                <div class="lab-grid">
+                  <div class="lab-ctrl">
+                    <label>R <span id="A1-R-v">2 Ω</span></label><input type="range" id="A1-R" min="0.5" max="300" step="0.5" value="2"/>
+                    <label>L <span id="A1-L-v">25 mH</span></label><input type="range" id="A1-L" min="1" max="200" step="1" value="25"/>
+                    <label>C <span id="A1-C-v">10 µF</span></label><input type="range" id="A1-C" min="0.1" max="100" step="0.1" value="10"/>
+                    <label>U_s <span id="A1-U-v">10 V</span></label><input type="range" id="A1-U" min="1" max="100" step="1" value="10"/>
+                    <label>ω <span id="A1-w-v">2000 rad/s</span></label><input type="range" id="A1-w" min="200" max="6000" step="10" value="2000"/>
+                    <div class="preset">
+                      <button onclick="setA1(2,25,10,10,2000)">例10-10（谐振）</button>
+                      <button onclick="setA1(2,25,10,10,1800)">失谐 ω=1800</button>
+                      <button onclick="setA1(200,25,10,10,2000)">Q&lt;1（R=200 Ω）</button>
+                    </div>
+                  </div>
+                  <div class="th-panel">
+                    <h5>串联：算给你看</h5>
+                    <div class="th-row"><span class="k">ω₀=1/√(LC)</span><span class="v" id="A1-w0">—</span></div>
+                    <div class="th-row"><span class="k">X_L / X_C</span><span class="v" id="A1-X">—</span></div>
+                    <div class="th-row"><span class="k">|Z|=√(R²+X²)</span><span class="v" id="A1-Z">—</span></div>
+                    <div class="th-row"><span class="k">I = U_s/|Z|</span><span class="v" id="A1-I">—</span></div>
+                    <div class="th-row"><span class="k">Q = ω₀L/R</span><span class="v" id="A1-Q">—</span></div>
+                    <div class="th-row"><span class="k">U_L / U_s</span><span class="v" id="A1-ratio">—</span></div>
+                    <div class="res-line" id="A1-formula">—</div>
+                    <div class="th-eq">改任意滑块按同一组公式重算；ω₀ 不随 R 变，I、Q、U_L 随 R 变。</div>
+                  </div>
+                </div>
+              </div>
+              <div class="sub-lab" id="sub-a-par">
+                <div class="lab-grid">
+                  <div class="lab-ctrl">
+                    <label>G <span id="A2-G-v">0.01 S</span></label><input type="range" id="A2-G" min="0.001" max="0.2" step="0.001" value="0.01"/>
+                    <label>L <span id="A2-L-v">10 mH</span></label><input type="range" id="A2-L" min="1" max="200" step="1" value="10"/>
+                    <label>C <span id="A2-C-v">100 µF</span></label><input type="range" id="A2-C" min="0.1" max="500" step="0.1" value="100"/>
+                    <label>I_s <span id="A2-Is-v">1 A</span></label><input type="range" id="A2-Is" min="0.1" max="10" step="0.1" value="1"/>
+                    <label>ω <span id="A2-w-v">1000 rad/s</span></label><input type="range" id="A2-w" min="200" max="6000" step="10" value="1000"/>
+                    <div class="preset"><button onclick="setA2(0.01,10,100,1,1000)">并联默认（谐振）</button></div>
+                  </div>
+                  <div class="th-panel">
+                    <h5>并联：对偶着算</h5>
+                    <div class="th-row"><span class="k">ω₀=1/√(LC)</span><span class="v" id="A2-w0">—</span></div>
+                    <div class="th-row"><span class="k">B=ωC−1/(ωL)</span><span class="v" id="A2-B">—</span></div>
+                    <div class="th-row"><span class="k">|Z|=1/√(G²+B²)</span><span class="v" id="A2-Z">—</span></div>
+                    <div class="th-row"><span class="k">U = I_s|Z|</span><span class="v" id="A2-U">—</span></div>
+                    <div class="th-row"><span class="k">Q=ω₀C/G</span><span class="v" id="A2-Q">—</span></div>
+                    <div class="th-row"><span class="k">I_L / I_s</span><span class="v" id="A2-ratio">—</span></div>
+                    <div class="res-line" id="A2-formula">—</div>
+                    <div class="th-eq">与串联逐项对偶：R↔G、L↔C；"电压放大"换成"电流放大"。</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 并联对偶（陈述时刻 ③ · 揭晓预测 3）</div>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>把电路改成 <strong>GLC 并联</strong>、用正弦电流源驱动，频率调到环节 1 求出的那个谐振频率 <code>ω₀</code>。端口阻抗 |Z| 与串联情况相比会？① 和串联一样是最小；② 反而变成最大；③ 始终不变。<strong>选定后才解锁，作答阶段不出现任何并联导纳公式。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① 一样是最小</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 反而变成最大</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ 始终不变</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3a" data-stage="3" onclick="revealBlock(this)" disabled>推并联导纳 + 公布预测 3（陈述③，解锁并联标签）→</button>
+        <div class="reveal" id="rev-3a">
+          <p><strong>选②。</strong>把串联阻抗式逐项对偶（<code>R↔G</code>、<code>L↔C</code>、<code>jωL−1/(jωC)↔jωC−1/(jωL)</code>）就得到并联导纳，不是新公式：</p>
+          <div class="eq-line">Y(jω)=G+j(ωC − 1/(ωL))　；　谐振条件 ωC−1/(ωL)=0 ⇒ ω₀=1/√(LC)</div>
+          <p><code>Y(jω₀)=G</code> 最小 ⇒ <code>Z(jω₀)=1/G=R</code> <strong>最大</strong> ⇒ 电流源驱动时端电压最大。选①错在把串联照搬。</p>
+          <p>支路电流 <code>I_L=U/(ω₀L)=I_s/(ω₀LG)</code>、<code>I_C=Uω₀C=I_s(ω₀C/G)</code>，用 <code>ω₀²=1/(LC)</code> 得 <code>1/(ω₀LG)=ω₀C/G</code>，二者等大反相而抵消、可远大于外施电流：<strong>电流谐振</strong>。</p>
+          <div class="eq-line">Q_并 = ω₀C/G = 1/(ω₀LG)　；　I_L = I_C = Q·I_s</div>
+          <div class="ok-box"><strong>陈述时刻 ③ · 并联谐振与电流谐振</strong>（正式定义 + 条件）：理想 GLC 并联电路在 <code>ω₀=1/√(LC)</code> 处电纳虚部为零、<code>Y=G</code>、<code>Z=R</code> 最大；L、C 支路电流等大反相而抵消、各自可达外施电流的 <code>Q_并=ω₀C/G</code> 倍，故又名<strong>电流谐振</strong>。条件：正弦稳态、ω=ω₀、理想元件（电感无损耗）；与串联共用同一个 ω₀，但"极大"落在阻抗而非电流上，低频/高频性质与串联相反；Q 仍不是无功功率。实际线圈并联见陈述①的条件说明，本课不计算。〔邱 §11-4、李下 §10-6〕</div>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图③：串 / 并联对偶对照。</strong>同一个 <code>ω₀=1/√(LC)</code>，但"极大"落点正好相反：串联是阻抗最小 → 电流极大 → 电压谐振；并联是阻抗最大 → 端电压极大 → 电流谐振。低频/高频性质也相反（串联：低容高感；并联：低感高容），因为串联看电抗 <code>ωL−1/ωC</code>、并联看电纳 <code>ωC−1/ωL</code>。</p>
+            </div>
+            <div class="fig-box lg" aria-label="串联与并联谐振对偶对照图：串联阻抗最小电流最大电压谐振，并联阻抗最大电流谐振，低高频性质相反">
+              <svg class="svg-diag" viewBox="0 0 470 250" role="img">
+                <title>串联与并联谐振对偶对照</title>
+                <line class="guide" x1="237" y1="14" x2="237" y2="240"/>
+                <text class="lbl" x="14" y="24">串联 RLC（电压源）</text>
+                <text class="plb" x="252" y="24">并联 GLC（电流源）</text>
+                <circle class="box" cx="34" cy="62" r="11"/>
+                <path class="wire" d="M27,62 q4,-8 7,0 q4,8 7,0"/>
+                <line class="wire" x1="34" y1="51" x2="34" y2="40"/>
+                <rect class="box" x="58" y="34" width="24" height="12"/>
+                <path class="wire" d="M82,40 q5,-10 10,0 q5,-10 10,0"/>
+                <line class="wire" x1="102" y1="46" x2="102" y2="58"/>
+                <line class="wire" x1="112" y1="46" x2="112" y2="58"/>
+                <line class="wire" x1="112" y1="52" x2="126" y2="52"/>
+                <line class="wire" x1="126" y1="52" x2="126" y2="78"/>
+                <line class="wire" x1="126" y1="78" x2="34" y2="78"/>
+                <line class="wire" x1="34" y1="78" x2="34" y2="73"/>
+                <text class="dim" x="130" y="58">R L C 串联</text>
+                <text class="dim" x="14" y="104">Z=R+j(ωL−1/ωC)</text>
+                <text class="lbl" x="14" y="126">谐振：Z=R 最小</text>
+                <text class="dim" x="14" y="146">I_max = U/R</text>
+                <text class="dim" x="14" y="166">U_L = −U_C → 电压谐振</text>
+                <text class="plb" x="14" y="190">ω&lt;ω₀ 容性；ω&gt;ω₀ 感性</text>
+                <circle class="box" cx="262" cy="52" r="11"/>
+                <path class="wire" d="M255,52 q5,-8 10,0 q5,8 10,0"/>
+                <line class="wire" x1="272" y1="52" x2="300" y2="52"/>
+                <line class="wire" x1="300" y1="52" x2="300" y2="34"/>
+                <line class="wire" x1="280" y1="34" x2="320" y2="34"/>
+                <line class="wire" x1="280" y1="44" x2="320" y2="44"/>
+                <line class="wire" x1="280" y1="54" x2="320" y2="54"/>
+                <line class="wire" x1="280" y1="64" x2="320" y2="64"/>
+                <line class="wire" x1="300" y1="64" x2="300" y2="78"/>
+                <line class="wire" x1="262" y1="78" x2="300" y2="78"/>
+                <line class="wire" x1="262" y1="78" x2="262" y2="63"/>
+                <text class="dim" x="322" y="54">G L C 并联</text>
+                <text class="dim" x="252" y="104">Y=G+j(ωC−1/ωL)</text>
+                <text class="plb" x="252" y="126">谐振：Z=R 最大</text>
+                <text class="dim" x="252" y="146">U = I_s·R 最大</text>
+                <text class="dim" x="252" y="166">I_L = −I_C → 电流谐振</text>
+                <text class="lbl" x="252" y="190">ω&lt;ω₀ 感性；ω&gt;ω₀ 容性</text>
+                <text class="glb" x="14" y="224">同一个 ω₀=1/√(LC)，极大落点对偶</text>
+                <text class="dim" x="14" y="242">行管峰高/尖锐度；Q 串并联写法不同，均非无功功率</text>
+              </svg>
+              <div class="fig-cap">图自包含，不引用书内图号；文字按中文教材记号。</div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 选择性与带宽（陈述时刻 ④ · 揭晓预测 4）</div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">复用 −3 dB 尺子：先定性看"尖不尖"→</button>
+        <div class="reveal" id="rev-4a">
+          <p>Q 不只管"冲多高"，还管"峰多尖"。沿用 L2-08 的半功率尺子：谐振曲线上电流降到 <code>I_r/√2</code>（功率减半、−3 dB）的两个频率记为 <code>ω₁</code>、<code>ω₂</code>，二者之差就是<strong>通频带 BW</strong>。Q 大的曲线更尖、带外抑制更强，但通频带更窄、带内信号易失真——这是工程权衡（邱 §11-3）。<strong>先不写出 BW 公式。</strong></p>
+        </div>
+
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>保持 ω₀ 不变，把品质因数 Q 调大（比如减小串联电阻 R），通频带 BW 会？① 变宽；② 变窄；③ 不变。<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">① 变宽</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">② 变窄</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">③ 不变</button>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>推半功率点 + 带宽公式 + 公布预测 4（陈述④，解锁面板 B）→</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>选②。</strong>从已学过的电流式推起（李下 §10-6）：<code>I=U/√[R²+(ωL−1/ωC)²]</code>、<code>I_r=U/R</code>。令 <code>I=I_r/√2</code> ⇔ <code>|Z|=√2 R</code> ⇔ <code>ωL−1/ωC=±R</code>，解得：</p>
+          <div class="eq-line">ω₁ = −R/(2L)+√[(R/(2L))²+1/(LC)]　；　ω₂ = +R/(2L)+√[(R/(2L))²+1/(LC)]</div>
+          <p>两式相减 <code>BW=ω₂−ω₁=R/L</code>；相乘 <code>ω₁ω₂=1/(LC)=ω₀²</code> ⇒ <code>ω₀=√(ω₁ω₂)</code>。于是</p>
+          <div class="eq-line">Q = ω₀L/R = ω₀/(R/L) = ω₀/BW　⇒　BW = ω₂−ω₁ = R/L = ω₀/Q（f 域：BW_f=f₀/Q）</div>
+          <p>选②：Q 越大 → BW 越窄，与"选择性越强"是同一件事的两面；选①记反了，选③忽略了半功率点随 Q 移动。</p>
+          <p><strong>画选择性曲线时才首次引入</strong>相对频率 <code>η=ω/ω₀</code>（邱 §11-3 归一化坐标）：把上式除以 <code>I_r</code>，用 <code>ω₀L=1/(ω₀C)</code> 改写 <code>(ωL−1/ωC)/R=(ω₀L/R)(η−1/η)=Q(η−1/η)</code>，得</p>
+          <div class="eq-line">I/I_r = 1/√[1 + Q²(η−1/η)²]</div>
+          <p><code>η=1</code> 时取 1（峰），<code>I/I_r=1/√2</code> 正是两个半功率点。<strong>这只是已推电流式的改写，不是要背的新公式。</strong></p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 品质因数 Q、通频带 BW 与选择性</strong>（正式定义 + 条件）：<code>BW=ω₂−ω₁=R/L=ω₀/Q</code>（串联），半功率点满足 <code>I=I_r/√2</code>（−3 dB），且 <code>ω₀=√(ω₁ω₂)</code>；Q 越大曲线越尖、选择性越强、通频带越窄，Q 越小带宽越宽、带内失真越小。条件：RLC 串联谐振、半功率定义；并联由对偶得 <code>BW=G/C=ω₀/Q</code>（电导 G 越小 → Q 越大 → BW 越窄）。<strong>Q 越大 BW 越窄是推出来的核心关系，不是死记。</strong>〔邱 §11-3、李下 §10-6〕</div>
+          <p><strong>带做（形态 B，李下例 10-12）：</strong><code>f₀=10 kHz</code>、<code>BW_f=100 Hz</code>、总 <code>R=25 Ω</code> ⇒ <code>Q=f₀/BW_f=100</code>、<code>ω₀=2π×10⁴≈62832 rad/s</code>、<code>L=QR/ω₀≈39.8 mH</code>、<code>C=1/(ω₀²L)≈6360 pF</code>、<code>f₁,₂≈f₀(1∓1/(2Q))=9950/10050 Hz</code>。下面的面板 B 就是这条设计链。</p>
+
+          <div class="calc-lab" id="lab-b">
+            <h4>选择性与带宽台 B（由 R、L、C 看 f₀、Q、BW）</h4>
+            <div id="B-lock">
+              <div class="lock-note">🔒 面板 B 在预测 4 揭晓后解锁（此刻显示带宽公式会提前泄露结论）。</div>
+            </div>
+            <div id="B-body" style="display:none">
+              <div class="lab-grid">
+                <div class="lab-ctrl">
+                  <label>R <span id="B-R-v">25 Ω</span></label><input type="range" id="B-R" min="1" max="200" step="0.5" value="25"/>
+                  <label>L <span id="B-L-v">39.79 mH</span></label><input type="range" id="B-L" min="5" max="120" step="0.01" value="39.79"/>
+                  <label>C <span id="B-C-v">6.366 nF</span></label><input type="range" id="B-C" min="1" max="20" step="0.001" value="6.366"/>
+                  <label>观测 η=ω/ω₀ <span id="B-eta-v">1.000</span></label><input type="range" id="B-eta" min="0.96" max="1.04" step="0.001" value="1"/>
+                  <div class="preset">
+                    <button onclick="setB(25,39.79,6.366,1)">例10-12（Q=100）</button>
+                    <button onclick="setB(50,39.79,6.366,1)">R 加倍（Q=50）</button>
+                    <button onclick="setB(12.5,39.79,6.366,1)">R 减半（Q=200）</button>
+                  </div>
+                </div>
+                <div class="th-panel">
+                  <h5>指标读数</h5>
+                  <div class="th-row"><span class="k">f₀=1/(2π√LC)</span><span class="v" id="B-f0">—</span></div>
+                  <div class="th-row"><span class="k">Q=ω₀L/R</span><span class="v" id="B-Q">—</span></div>
+                  <div class="th-row"><span class="k">BW_f=f₀/Q</span><span class="v" id="B-BW">—</span></div>
+                  <div class="th-row"><span class="k">f₁ / f₂（半功率）</span><span class="v" id="B-f12">—</span></div>
+                  <div class="res-line" id="B-agree">—</div>
+                  <div class="th-eq">L、C 取整读数与教材 9950/10050 Hz 有约几 Hz 差异，属正常。</div>
+                </div>
+              </div>
+              <div class="sel-wrap">
+                <svg class="svg-diag" viewBox="0 0 470 235" role="img" aria-label="选择性曲线：纵轴为电流比，横轴为相对频率，峰值在η等于1，两侧半功率点标出带宽">
+                  <title>选择性曲线与半功率带宽</title>
+                  <line class="guide" x1="46" y1="200" x2="452" y2="200"/>
+                  <line class="guide" x1="80" y1="22" x2="80" y2="200"/>
+                  <text class="dim" x="440" y="218">η</text>
+                  <text class="dim" x="86" y="28">I/I_r</text>
+                  <text class="dim" x="70" y="36">1</text>
+                  <text class="dim" x="62" y="88">0.707</text>
+                  <text class="ylb" x="234" y="16">η=1（峰）</text>
+                  <line class="guide" x1="46" y1="79.8" x2="452" y2="79.8"/>
+                  <path class="vecC" id="sel-curve" d=""/>
+                  <line class="guide" id="sel-v1" x1="0" y1="79.8" x2="0" y2="200"/>
+                  <line class="guide" id="sel-v2" x1="0" y1="79.8" x2="0" y2="200"/>
+                  <circle id="sel-d1" cx="0" cy="79.8" r="3.5" fill="var(--chalk-pink)"/>
+                  <circle id="sel-d2" cx="0" cy="79.8" r="3.5" fill="var(--chalk-pink)"/>
+                  <line class="vecA" id="sel-bracket" x1="0" y1="118" x2="0" y2="118"/>
+                  <text class="glb" id="sel-brk-lab" x="0" y="132">BW</text>
+                  <line class="vecD" id="sel-mark" x1="0" y1="200" x2="0" y2="200"/>
+                  <circle id="sel-markdot" cx="0" cy="0" r="4" fill="var(--chalk-green)"/>
+                  <text class="dim" id="sel-marklab" x="0" y="0">η</text>
+                </svg>
+                <div class="fig-cap">曲线由 <code>I/I_r=1/√[1+Q²(η−1/η)²]</code> 现场绘制；移动 η 滑块看工作点，改 R 看峰形变尖/变钝。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 稳态谐振 vs 暂态振铃（陈述时刻 ⑤）</div>
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">两种过冲，为什么本质不同 →</button>
+        <div class="reveal" id="rev-5a">
+          <p>邱 §11-4 末段专门提醒：稳态谐振的过压/过流，与换路后动态电路的过冲<strong>机理完全不同</strong>。并排看：</p>
+          <table class="mini-t">
+            <tr><th></th><th>稳态谐振过压/过流</th><th>暂态振铃过冲</th></tr>
+            <tr><td>起因</td><td>外施正弦源频率调到 ω₀，L、C 反复交换能量</td><td>t=0 换路，储能重新分配的自由响应</td></tr>
+            <tr><td>是否持续</td><td>参数与激励频率不变就<strong>一直存在</strong></td><td>随时间<strong>衰减</strong>，最终到新稳态</td></tr>
+            <tr><td>用什么工具</td><td>相量 / 阻抗 / Q（本课）</td><td>二阶微分方程、阻尼分类（L3-03）</td></tr>
+          </table>
+          <div class="ok-box"><strong>陈述时刻 ⑤ · 稳态谐振与暂态振铃的区别</strong>（正式定义 + 条件）：正弦稳态谐振是与外施频率"合拍"后由外部持续供能的强迫响应，过压/过流在参数不变时持续存在；暂态振铃是换路瞬间 L、C 储能重新分配的自由响应，随时间衰减。条件：前者只在 <code>ω=ω₀</code> 的正弦稳态下讨论，后者属二阶暂态（L3-03 主课）。<strong>本课的 Q 只用于前者，不能套到暂态振铃。</strong>〔邱 §11-4〕</div>
+          <p class="muted">下一课 L2-10 把时域暂态工具与正弦稳态工具放在一起，问"给定问题该用哪一套"；L3-03 再定量讲二阶阶跃响应形态（振铃、过冲、稳定时间）。本课先把两条线分开。</p>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：独立练习 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习（9 题，先作答再判定）与过关</div>
+        <div class="qrow">
+          <div class="qt">练习 1 · 串联 RLC 保持 L、C、U_s 与 ω=ω₀ 不变，只把 R 减小，谐振电流 I 与 Q 怎么变？</div>
+          <div class="choicebox" id="q-1" data-qid="q-1" data-hint="ω₀ 与 R 无关，但 I_r=U/R、Q=ω₀L/R 都含 R。" data-explain="R 减小 ⇒ I_r=U/R 增大、Q=ω₀L/R 增大，选①。"><label><input type="radio" name="q-1" value="a"/> ① 都增大</label><label><input type="radio" name="q-1" value="b"/> ② I 减 / Q 增</label><label><input type="radio" name="q-1" value="c"/> ③ I 增 / Q 减</label><button class="btn-sm" onclick="checkChoice('q-1','a')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 2 · 串联 <code>L=0.1 H</code>、<code>C=10 µF</code>、<code>R=5 Ω</code>、<code>U_s=10 V</code>，<code>ω=ω₀</code>。求 ω₀(rad/s)、I(A)、Q、U_L(V)。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>ω₀ <input type="text" placeholder="rad/s" />，I <input type="text" placeholder="A" />，Q <input type="text" placeholder="" />，U_L <input type="text" placeholder="V" /></label><button class="btn-sm" onclick="checkMulti('q-2',[1000,2,20,200],[1,0.05,0.2,2])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 3 · 串联 <code>R=10 Ω</code>、<code>L=0.5 H</code>、<code>C=2 µF</code>。求 ω₀(rad/s)、Q、BW(rad/s)，并判断是"电压"还是"电流"谐振。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>ω₀ <input type="text" placeholder="rad/s" />，Q <input type="text" placeholder="" />，BW <input type="text" placeholder="rad/s" />，类型 <input type="text" placeholder="电压/电流" /></label><button class="btn-sm" onclick="checkFields('q-3',[1000,50,20,'电压'],[1,0.5,0.5,0])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 4 · 设计串联 RLC：<code>f₀=5 kHz</code>、<code>BW_f=250 Hz</code>、总 <code>R=20 Ω</code>。求 Q、L(mH)、C(nF)、f₁(Hz)、f₂(Hz)。</div>
+          <div class="numcheck" id="q-4" data-qid="q-4"><label>Q <input type="text" placeholder="" />，L <input type="text" placeholder="mH" />，C <input type="text" placeholder="nF" />，f₁ <input type="text" placeholder="Hz" />，f₂ <input type="text" placeholder="Hz" /></label><button class="btn-sm" onclick="checkMulti('q-4',[20,12.73,79.6,4875,5125],[0.5,0.3,1,5,5])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 5 · GLC 并联谐振时，端口阻抗 |Z| 与电路性质正确的是？</div>
+          <div class="choicebox" id="q-5" data-qid="q-5" data-hint="并联谐振 Y=G 最小、Z=R 最大，是电流谐振。" data-explain="并联谐振 Z 最大、L/C 支路电流抵消 ⇒ 电流谐振，选②。"><label><input type="radio" name="q-5" value="a"/> ① 最小、电压谐振</label><label><input type="radio" name="q-5" value="b"/> ② 最大、电流谐振</label><label><input type="radio" name="q-5" value="c"/> ③ 最大、电压谐振</label><button class="btn-sm" onclick="checkChoice('q-5','b')">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 6 · 并联 GLC：<code>G=0.02 S</code>、<code>L=20 mH</code>，要在 <code>ω₀=500 rad/s</code> 谐振。求 C(µF)、Q_并。</div>
+          <div class="numcheck" id="q-6" data-qid="q-6"><label>C <input type="text" placeholder="µF" />，Q_并 <input type="text" placeholder="" /></label><button class="btn-sm" onclick="checkMulti('q-6',[200,5],[2,0.1])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 7 · 串联谐振电路在 <code>ω&lt;ω₀</code> 时呈什么性（容/感）？并联谐振电路在 <code>ω&lt;ω₀</code> 时呈什么性（容/感）？</div>
+          <div class="numcheck" id="q-7" data-qid="q-7"><label>串联 <input type="text" placeholder="容/感" />，并联 <input type="text" placeholder="容/感" /></label><button class="btn-sm" onclick="checkFields('q-7',['容','感'],[0,0])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 8 · 串联谐振 <code>ω₀=10⁴ rad/s</code>、<code>BW=200 rad/s</code>，求 Q；若保持 L、C 不变把 R 加倍，求新 BW(rad/s) 与新 Q。</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>Q <input type="text" placeholder="" />，新 BW <input type="text" placeholder="rad/s" />，新 Q <input type="text" placeholder="" /></label><button class="btn-sm" onclick="checkMulti('q-8',[50,400,25],[0.5,4,0.3])">判定</button><div class="fb"></div></div>
+        </div>
+        <div class="qrow">
+          <div class="qt">练习 9 · 电路甲：正弦源 <code>ω=ω₀</code> 持续作用，<code>U_L=10 U_s</code> 一直存在；电路乙：t=0 换路后出现一次过冲、随后衰减。属于稳态谐振过电压的是（甲/乙）？本课定义的品质因数公式适用于（甲/乙）？</div>
+          <div class="numcheck" id="q-9" data-qid="q-9"><label>过压 <input type="text" placeholder="甲/乙" />，Q 公式 <input type="text" placeholder="甲/乙" /></label><button class="btn-sm" onclick="checkFields('q-9',['甲','甲'],[0,0])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出）</strong>：① 为什么谐振频率 <code>ω₀</code> 与 R 无关，R 又管什么？② 串联谐振四条特征是什么、为什么叫电压谐振？③ 品质因数 Q 与无功功率 Q 有何不同，<code>Q&gt;1</code> 意味着什么？④ 并联谐振为什么 Z 最大、叫电流谐振，低高频性质为何与串联相反？⑤ 半功率条件怎么导出带宽与 Q 的关系式，Q 大与"选择性好/带宽窄"什么关系？⑥ 稳态谐振过压与暂态振铃过冲本质区别是什么，Q 公式能用于哪一个？
+        </div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏与来源台账（页尾资料）</summary>
+          <h4>学习目标</h4>
+          <p class="muted">形态 A：由 L/C/R/U 算 ω₀、Q、谐振电流与电压（串/并联）；形态 B：由 f₀/BW 指标反推参数、读曲线判类型与性质，并区分稳态谐振与暂态振铃。</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 3′ · 谐振条件ω₀ 9′ · 串联四特征/Q 10′ · 并联对偶 8′ · 选择性与带宽 8′ · 稳态vs暂态 + 练习 7′。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>谐振定义、ω₀=1/√(LC)、串联四特征、Q=ω₀L/R、U_L=Q·U、Q&gt;1、例11-2</td><td>〔书〕邱 §11-2 印刷 p.263–266（PDF 287–290）</td></tr>
+            <tr><td>η=ω/ω₀ 归一化、Q 与选择性/带宽定性、以 L/C 电压输出的低通高通</td><td>〔书〕邱 §11-3 片段印刷 p.266–270（PDF 290–294）</td></tr>
+            <tr><td>并联谐振 Y/Z、电流谐振、Q_并、工程线圈 ω₀ 偏移、稳态谐振 vs 暂态本质区别</td><td>〔书〕邱 §11-4 印刷 p.270–272（PDF 294–296）</td></tr>
+            <tr><td>串联谐振条件、例10-10（250 V/Q=25）、Q、选择性、半功率推导、BW=ω₀/Q、例10-11/10-12、并联 GLC 对偶</td><td>〔书〕李下 §10-6（PDF 146–153）</td></tr>
+            <tr><td>4 预测 + 9 练习 + 两面板全部数值</td><td>〔我编的题〕（结构来自上述原文，数值独立验算自洽；例10-10/10-12 原始数值保留）</td></tr>
+            <tr><td>电路/相量/对偶/选择性曲线等 SVG 几何画法</td><td>〔通识〕</td></tr>
+          </table>
+          <p class="muted">邱 PDF=印刷+24；李下印刷页码按 PDF−7 推算、以原书为准故用章节号。H&amp;H 未摘正文，本课不引其章节号（原排期 "H&amp;H 1.7.14" 不采用）。正文见 <code>书籍/摘录/L2-09.md</code>，教案见 <code>lessons/drafts/L2-09-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：③（过零）；预测 2：③（250 V，Q=25）；预测 3：②（Z 最大，电流谐振）；预测 4：②（BW=ω₀/Q 变窄）。练习：1 ①；2 `1000/2/20/200`；3 `1000/50/20/电压`；4 `20/12.73/79.6/4875/5125`；5 ②；6 `200/5`；7 `容/感`；8 `50/400/25`；9 `甲/甲`。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-09-resonance';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-09 增量脚本：谐振台 A（串联/并联）+ 带宽台 B + 判定 + 门禁 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+    function sgn(v,d){ if(Math.abs(v)<1e-9) return '0'; return (v<0?'−':'') + num(Math.abs(v), d==null?2:d); }
+
+    /* ---------- 门控状态 ---------- */
+    var seriesUnlocked=false, parUnlocked=false, bUnlocked=false;
+    function unlockSeries(){
+      if(seriesUnlocked) return;
+      seriesUnlocked=true;
+      el('A-lock').style.display='none';
+      el('A-body').style.display='';
+      solveA1();
+    }
+    function unlockParallel(){
+      if(parUnlocked) return;
+      parUnlocked=true;
+      var t=el('tab-a-par'); t.disabled=false; t.title=''; t.textContent='并联 GLC';
+      solveA2();
+    }
+    function unlockB(){
+      if(bUnlocked) return;
+      bUnlocked=true;
+      el('B-lock').style.display='none';
+      el('B-body').style.display='';
+      solveB();
+    }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred2') unlockSeries();
+      if(btn.id==='gate-pred3') unlockParallel();
+      if(btn.id==='gate-pred4') unlockB();
+    };
+
+    /* ---------- 面板 A：串联 ---------- */
+    function solveA1(){
+      if(!seriesUnlocked) return;
+      var R=parseFloat(el('A1-R').value), L=parseFloat(el('A1-L').value);
+      var C=parseFloat(el('A1-C').value), U=parseFloat(el('A1-U').value), w=parseFloat(el('A1-w').value);
+      var LH=L/1000, CF=C*1e-6;
+      set('A1-R-v',num(R,1)+' Ω'); set('A1-L-v',num(L,0)+' mH'); set('A1-C-v',num(C,1)+' µF');
+      set('A1-U-v',num(U,0)+' V'); set('A1-w-v',num(w,0)+' rad/s');
+      var w0=1/Math.sqrt(LH*CF);
+      var XL=w*LH, XC=1/(w*CF), X=XL-XC;
+      var Z=Math.sqrt(R*R+X*X), I=U/Z, Q=w0*LH/R, UL=I*XL, ratio=UL/U;
+      set('A1-w0',num(w0,0)+' rad/s');
+      set('A1-X',num(XL,1)+' / '+num(XC,1)+' Ω');
+      set('A1-Z',num(Z,2)+' Ω');
+      set('A1-I',num(I,3)+' A');
+      set('A1-Q',num(Q,2));
+      set('A1-ratio',num(ratio,2)+' ×');
+      var state=Math.abs(X)<0.5?'谐振（X≈0）':(X<0?'容性（X&lt;0）':'感性（X&gt;0）');
+      set('A1-formula','X='+sgn(X,2)+' Ω → '+state.replace('&lt;','<').replace('&gt;','>')+'；Q=ω₀L/R，U_L/U_s='+num(ratio,2));
+    }
+    window.setA1=function(r,l,c,u,w){ el('A1-R').value=r; el('A1-L').value=l; el('A1-C').value=c; el('A1-U').value=u; el('A1-w').value=w; solveA1(); };
+    ['A1-R','A1-L','A1-C','A1-U','A1-w'].forEach(function(id){ el(id).addEventListener('input',solveA1); });
+
+    /* ---------- 面板 A：并联 ---------- */
+    function solveA2(){
+      if(!parUnlocked) return;
+      var G=parseFloat(el('A2-G').value), L=parseFloat(el('A2-L').value);
+      var C=parseFloat(el('A2-C').value), Is=parseFloat(el('A2-Is').value), w=parseFloat(el('A2-w').value);
+      var LH=L/1000, CF=C*1e-6;
+      set('A2-G-v',num(G,3)+' S'); set('A2-L-v',num(L,0)+' mH'); set('A2-C-v',num(C,1)+' µF');
+      set('A2-Is-v',num(Is,1)+' A'); set('A2-w-v',num(w,0)+' rad/s');
+      var w0=1/Math.sqrt(LH*CF);
+      var B=w*CF-1/(w*LH), Y=Math.sqrt(G*G+B*B), Z=1/Y, U=Is*Y>0?Is/Y:0;
+      var Q=w0*CF/G, IL=U/(w*LH), ratio=IL/Is;
+      set('A2-w0',num(w0,0)+' rad/s');
+      set('A2-B',num(B,4)+' S');
+      set('A2-Z',num(Z,2)+' Ω');
+      set('A2-U',num(U,2)+' V');
+      set('A2-Q',num(Q,2));
+      set('A2-ratio',num(ratio,2)+' ×');
+      set('A2-formula','B='+sgn(B,4)+' S → '+(Math.abs(B)<0.001?'谐振':'偏谐')+'；I_L/I_s='+num(ratio,2)+'（谐振时=Q）');
+    }
+    window.setA2=function(g,l,c,is,w){ el('A2-G').value=g; el('A2-L').value=l; el('A2-C').value=c; el('A2-Is').value=is; el('A2-w').value=w; solveA2(); };
+    ['A2-G','A2-L','A2-C','A2-Is','A2-w'].forEach(function(id){ el(id).addEventListener('input',solveA2); });
+    window.switchPanelA=function(which){
+      if(which==='par' && !parUnlocked) return;
+      var ser=(which==='ser');
+      el('sub-a-ser').classList.toggle('on',ser); el('sub-a-par').classList.toggle('on',!ser);
+      el('tab-a-ser').classList.toggle('on',ser); el('tab-a-par').classList.toggle('on',!ser);
+      if(!ser) solveA2();
+    };
+
+    /* ---------- 面板 B：选择性与带宽 ---------- */
+    function px(eta){ return 80+(eta-0.96)/0.08*372; }
+    function py(v){ return 200-170*v; }
+    function solveB(){
+      if(!bUnlocked) return;
+      var R=parseFloat(el('B-R').value), L=parseFloat(el('B-L').value);
+      var C=parseFloat(el('B-C').value), eta=parseFloat(el('B-eta').value);
+      var LH=L/1000, CF=C*1e-9;
+      set('B-R-v',num(R,1)+' Ω'); set('B-L-v',num(L,2)+' mH'); set('B-C-v',num(C,3)+' nF'); set('B-eta-v',num(eta,3));
+      var w0=1/Math.sqrt(LH*CF), f0=w0/(2*Math.PI);
+      var Q=w0*LH/R, BWf=f0/Q;
+      var a=R/(2*LH), root=Math.sqrt(a*a+1/(LH*CF));
+      var f1=(-a+root)/(2*Math.PI), f2=(a+root)/(2*Math.PI);
+      set('B-f0',num(f0,0)+' Hz'); set('B-Q',num(Q,1)); set('B-BW',num(BWf,1)+' Hz');
+      set('B-f12',num(f1,0)+' / '+num(f2,0)+' Hz');
+      set('B-agree','✓ BW='+num(BWf,1)+' Hz，f₁f₂ 几何中心 ≈ '+num(Math.sqrt(f1*f2),0)+' Hz ≈ f₀（ω₀=√(ω₁ω₂)）');
+      /* 曲线 */
+      var pts=[];
+      for(var i=0;i<=180;i++){
+        var e=0.96+0.08*i/180;
+        var v=1/Math.sqrt(1+Q*Q*Math.pow(e-1/e,2));
+        pts.push(px(e).toFixed(1)+','+py(v).toFixed(1));
+      }
+      el('sel-curve').setAttribute('d','M'+pts.join(' L'));
+      var e1=(-a+root)/w0, e2=(a+root)/w0;
+      var x1=px(e1), x2=px(e2);
+      el('sel-v1').setAttribute('x1',x1.toFixed(1)); el('sel-v1').setAttribute('x2',x1.toFixed(1));
+      el('sel-v2').setAttribute('x1',x2.toFixed(1)); el('sel-v2').setAttribute('x2',x2.toFixed(1));
+      el('sel-d1').setAttribute('cx',x1.toFixed(1)); el('sel-d2').setAttribute('cx',x2.toFixed(1));
+      el('sel-bracket').setAttribute('x1',x1.toFixed(1)); el('sel-bracket').setAttribute('x2',x2.toFixed(1));
+      el('sel-brk-lab').setAttribute('x',((x1+x2)/2-8).toFixed(1));
+      /* 工作点 */
+      var vv=1/Math.sqrt(1+Q*Q*Math.pow(eta-1/eta,2)), mx=px(eta), my=py(vv);
+      el('sel-mark').setAttribute('x1',mx.toFixed(1)); el('sel-mark').setAttribute('x2',mx.toFixed(1));
+      el('sel-markdot').setAttribute('cx',mx.toFixed(1)); el('sel-markdot').setAttribute('cy',my.toFixed(1));
+      el('sel-marklab').setAttribute('x',Math.min(mx+6,400).toFixed(1)); el('sel-marklab').setAttribute('y',Math.max(my-6,20).toFixed(1));
+      el('sel-marklab').textContent='η='+num(eta,3)+'，I/I_r='+num(vv,2);
+    }
+    window.setB=function(r,l,c,eta){ el('B-R').value=r; el('B-L').value=l; el('B-C').value=c; el('B-eta').value=eta; solveB(); };
+    ['B-R','B-L','B-C','B-eta'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L2-09-resonance');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,box,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+
+    refresh();
+
+    /* ---------- 重来：共享 resetFlow 解锁全部后，重锁四门并清空一切 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      /* 面板 A */
+      seriesUnlocked=false; parUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      var pt=el('tab-a-par'); pt.disabled=true; pt.textContent='并联 GLC（预测 3 后解锁）'; pt.title='预测 3 揭晓后解锁';
+      ['A1-w0','A1-X','A1-Z','A1-I','A1-Q','A1-ratio','A1-formula','A2-w0','A2-B','A2-Z','A2-U','A2-Q','A2-ratio','A2-formula'].forEach(function(id){ set(id,'—'); });
+      el('A1-R').value=2; el('A1-L').value=25; el('A1-C').value=10; el('A1-U').value=10; el('A1-w').value=2000;
+      el('A2-G').value=0.01; el('A2-L').value=10; el('A2-C').value=100; el('A2-Is').value=1; el('A2-w').value=1000;
+      switchPanelA('ser');
+      /* 面板 B */
+      bUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      ['B-f0','B-Q','B-BW','B-f12','B-agree'].forEach(function(id){ set(id,'—'); });
+      el('sel-curve').setAttribute('d','');
+      el('B-R').value=25; el('B-L').value=39.79; el('B-C').value=6.366; el('B-eta').value=1;
+    };
+  })();
+  </script>
+</body>
+</html>
