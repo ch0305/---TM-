@@ -262,6 +262,22 @@ details.answer summary { cursor: pointer; color: var(--chalk-blue); font-size: .
   .topbar .meta { display: none; }
   .formula { font-size: 1rem; }
 }
+/* 示意图窄屏适配：不再让图被内联 max-width 撑出屏幕，文字上移一行、字号略放大 */
+@media (max-width: 860px), (hover: none) {
+  .fig-box, .fig-box.sm, .fig-box.md, .fig-box.lg { max-width: 100% !important; width: 100% !important; }
+  .side-fig-row { display: block !important; }
+  .side-fig-row .side-text { min-width: 0 !important; }
+  .side-fig-row .fig-box { margin: 8px 0 !important; flex: none !important; }
+  .svg-diag, .sketch, .fig-mini svg { width: 100% !important; max-width: 100% !important; height: auto !important; }
+  /* 图内长注释/标签按 viewBox 会被裁掉，窄屏单独缩到能完整显示 */
+  .svg-diag .dim { font-size: 11px !important; }
+  .svg-diag .lbl { font-size: 12px !important; }
+  /* 收紧嵌套留白，把宽度让给示意图本身 */
+  .section, .stage, .panel, .lab, .fig-box { padding-left: 4px !important; padding-right: 4px !important; }
+  .board { padding-left: 6px !important; padding-right: 6px !important; }
+  .fig-cap { font-size: .9rem; }
+  .solve-ctrl { min-width: 0; }
+}
 @media (hover: hover) and (min-width: 861px) {
   .nav-toggle { display: none; }
 }
