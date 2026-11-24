@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>正弦稳态功率与功率因数 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:470px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:13.5px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .vecA{stroke:var(--chalk-blue);stroke-width:3;fill:none}
+    .svg-diag .vecB{stroke:var(--chalk-pink);stroke-width:3;fill:none}
+    .svg-diag .vecC{stroke:var(--chalk-yellow);stroke-width:3.2;fill:none}
+    .svg-diag .vecD{stroke:var(--chalk-green);stroke-width:3;fill:none}
+    .svg-diag .arc{stroke:var(--chalk-yellow);stroke-width:2;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.98rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .step-list{counter-reset:stp;list-style:none;padding:0;margin:6px 0}
+    .step-list li{position:relative;padding:4px 0 4px 30px;font-size:.9rem;line-height:1.5}
+    .step-list li::before{counter-increment:stp;content:counter(stp);position:absolute;left:0;top:4px;width:20px;height:20px;border-radius:50%;background:rgba(255,224,138,.18);color:var(--chalk-yellow);text-align:center;line-height:20px;font-size:.78rem;font-weight:700}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem}
+    .numcheck label{font-size:.88rem;line-height:2}
+    .numcheck input{width:80px}
+    /* 功率实验台 */
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .lab-ctrl .preset{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .lab-ctrl .preset button,.lab-tabs button,.nat-toggle button{background:rgba(255,255,255,.08);color:var(--chalk-dim);border:1px solid var(--line);border-radius:6px;padding:3px 8px;font-size:.78rem;cursor:pointer}
+    .lab-ctrl .preset button:hover,.lab-tabs button:hover,.nat-toggle button:hover{color:var(--chalk-yellow);border-color:var(--chalk-yellow)}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:2px 0;word-break:break-word}
+    .th-eq{font-family:var(--mono);font-size:.74rem;color:var(--chalk-faint);margin-top:6px;line-height:1.45}
+    .lab-tabs{display:flex;gap:8px;margin:8px 0 4px;flex-wrap:wrap}
+    .lab-tabs button.on,.nat-toggle button.on{color:var(--chalk-yellow);border-color:var(--chalk-yellow);background:rgba(255,224,138,.1)}
+    .nat-toggle{display:flex;gap:4px;margin:2px 0 4px}
+    .sub-lab{display:none}.sub-lab.on{display:block}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .agree{font-family:var(--mono);font-size:.82rem;color:var(--chalk-green);font-weight:700;margin-top:6px}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">正弦稳态功率与功率因数</span>
+    <span class="meta">教案先行 · 45 min · S2 把相量变成功率账</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（把相量变成功率账）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 从 p=ui 推出 P 与 Q（预测 2）</a></li>
+        <li><a href="#stage-2">2 · 视在功率、功率因数、揭晓预测 1</a></li>
+        <li><a href="#stage-3">3 · 复功率与守恒（预测 3）</a></li>
+        <li><a href="#stage-4">4 · 并联电容提高功率因数（预测 4）</a></li>
+        <li><a href="#stage-5">5 · 最大功率传输与共轭匹配</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">上一课会解出稳态相量 <code>Ū</code>、<code>İ</code>；本课把二者"相乘"：<code>p=ui</code> 展开后分成<strong>恒定分量</strong>（真耗能）与<strong>可逆分量</strong>（往返交换），于是有 P、Q、S、λ。</div>
+      <div class="mini">因果顺序：p=ui → P/Q → S/λ → 复功率打包 → 并联补偿 / 共轭匹配。不是时间安排。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L2-07.md</code>（邱 §9-4/§9-5/§9-6；李下 §9-2~§9-7）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L2-07-教案.md</code>（初审退 5 项、复审退 3 项、终审通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>三条纪律（违反就错）</h4>
+      <div class="mini">① 功率公式用<strong>有效值</strong>；<code>P=UIcosφ</code> 不是 <code>UI</code>。</div>
+      <div class="mini">② <code>ΣS̃=0</code> 守恒，但<strong>视在功率 S 是模、一般不守恒</strong>：<code>ΣS≠|ΣS̃|</code>。</div>
+      <div class="mini">③ 电容无功用 <code>Q_C=−ωCU²=−I²/(ωC)</code>，<strong>不是</strong> <code>−ωCI²</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>公式速查</h4>
+      <div class="mini"><code>P=UIcosφ</code>、<code>Q=UIsinφ</code>、<code>S=UI=√(P²+Q²)</code>、<code>λ=P/S=cosφ</code>。</div>
+      <div class="mini"><code>S̃=Ūİ*=P+jQ=Z|İ|²=|Ū|²Y*</code>（取电流共轭）。</div>
+      <div class="mini">补偿：<code>C=P(tanφ₁−tanφ)/(ωU²)</code>（并联、感性）。</div>
+      <div class="mini">匹配：<code>Z=Z_o*</code>、<code>P_max=U_oc²/(4R_o)</code>（效率 50%）。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S2 · 把相量变成功率账（L2-07）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">P/Q/S · 功率因数 · 复功率守恒 · 共轭匹配</span>
+      </div>
+      <h1>正弦稳态功率与功率因数</h1>
+      <p class="muted">L2-06 已经能把稳态的电压、电流相量解出来。但把两个相量"相乘"到底发生什么？<strong>这节课只解决一个问题：正弦稳态下电压、电流都是相量，为什么功率不能简单写成 UI，而要写成 P=UIcosφ？那个不干活的"无功 Q"究竟在交换什么、多个负载的功率怎么结算、又怎样用并联电容让电源少送无效电流、让负载拿到最大功率？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">p=ui → P/Q</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">S 与 λ</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">复功率守恒</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">并联补偿</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">共轭匹配</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习</span>
+      </div>
+      <div class="flow-note">上方链条是<strong>因果顺序</strong>：先看见功率里有一半在往返，才需要 P 与 Q；再由容量引出 S 与 λ；三种功率太散才用复功率打包；最后谈两个"调一调"的工程应用。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，凭直觉选）</div>
+        <p class="qbig">某感性负载接在 220 V 交流电源上，电流表读 10 A（有效值），但瓦特表只读 1500 W——不是 220×10=2200 W。<strong>为什么？先猜，第 2 环节推导出 P=UIcosφ 后才揭晓。</strong></p>
+        <div class="pred" data-pred="q-p0" style="margin-top:10px;">
+          <p class="ask"><strong>先预测 1：</strong>① 电表坏了；② 电压电流不同相，要乘 cosφ；③ 有功能量被无功抵消掉了。</p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">① 电表坏了</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">② 乘 cosφ</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">③ 被无功抵消</button>
+          </div>
+          <p class="gate-note">选定后，第 2 环节给出功率因数定义才揭晓；现在不公布。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 从 p=ui 推出 P 与 Q（揭晓预测 2）</div>
+
+        <button class="reveal-btn" data-target="rev-1a" data-stage="1" onclick="revealBlock(this)">把同频正弦相乘，看功率里藏着什么 →</button>
+        <div class="reveal" id="rev-1a">
+          <p>不引入任何新东西，就从最朴素的瞬时功率 <code>p(t)=u(t)i(t)</code> 出发。设电流为参考：<code>i=√2 I cosωt</code>、<code>u=√2 U cos(ωt+φ)</code>（关联参考方向，<code>φ=φ_u−φ_i</code>，感性时 φ&gt;0）。相乘并用积化和差 <code>cosα cosβ=½[cos(α−β)+cos(α+β)]</code>：〔邱 §9-4〕</p>
+          <div class="eq-line">p = UI cosφ [1 + cos(2ωt)] − UI sinφ · sin(2ωt)</div>
+          <p>功率的频率是电压电流的 <strong>2 倍</strong>，而且分成两块：<strong>第一项</strong>有恒定分量 <code>UIcosφ</code>（无源一端口时 ≥0），是不可逆部分，真正被电阻吃掉；<strong>第二项</strong>是纯波动、一周期均值为零，是储能元件与外电路<strong>往返交换</strong>的可逆部分，振幅 <code>UIsinφ</code>。</p>
+          <p class="muted">符号说明：这里以<strong>电流</strong>为参考才得到负号；若以电压为参考，第二项写成正号，二者等价。恒定分量 <code>UIcosφ</code> 与可逆分量振幅 <code>|UIsinφ|</code> 与参考选择无关——这才是要记住的物理量。（以电流为参考与邱 §9-4 一致。）</p>
+          <p class="muted">代入数值检验：U=100、I=1、φ=30°、ωt=45° 时，直接算 <code>p=u·i≈136.6 W</code>，上式也给出 136.6 W；若把第二项符号写反就变成 36.6 W，立刻露馅。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p1" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 2：</strong>纯电感接正弦电源，一周期<strong>平均</strong>功率 P 是多少？① UI；② 0；③ UI/2。<strong>定义给出前先选。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred2')">① UI</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred2')">② 0</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred2')">③ UI/2</button>
+          </div>
+          <p class="gate-note">选定后解锁下面的定义与揭晓。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1b" data-stage="1" onclick="revealBlock(this)">给 P 和 Q 下正式定义 →</button>
+        <div class="reveal" id="rev-1b">
+          <div class="ok-box"><strong>陈述时刻 ① · 有功功率（average / active power）P</strong>（正式定义 + 条件）：一端口一周期内吸收的平均功率，等于瞬时功率不可逆部分的恒定分量 <code>P=(1/T)∫₀ᵀp dt = UI cosφ</code>，单位 W。条件：同频正弦稳态、U/I 为有效值、电压电流关联参考方向、<code>φ=φ_u−φ_i</code>。</div>
+          <div class="ok-box"><strong>陈述时刻 ② · 无功功率（reactive power）Q</strong>（正式定义 + 条件）：瞬时功率可逆部分的振幅 <code>Q = UI sinφ</code>，衡量储能元件与外电路往返交换的规模，单位 var（乏）。条件：同上；<code>φ&gt;0</code>（感性、电流滞后）时 <code>Q&gt;0</code>，<code>φ&lt;0</code>（容性、电流超前）时 <code>Q&lt;0</code>。"无功"不是"没做功"，而是这部分能量在往复中不被消耗。</div>
+          <p>李下 §9-3 给出 Q 的物理意义：<code>Q_L=+ωLI²=+2ωW̄_L</code>、<code>Q_C=−ωCU²=−2ωW̄_C</code>——<strong>Q = 2ω × 储能平均值</strong>（电感正、电容负）。储能越多、往返规模越大，Q 越大。能量平均值与时间无关，可以直接相加，于是有<strong>无功守恒 ΣQ=0</strong>。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-1c" data-stage="1" onclick="revealBlock(this)">单个 R / L / C 各吃什么功率 →</button>
+        <div class="reveal" id="rev-1c">
+          <table class="mini-t">
+            <tr><th>元件</th><th>φ</th><th>有功 P</th><th>无功 Q</th><th>口诀</th></tr>
+            <tr><td>电阻 R</td><td>0</td><td><code>I²R=U²/R</code></td><td>0</td><td>只吃 P</td></tr>
+            <tr><td>电感 L</td><td>+90°</td><td>0</td><td><code>+ωLI²=U²/(ωL)</code></td><td>吃正 Q</td></tr>
+            <tr><td>电容 C</td><td>−90°</td><td>0</td><td><code>−ωCU²=−I²/(ωC)</code></td><td>"吐"负 Q</td></tr>
+          </table>
+          <p class="muted"><strong>电容 Q 的坑</strong>：用电压写是 <code>−ωCU²</code>，用电流写是 <code>−I²/(ωC)</code>（因为 <code>U=I/(ωC)</code>，两式相等），<strong>不能写成 <code>−ωCI²</code></strong>——那是 OCR 常见的误识，量纲和数值都不对。〔李下 §9-3 式 9-17〕</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-1d" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 2：纯电感平均功率 →</button>
+        <div class="reveal" id="rev-1d">
+          <p><strong>选②，P=0，但 Q=+UI≠0。</strong>纯电感瞬时功率是均值为零的波动（前半周吸能、后半周吐能），一周期净耗能为零，所以平均功率为零；但它和电源之间有大规模能量往返，这个规模正由 <code>Q=+UI=ωLI²</code> 衡量。**"不耗能"不等于"没有功率交换"**——这是后面理解并联补偿的支点。</p>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 视在功率、功率因数，揭晓预测 1</div>
+
+        <button class="reveal-btn" data-target="rev-2a" data-stage="2" onclick="revealBlock(this)">从"设备容量"引出 S 与 λ →</button>
+        <div class="reveal" id="rev-2a">
+          <p>发电机、变压器是按<strong>额定电压和额定电流</strong>设计的，关心的是"电压×电流"的整体规模，于是定义视在功率 <code>S=UI</code>（单位 V·A）。由 <code>P=Scosφ</code>、<code>Q=Ssinφ</code> 得直角三角形：</p>
+          <div class="eq-line">S = √(P² + Q²)　，　λ = cosφ = P / S</div>
+          <div class="ok-box"><strong>陈述时刻 ③ · 视在功率（apparent power）S 与功率因数（power factor）λ</strong>（正式定义 + 条件）：<code>S=UI</code> 是电源需提供的功率容量（V·A）；<code>λ=P/S=cosφ</code> 是有功占容量的比例；<code>S≥|P|</code>、<code>S≥|Q|</code>。条件：正弦稳态有效值。<strong>对不含独立源的无源一端口，|φ|≤90°，P≥0、λ≥0；因 cosφ 对 ±φ 同值，必须补注"感性（滞后）"或"容性（超前）"才知道电路性质</strong>。含受控源时可能 |φ|&gt;90°、P&lt;0（发出有功），此时按定义 <code>λ=P/S&lt;0</code>，"功率因数非负"的说法不适用，须直接看 P 的符号。〔邱 §9-4、李下 §9-4〕</div>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>功率三角形</strong>把三个功率画成直角三角形：横边 P、竖边 Q、斜边 S，夹角 φ。图中用 3-4-5 整比参数 <code>P=36 W</code>、<code>Q=−48 var</code>、<code>S=60 V·A</code>、<code>φ=−53.13°</code>、<code>λ=0.6</code>，对应容性负载（Q 向下为负）。</p>
+            <p class="muted">看三角形就明白两件事：① S 是<strong>斜边</strong>，不是 P+Q 的算术和；② λ=横边/斜边，是有功"打了几折"。容性时 Q 在下方，但 λ 仍为正——性质要看 Q 的符号或文字标注。</p>
+          </div>
+          <div class="fig-box lg" aria-label="功率三角形：横边P等于36瓦，竖边Q等于负48乏，斜边S等于60伏安，夹角负53.13度">
+            <svg class="svg-diag" viewBox="0 0 440 330" role="img">
+              <title>功率三角形：3-4-5 参数，P=36 W、Q=−48 var、S=60 V·A、φ=−53.13°</title>
+              <defs><marker id="ar2a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-blue)"/></marker><marker id="ar2b" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-pink)"/></marker><marker id="ar2c" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker></defs>
+              <line class="guide" x1="50" y1="50" x2="400" y2="50"/>
+              <line class="vecA" x1="50" y1="50" x2="230" y2="50" marker-end="url(#ar2a)"/>
+              <text class="lbl" x="96" y="42">P = 36 W（有功）</text>
+              <line class="vecB" x1="230" y1="50" x2="230" y2="290" marker-end="url(#ar2b)"/>
+              <text class="plb" x="238" y="180">Q = −48 var</text>
+              <text class="plb" x="238" y="198">（容性，向下）</text>
+              <line class="vecC" x1="50" y1="50" x2="230" y2="290" marker-end="url(#ar2c)"/>
+              <text class="ylb" x="86" y="200">S = 60 V·A（斜边）</text>
+              <path class="arc" d="M92,50 A42,42 0 0,1 84,74"/>
+              <text class="ylb" x="96" y="82">φ = −53.13°</text>
+              <text class="dim" x="50" y="312">λ = cosφ = P/S = 36/60 = 0.6（容性）</text>
+              <text class="dim" x="50" y="326">错误：P + Q = −12；正确：S = √(36²+48²) = 60</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：功率三角形。斜边 S 才是"容量"，横边 P 才是"真做功"。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-2b" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 1：为什么不是 2200 W →</button>
+        <div class="reveal" id="rev-2b">
+          <p><strong>选②，电压电流不同相，要乘 cosφ。</strong><code>P=UIcosφ=220×10×cosφ=1500 W</code>，所以 <code>cosφ=1500/2200≈0.682</code>（感性）。<code>S=UI=2200 V·A</code> 才是"220×10"，它比 P=1500 W 大。</p>
+          <p><strong>选③错在哪</strong>：把 P 与 Q 当成正负标量相减。它们相位差 90°，在功率三角形里是两条<strong>直角边</strong>，合成用勾股定理 <code>S=√(P²+Q²)</code>，不是加减。无功不会"抵消"有功。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+      <!-- ============ 环节 3 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 复功率与守恒（揭晓预测 3）</div>
+
+        <button class="reveal-btn" data-target="rev-3a" data-stage="3" onclick="revealBlock(this)">把三种功率打包成一个复数 →</button>
+        <div class="reveal" id="rev-3a">
+          <p>P/Q/S 三套公式太散，能不能装进一个复数？用极坐标一步就够：<code>Ū=U∠φ_u</code>、<code>İ=I∠φ_i</code>，<strong>取共轭</strong>得 <code>İ*=I∠−φ_i</code>，于是</p>
+          <div class="eq-line">S̃ = Ū İ* = UI∠(φ_u − φ_i) = UIcosφ + j UIsinφ = P + jQ</div>
+          <p>实部是 P、虚部是 Q、模是 S、辐角是 φ——三种功率与功率因数全部统一进一个复数。<strong>为什么必须取电流共轭</strong>：不取共轭就会得到 <code>φ_u+φ_i</code>，实部不再是 P。〔邱 §9-5〕</p>
+          <div class="ok-box"><strong>陈述时刻 ④ · 复功率（complex power）S̃</strong>（正式定义 + 条件）：<code>S̃=Ūİ*=P+jQ</code>，等价写法 <code>S̃=Z|İ|²=|Ū|²Y*</code>（<code>Y*=G−jB</code>；串联用前者、并联用后者）。条件：<strong>必须取电流共轭</strong>；S̃ 不是相量、不对应任何时域正弦量（乘积 <code>Ūİ</code> 没有物理意义）；吸收或发出由端口参考方向决定。单位 V·A，实部 W、虚部 var。</div>
+          <p>李下 §9-5~§9-6 把节点方程乘以节点电压后相加，从 KCL/KVL 严格证出 <code>ΣŪ_k İ_k* = 0</code>，即</p>
+          <div class="eq-line">Σ S̃ = 0　⇒　ΣP = 0 且 ΣQ = 0</div>
+          <p class="muted">注意：这里说的是<strong>复功率</strong>守恒。视在功率 S 是否也能相加？先别看答案，自己判断。</p>
+        </div>
+
+        <div class="pred" data-pred="q-p2" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 3：</strong>既然复功率守恒、P 与 Q 都守恒，多个元件各自的视在功率相加，是否等于总视在功率？① 一定等于；② 一般不等于；③ 都不守恒。<strong>选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred3')">① 一定等于</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred3')">② 一般不等于</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred3')">③ 都不守恒</button>
+          </div>
+          <p class="gate-note">选定后解锁下面的带做与揭晓；现在不公布。</p>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3b" data-stage="3" onclick="revealBlock(this)" disabled>带做 + 公布预测 3 →</button>
+        <div class="reveal" id="rev-3b">
+          <p><strong>带做（形态 A）· 李下例 9-12：</strong>2300 V 母线上并接两负载——负载 1：10 kW、λ₁=0.8（容性）；负载 2：15 kW、λ₂=0.6（感性）。求总复功率、线电流与总功率因数。</p>
+          <div class="res-line">S̃₁ = P₁ − j P₁ tan(arccosλ₁) = 10000 − j7500 V·A</div>
+          <div class="res-line">S̃₂ = P₂ + j P₂ tan(arccosλ₂) = 15000 + j20000 V·A</div>
+          <div class="res-line">ΣS̃ = 25000 + j12500 = 27951∠26.56° V·A</div>
+          <div class="res-line">λ = ΣP / |ΣS̃| = 25000 / 27951 ≈ 0.894（感性）；　I = |ΣS̃| / U = 27951 / 2300 ≈ 12.15 A</div>
+          <p><strong>揭晓：选②，一般不等于。</strong><code>ΣS̃=0</code> 保证 P、Q 分别守恒（实部、虚部各自相加），但视在功率 S 是复功率的<strong>模</strong>，模不满足线性相加：</p>
+          <div class="eq-line">ΣS<sub>件</sub> = 12.5 k V·A + 25 k V·A = 37.5 k V·A　≠　|ΣS̃| = 27.95 k V·A</div>
+          <p>两个负载的视在功率相加是 37.5 k V·A，实际总线只需提供 27.95 k V·A——因为容性负载的负 Q 与感性的正 Q <strong>在复功率里抵消了一部分</strong>，但各自的视在功率（模）都是正的，加起来自然偏大。选①错在把模当成可加的量；选③错在以为 P、Q 也不守恒。</p>
+          <p class="muted">工程含义：设备容量按<strong>总视在功率</strong>选，而不是各负载容量之和——理解复功率守恒能省下真实投资。〔李下 §9-5~§9-6〕</p>
+        </div>
+
+        <div class="calc-lab">
+          <h4>功率实验台 A · 把功率账算对</h4>
+          <div class="lab-tabs">
+            <button id="tab-a-single" class="on" onclick="switchPanelA('single')">单口功率三角</button>
+            <button id="tab-a-multi" onclick="switchPanelA('multi')">多负载复功率守恒</button>
+          </div>
+
+          <div class="sub-lab on" id="sub-a-single">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电压 U（V）<span id="A1-U-v">100 V</span></label>
+                <input type="range" id="A1-U" min="10" max="400" step="1" value="100" />
+                <label>电流 I（A）<span id="A1-I-v">0.6 A</span></label>
+                <input type="range" id="A1-I" min="0.1" max="5" step="0.1" value="0.6" />
+                <label>相位差 φ（度，负=容性）<span id="A1-phi-v">−53.13°</span></label>
+                <input type="range" id="A1-phi" min="-90" max="90" step="0.01" value="-53.13" />
+                <div class="preset"><button onclick="setA1(100,0.6,-53.13)">3-4-5 容性默认</button><button onclick="setA1(220,10,45)">感性示例</button><button onclick="setA1(100,2,0)">纯电阻 λ=1</button></div>
+              </div>
+              <div class="th-panel">
+                <h5>结算结果（有效值）</h5>
+                <div class="th-row"><span class="k">S = UI</span><span class="v" id="A1-S">60 V·A</span></div>
+                <div class="th-row"><span class="k">P = UIcosφ</span><span class="v" id="A1-P">36 W</span></div>
+                <div class="th-row"><span class="k">Q = UIsinφ</span><span class="v" id="A1-Q">−48 var</span></div>
+                <div class="th-row"><span class="k">λ = P/S</span><span class="v" id="A1-lam">0.6</span></div>
+                <div class="th-row"><span class="k">电路性质</span><span class="v" id="A1-nat">容性（超前）</span></div>
+                <div class="res-line" id="A1-check">✓ 校核：√(P²+Q²) = 60 V·A = S</div>
+                <div class="warn-note" id="A1-wrong">✗ 算术和 P + Q = −12（既非 W 也非 var 的物理量，别这么加）</div>
+                <div class="th-eq">S=UI；P=S·cosφ；Q=S·sinφ；λ=cosφ（须另标感/容）。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-lab" id="sub-a-multi">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>负载1 有功 P₁（kW）<span id="A2-P1-v">10 kW</span></label>
+                <input type="range" id="A2-P1" min="1" max="30" step="1" value="10" />
+                <div class="nat-toggle"><button id="A2-n1-c" class="on" onclick="setA2Nat(1,'c')">容性</button><button id="A2-n1-l" onclick="setA2Nat(1,'l')">感性</button></div>
+                <label>负载1 功率因数 λ₁<span id="A2-pf1-v">0.8</span></label>
+                <input type="range" id="A2-pf1" min="0.1" max="1" step="0.01" value="0.8" />
+                <label>负载2 有功 P₂（kW）<span id="A2-P2-v">15 kW</span></label>
+                <input type="range" id="A2-P2" min="1" max="30" step="1" value="15" />
+                <div class="nat-toggle"><button id="A2-n2-c" onclick="setA2Nat(2,'c')">容性</button><button id="A2-n2-l" class="on" onclick="setA2Nat(2,'l')">感性</button></div>
+                <label>负载2 功率因数 λ₂<span id="A2-pf2-v">0.6</span></label>
+                <input type="range" id="A2-pf2" min="0.1" max="1" step="0.01" value="0.6" />
+                <label>母线电压 U（V）<span id="A2-U-v">2300 V</span></label>
+                <input type="range" id="A2-U" min="100" max="5000" step="50" value="2300" />
+                <div class="preset"><button onclick="setA2(10,0.8,'c',15,0.6,'l',2300)">李下例 9-12 默认</button></div>
+              </div>
+              <div class="th-panel">
+                <h5>总线复功率结算</h5>
+                <div class="res-line" id="A2-s1">S̃₁ = 10000 − j7500 V·A</div>
+                <div class="res-line" id="A2-s2">S̃₂ = 15000 + j20000 V·A</div>
+                <div class="th-row"><span class="k">ΣP（有功守恒）</span><span class="v" id="A2-sp">25 kW</span></div>
+                <div class="th-row"><span class="k">ΣQ（无功守恒）</span><span class="v" id="A2-sq">+12.5 kvar</span></div>
+                <div class="th-row"><span class="k">|ΣS̃|（总视在）</span><span class="v" id="A2-abs">27951 V·A</span></div>
+                <div class="th-row"><span class="k">总 λ = ΣP/|ΣS̃|</span><span class="v" id="A2-lam">0.894 感性</span></div>
+                <div class="th-row"><span class="k">线电流 I</span><span class="v" id="A2-I">12.15 A</span></div>
+                <div class="warn-note" id="A2-note">✗ 视在不守恒：ΣS<sub>件</sub> = 37500 V·A ≠ |ΣS̃| = 27951 V·A</div>
+                <div class="th-eq">Q = P·tan(arccosλ)，感性取正、容性取负；ΣS̃=ΣP + jΣQ；S=√(P²+Q²) 非线性，故 ΣS≠|ΣS̃|。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 并联电容提高功率因数（揭晓预测 4）</div>
+
+        <div class="pred" data-pred="q-p3" style="margin-top:8px;">
+          <p class="ask"><strong>先预测 4：</strong>给感性负载<strong>并联</strong>电容把功率因数提高后，电源提供的电流如何变？① 变大；② 变小；③ 不变（因为电容不耗能）。<strong>推导前先选。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred4')">① 变大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred4')">② 变小</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred4')">③ 不变</button>
+          </div>
+          <p class="gate-note">选定后解锁下面的补偿推导与揭晓。</p>
+        </div>
+
+        <button class="reveal-btn" data-target="rev-4a" data-stage="4" onclick="revealBlock(this)">推导并联补偿公式 →</button>
+        <div class="reveal" id="rev-4a">
+          <p>感性负载 <code>Q₁&gt;0</code>，电源得来回送这部分无功、电流白流。电容 <code>Q_C=−ωCU²&lt;0</code>，两者符号相反，可以就地抵消。<strong>关键在"并联"</strong>：并联在负载两端 ⇒ 端电压 U 不变 ⇒ 负载自身的 P₁、Q₁ 与工作状态<strong>完全不变</strong>；变的只是电源少送的那部分无功。</p>
+          <div class="eq-line">S̃ = S̃₁ + S̃_C　⇒　P = P₁ = UIcosφ，　Q = Q₁ − ωCU²</div>
+          <p>两式相除：<code>tanφ = tanφ₁ − ωCU²/P</code>，解出电容：</p>
+          <div class="eq-line">C = P (tanφ₁ − tanφ) / (ω U²)</div>
+          <div class="ok-box"><strong>陈述时刻 ⑤ · 并联电容提高功率因数</strong>（正式定义 + 条件）：在感性负载端并联电容，以电容的负无功抵消负载的正无功，使总功率因数由 λ₁ 提到 λ，而负载工作状态不变；所需电容 <code>C=P(tanφ₁−tanφ)/(ωU²)</code>，其中 <code>φ₁=arccosλ₁</code>、<code>φ=arccosλ</code>。条件：① 负载为感性且电容<strong>并联</strong>（串联会改变负载电压，不是同一回事）；② 只提高 λ、不改变负载 P；③ 工程通常提到 0.9 左右而非 1——过补偿会变容性，且需更大电容、不经济。〔邱 §9-5 例 9-10〕</div>
+          <p><strong>带做：</strong>50 Hz、380 V，感性负载 <code>P=20 kW</code>、<code>λ₁=0.6</code> 提到 <code>λ=0.9</code>。<code>φ₁=53.13°</code>、<code>φ=25.84°</code>、<code>ω≈314.16 rad/s</code>，得 <code>C≈374 μF</code>（书 374.51 μF，tan 取值舍入微差）。电源电流由 <code>I₁=P/(Uλ₁)≈87.7 A</code> 降到 <code>I=P/(Uλ)≈58.5 A</code>——同样送出 20 kW，线路电流小了三分之一，损耗下降、设备利用率上升。</p>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>相量图看"电流为什么变小"</strong>：以端电压 <code>Ū</code> 为水平参考。感性负载电流 <code>İ₁</code> 滞后 U；电容电流 <code>İ_C</code> <strong>超前 U 恰好 90°</strong>。总线电流 <code>İ = İ₁ + İ_C</code>——电容电流抵消了 <code>İ₁</code> 的滞后分量，于是合成电流更短、与 U 的夹角更小（λ 提高）。</p>
+            <p class="muted">看图就懂：电容不耗有功，但它提供的这个<strong>向上的无功分量</strong>让电源不必再从远处送同样多的无功电流。这就是"不耗能也能减小电流"的真相。</p>
+          </div>
+          <div class="fig-box md" aria-label="并联补偿相量图：电压U水平参考，负载电流I1滞后，电容电流IC超前90度，合成电流I变短且夹角变小">
+            <svg class="svg-diag" viewBox="0 0 360 300" role="img">
+              <title>并联补偿相量图：Ī=Ī₁+Ī_C，Ī 变短且与 Ū 夹角变小</title>
+              <defs><marker id="ar4a" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-blue)"/></marker><marker id="ar4b" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-pink)"/></marker><marker id="ar4c" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-green)"/></marker><marker id="ar4d" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-yellow)"/></marker></defs>
+              <line class="guide" x1="40" y1="200" x2="320" y2="200"/>
+              <text class="glb" x="44" y="192">Ū（参考）</text>
+              <line class="vecA" x1="40" y1="200" x2="250" y2="200" marker-end="url(#ar4a)"/>
+              <text class="lbl" x="120" y="216"> Ū = 380 V</text>
+              <line class="vecB" x1="40" y1="200" x2="190" y2="122" marker-end="url(#ar4b)"/>
+              <text class="plb" x="64" y="126">İ₁（滞后，87.7 A）</text>
+              <line class="vecC" x1="190" y1="122" x2="190" y2="30" marker-end="url(#ar4c)"/>
+              <text class="glb" x="198" y="84">İ_C 超前 90°</text>
+              <line class="vecD" x1="40" y1="200" x2="190" y2="30" marker-end="url(#ar4d)"/>
+              <text class="ylb" x="44" y="76">İ = İ₁ + İ_C（58.5 A）</text>
+              <path class="arc" d="M96,200 A56,56 0 0,0 86,172"/>
+              <text class="dim" x="98" y="182">φ 变小</text>
+              <text class="dim" x="40" y="246">虚线：İ₁ 的滞后分量被 İ_C 抵消；合成电流更短</text>
+              <text class="dim" x="40" y="262">并联 ⇒ Ū 不变 ⇒ 负载 P₁、Q₁ 不变</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：并联补偿相量图。电容电流向上抵消滞后分量。</div>
+          </div>
+        </div>
+
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4b" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4：电流怎么变 →</button>
+        <div class="reveal" id="rev-4b">
+          <p><strong>选②，电流变小。</strong>电容虽不耗 P，却提供负 Q；电源不必再往返送这部分无功，于是<strong>同样 P 下总电流变小</strong>（87.7 A → 58.5 A）。<code>I=P/(Uλ)</code>，λ 提高、电流自然下降。</p>
+          <p><strong>选③错在哪</strong>：把"不耗能"等同于"对电源电流没贡献"。电容不耗有功，但它的无功电流是真实流过电源与线路的——正因为这份电流在负载端就地提供，干路才少了一部分。</p>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 最大功率传输与共轭匹配</div>
+
+        <button class="reveal-btn" data-target="rev-5a" data-stage="5" onclick="revealBlock(this)">调负载，让它拿到最多功率 →</button>
+        <div class="reveal" id="rev-5a">
+          <p>另一类"调一调"不是调电源侧的电容，而是调<strong>负载自己</strong>。通信、信号电路里功率很小、不计效率，只关心负载拿到多少。把 L2-05 的戴维南等效搬来：电源 <code>U_oc</code>、内阻抗 <code>Z_o=R_o+jX_o</code>，负载 <code>Z=R+jX</code>。</p>
+          <div class="eq-line">P = I² R = U_oc² R / [(R_o+R)² + (X_o+X)²]</div>
+          <ol class="step-list">
+            <li>先固定 R 看 X：<code>X</code> 只在分母里，取 <code>X=−X_o</code> 把总电抗消成纯电阻，分母最小。</li>
+            <li>再对 R 求极值：此时 <code>P=U_oc²R/(R_o+R)²</code>，令 <code>dP/dR=0</code> 得 <code>R=R_o</code>。</li>
+            <li>合并：<code>Z=Z_o*</code>（共轭匹配），最大功率 <code>P_max=U_oc²/(4R_o)</code>（诺顿形式为 <code>Y=Y_o*</code>）。</li>
+          </ol>
+          <div class="ok-box"><strong>陈述时刻 ⑥ · 正弦稳态最大功率传输（共轭匹配）</strong>（正式定义 + 条件）：当负载 <code>Z=Z_o*</code>（即 <code>R=R_o</code>、<code>X=−X_o</code>）时，负载获得最大有功功率 <code>P_max=U_oc²/(4R_o)</code>（U_oc 为有效值）。条件：给定戴维南电源、R 与 X 可独立调整；此时负载与内阻各分一半电压、<strong>效率 50%</strong>，只适合小功率信号场景，不适于电力传输；若负载阻抗角固定、仅模可变，只能取次优而非此极值。〔邱 §9-6、李下 §9-7〕</div>
+          <p class="muted"><strong>与直流的区别</strong>：直流最大功率只有 <code>R=R_o</code>；交流多了一条 <code>X=−X_o</code>，因为电抗不耗能却进分母，必须先抵消掉。</p>
+        </div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p><strong>P–R_L 曲线</strong>（保持 <code>X_L=−X_o</code>）：只有一个峰，落在 <code>R_L=R_o</code>。左右两侧都下降——想多拿功率，负载电阻既不能太大也不能太小，必须和电源内阻"门当户对"。</p>
+            <p class="muted">默认 <code>U_oc=12 V</code>、<code>Z_o=2+j4 Ω</code>：匹配时 <code>Z_L=2−j4 Ω</code>、<code>P_max=18 W</code>。若只把 <code>R_L</code> 调到 4 Ω 而不消电抗，功率掉到 16 W；若只把 <code>X_L</code> 调到 0 而保留 <code>R_L=2 Ω</code>，掉到 9 W——两个条件缺一不可。</p>
+          </div>
+          <div class="fig-box md" aria-label="最大功率曲线：横轴RL，纵轴P，峰值在RL等于Ro处">
+            <svg class="svg-diag" viewBox="0 0 380 290" role="img">
+              <title>保持 XL=−Xo 时，P 随 RL 变化的曲线，峰值在 RL=Ro</title>
+              <line class="wire" x1="46" y1="238" x2="352" y2="238" marker-end="url(#ar5x)"/>
+              <line class="wire" x1="46" y1="238" x2="46" y2="26" marker-end="url(#ar5y)"/>
+              <defs><marker id="ar5x" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-dim)"/></marker><marker id="ar5y" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="var(--chalk-dim)"/></marker></defs>
+              <path class="vecC" d="M56,232 C100,90 170,58 200,58 C240,58 300,110 342,196"/>
+              <line class="guide" x1="200" y1="238" x2="200" y2="58"/>
+              <line class="guide" x1="46" y1="58" x2="200" y2="58"/>
+              <circle cx="200" cy="58" r="5" fill="var(--chalk-yellow)"/>
+              <text class="ylb" x="150" y="46">峰值 P_max</text>
+              <text class="glb" x="188" y="256">R_L = R_o</text>
+              <text class="dim" x="300" y="256">R_L</text>
+              <text class="dim" x="16" y="30">P</text>
+              <text class="dim" x="52" y="60">U_oc²/(4R_o)</text>
+              <text class="dim" x="56" y="278">两侧下降：只调一个参数也掉功率</text>
+            </svg>
+            <div class="fig-cap">自包含示意图：P–R_L 曲线，峰值在共轭匹配处。</div>
+          </div>
+        </div>
+
+        <div class="calc-lab">
+          <h4>功率实验台 B · 两个"调一调"</h4>
+          <div class="lab-tabs">
+            <button id="tab-b-comp" class="on" onclick="switchPanelB('comp')">并联补偿</button>
+            <button id="tab-b-max" onclick="switchPanelB('max')">最大功率</button>
+          </div>
+
+          <div class="sub-lab on" id="sub-b-comp">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>电压 U（V）<span id="B1-U-v">380 V</span></label>
+                <input type="range" id="B1-U" min="100" max="1000" step="10" value="380" />
+                <label>频率 f（Hz）<span id="B1-f-v">50 Hz</span></label>
+                <input type="range" id="B1-f" min="10" max="100" step="1" value="50" />
+                <label>负载有功 P（kW）<span id="B1-P-v">20 kW</span></label>
+                <input type="range" id="B1-P" min="1" max="100" step="1" value="20" />
+                <label>原功率因数 λ₁<span id="B1-l1-v">0.6</span></label>
+                <input type="range" id="B1-l1" min="0.1" max="0.95" step="0.01" value="0.6" />
+                <label>目标功率因数 λ<span id="B1-l2-v">0.9</span></label>
+                <input type="range" id="B1-l2" min="0.11" max="1" step="0.01" value="0.9" />
+                <div class="preset"><button onclick="setB1(380,50,20,0.6,0.9)">邱例 9-10 默认</button><button onclick="setB1(220,50,10,0.5,1)">练习 6 参数</button></div>
+              </div>
+              <div class="th-panel">
+                <h5>补偿结算</h5>
+                <div class="th-row"><span class="k">φ₁ = arccos λ₁</span><span class="v" id="B1-p1">53.13°</span></div>
+                <div class="th-row"><span class="k">φ = arccos λ</span><span class="v" id="B1-p2">25.84°</span></div>
+                <div class="th-row"><span class="k">所需电容 C</span><span class="v" id="B1-C">374 μF</span></div>
+                <div class="th-row"><span class="k">补偿前电流 I₁</span><span class="v" id="B1-I1">87.7 A</span></div>
+                <div class="th-row"><span class="k">补偿后电流 I</span><span class="v" id="B1-I">58.5 A</span></div>
+                <div class="agree" id="B1-agree">✓ I↓：P 不变，λ↑ ⇒ 电流↓</div>
+                <div class="th-eq">C = P(tanφ₁−tanφ)/(ωU²)，ω=2πf；并联 ⇒ 负载 P₁、Q₁ 不变；I=P/(Uλ)。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sub-lab" id="sub-b-max">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>U_oc（V）<span id="B2-Uoc-v">12 V</span></label>
+                <input type="range" id="B2-Uoc" min="1" max="100" step="1" value="12" />
+                <label>R_o（Ω）<span id="B2-Ro-v">2 Ω</span></label>
+                <input type="range" id="B2-Ro" min="1" max="20" step="1" value="2" />
+                <label>X_o（Ω）<span id="B2-Xo-v">4 Ω</span></label>
+                <input type="range" id="B2-Xo" min="-10" max="10" step="1" value="4" />
+                <label>R_L（Ω）<span id="B2-RL-v">2 Ω</span></label>
+                <input type="range" id="B2-RL" min="1" max="20" step="1" value="2" />
+                <label>X_L（Ω）<span id="B2-XL-v">−4 Ω</span></label>
+                <input type="range" id="B2-XL" min="-10" max="10" step="1" value="-4" />
+                <div class="preset">
+                  <button onclick="setB2(12,2,4,2,-4)">共轭匹配默认</button>
+                  <button onclick="setB2(12,2,4,4,-4)">只改 R_L=4</button>
+                  <button onclick="setB2(12,2,4,2,0)">只消 X_L=0</button>
+                </div>
+              </div>
+              <div class="th-panel">
+                <h5>负载实际功率</h5>
+                <div class="th-row"><span class="k">Z_o</span><span class="v" id="B2-zo">2 + j4 Ω</span></div>
+                <div class="th-row"><span class="k">Z_L</span><span class="v" id="B2-zl">2 − j4 Ω</span></div>
+                <div class="th-row"><span class="k">负载 P</span><span class="v" id="B2-P">18 W</span></div>
+                <div class="th-row"><span class="k">P_max = U_oc²/(4R_o)</span><span class="v" id="B2-pmax">18 W</span></div>
+                <div class="agree" id="B2-status">✓ 已匹配：Z_L = Z_o*（共轭匹配）</div>
+                <div class="th-eq">P=U_oc²R_L/[(R_o+R_L)²+(X_o+X_L)²]；匹配需 X_L=−X_o 且 R_L=R_o，此时效率 50%。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 独立练习与过关</div>
+        <p class="muted">全部换参数或换问法，先自己算再判定。判定后才给反馈；想不起公式回看右侧速查。</p>
+
+        <div class="qrow">
+          <div class="qt">1 · 纯电感接正弦电源，U=100 V、I=2 A（均为有效值）。P 与 Q 是多少？</div>
+          <div class="choicebox" id="q-1" data-qid="q-1" data-hint="电感不耗有功，但与电源有能量往返，Q 为正。" data-explain="电感 P=0、Q=+UI=+200 var。"><label><input type="radio" name="q-1" value="a"/> ① P=200 W，Q=0</label><label><input type="radio" name="q-1" value="b"/> ② P=0，Q=+200 var</label><label><input type="radio" name="q-1" value="c"/> ③ P=200 W，Q=200 var</label><button class="btn-sm" onclick="checkChoice('q-1','b')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">2 · 正弦稳态一端口，U=220 V、I=5 A、感性、λ=0.8。求 P=___ W、Q=___ var、S=___ V·A、φ=___°。</div>
+          <div class="numcheck" id="q-2" data-qid="q-2"><label>P <input type="text" placeholder="W" />，Q <input type="text" placeholder="var" />，S <input type="text" placeholder="V·A" />，φ <input type="text" placeholder="度" /></label><button class="btn-sm" onclick="checkMulti('q-2',[880,660,1100,36.87],[0.5,0.5,0.5,0.5])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">3 · 关联参考方向下 Ū=100∠30° V、İ=2∠−20° A。求 P=___ W、Q=___ var，电路呈___性（填"感"或"容"）。</div>
+          <div class="numcheck" id="q-3" data-qid="q-3"><label>P <input type="text" placeholder="W" />，Q <input type="text" placeholder="var" />，呈 <input type="text" placeholder="感/容" /> 性</label><button class="btn-sm" onclick="checkFields('q-3',[128.56,153.21,'感'],[0.5,0.5,0])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">4 · 判断："多个元件各自的视在功率之和等于总视在功率。"</div>
+          <div class="choicebox" id="q-4" data-qid="q-4" data-hint="守恒的是复功率 S̃，不是视在功率 S（模不能线性相加）。" data-explain="S 是模，ΣS≠|ΣS̃|；守恒的是复功率。"><label><input type="radio" name="q-4" value="a"/> ① 对</label><label><input type="radio" name="q-4" value="b"/> ② 错</label><button class="btn-sm" onclick="checkChoice('q-4','b')">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">5 · 两负载并联：负载1 为 6 kW / λ=0.8（感性），负载2 为 4 kW / λ=0.9（容性）。求 ΣP=___ W、ΣQ=___ var、总视在 S=___ V·A、总 λ=___。</div>
+          <div class="numcheck" id="q-5" data-qid="q-5"><label>ΣP <input type="text" placeholder="W" />，ΣQ <input type="text" placeholder="var" />，S <input type="text" placeholder="V·A" />，λ <input type="text" placeholder="0.xxx" /></label><button class="btn-sm" onclick="checkMulti('q-5',[10000,2562.7,10323,0.969],[1,1,2,0.002])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">6 · 220 V / 50 Hz、10 kW 的感性负载，λ₁=0.5，要提到 λ=1。求并联电容 C=___ μF、补偿前电流=___ A、补偿后电流=___ A。</div>
+          <div class="numcheck" id="q-6" data-qid="q-6"><label>C <input type="text" placeholder="μF" />，I 前 <input type="text" placeholder="A" />，I 后 <input type="text" placeholder="A" /></label><button class="btn-sm" onclick="checkMulti('q-6',[1139,90.91,45.45],[2,0.5,0.5])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">7 · 戴维南电源 U_oc=10 V、Z_o=3+j4 Ω，负载 R、X 可任意调。匹配时 Z_L 的实部=___ Ω、虚部=___ Ω，最大功率 P_max=___ W。</div>
+          <div class="numcheck" id="q-7" data-qid="q-7"><label>R_L <input type="text" placeholder="Ω" />，X_L <input type="text" placeholder="Ω（带符号）" />，P_max <input type="text" placeholder="W" /></label><button class="btn-sm" onclick="checkMulti('q-7',[3,-4,8.33],[0.05,0.05,0.05])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="qrow">
+          <div class="qt">8 · 承上题，若改用纯电阻 R_L=3 Ω（X_L=0），负载功率 P=___ W；此时是否匹配（填"是/否"）？为匹配应把 X_L 调为 ___ Ω。</div>
+          <div class="numcheck" id="q-8" data-qid="q-8"><label>P <input type="text" placeholder="W" />，是否匹配 <input type="text" placeholder="是/否" />，X_L 应调为 <input type="text" placeholder="Ω" /></label><button class="btn-sm" onclick="checkFields('q-8',[5.77,'否',-4],[0.05,0,0.05])">判定</button><div class="fb"></div></div>
+        </div>
+
+        <div class="ok-box" style="margin-top:14px;">
+          <strong>过关自检（合上笔记能说出来才算过）</strong>
+          <ol class="step-list">
+            <li>为什么 <code>P=UIcosφ</code> 而不是 UI？Q 交换的是什么？</li>
+            <li><code>S=√(P²+Q²)</code>、<code>λ=P/S</code> 为何必须补注"感性/容性"？</li>
+            <li>复功率为什么要取共轭？<code>ΣS̃=0</code> 与 <code>ΣS≠0</code> 区别在哪？</li>
+            <li>并联电容为什么能减小电流、为什么不能串联、为什么通常只提到 0.9？</li>
+            <li>共轭匹配的两个条件、<code>P_max</code> 公式、效率 50% 的适用边界？</li>
+            <li><code>Q=2ω·储能平均值</code> 的物理意义是什么？</li>
+          </ol>
+        </div>
+        <p class="muted"><strong>下一课钩子：</strong>这些结论都锁在"单一频率正弦稳态"。若电路里同时有直流和多个不同频率的正弦源，功率还能不能简单相加？下一课转向频率响应与多频正弦稳态。</p>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾折叠区 ============ -->
+      <details class="appendix">
+        <summary>学习目标 / 节奏 / 来源台账（展开看）</summary>
+        <h4>学习目标</h4>
+        <p>掌握正弦稳态 P/Q/S/λ 的定义与推导，理解无功的物理意义；会用复功率守恒结算多负载总账；掌握并联补偿与共轭匹配两个工程应用及其适用边界。覆盖形态 A（功率结算）与形态 B（补偿/匹配）。</p>
+        <h4>45 分钟节奏（预算不是配额）</h4>
+        <table class="mini-t">
+          <tr><th>环节</th><th>内容</th><th>分钟</th></tr>
+          <tr><td>0</td><td>核心问题、预测 1</td><td>3</td></tr>
+          <tr><td>1</td><td>p=ui 推出 P 与 Q、预测 2</td><td>9</td></tr>
+          <tr><td>2</td><td>S 与 λ、揭晓预测 1</td><td>6</td></tr>
+          <tr><td>3</td><td>复功率守恒、预测 3、实验台 A</td><td>8</td></tr>
+          <tr><td>4</td><td>并联补偿、预测 4</td><td>9</td></tr>
+          <tr><td>5</td><td>共轭匹配、实验台 B</td><td>7</td></tr>
+          <tr><td>6</td><td>独立练习与过关</td><td>4</td></tr>
+        </table>
+        <h4>来源台账</h4>
+        <table class="mini-t">
+          <tr><th>内容</th><th>依据</th></tr>
+          <tr><td>瞬时功率分解、P/Q/S/λ、R/L/C 元件功率、ΣP=ΣQ=0</td><td>〔书〕邱 §9-4 印刷 p.222–226</td></tr>
+          <tr><td>邱例 9-9（S=60 V·A、φ=−52.3°、λ=0.612）</td><td>〔书〕邱 §9-4 印刷 p.226</td></tr>
+          <tr><td>复功率 S̃=Ūİ*、守恒、并联电容例 9-10</td><td>〔书〕邱 §9-5 印刷 p.226–228</td></tr>
+          <tr><td>最大功率共轭匹配、P_max</td><td>〔书〕邱 §9-6 印刷 p.229–230</td></tr>
+          <tr><td>P=RI²=U²/R、Q=2ω·储能平均值、无功守恒</td><td>〔书〕李下 §9-2~§9-3</td></tr>
+          <tr><td>P=UIcosφ、S=UI、λ=P/S 与感/容标注、含受控源 |φ|&gt;90°</td><td>〔书〕李下 §9-4</td></tr>
+          <tr><td>ΣŪİ*=0 证明、例 9-12 两负载</td><td>〔书〕李下 §9-5~§9-6</td></tr>
+          <tr><td>最大功率传递定理</td><td>〔书〕李下 §9-7</td></tr>
+          <tr><td>4 预测 + 8 练习 + 面板全部数值</td><td>〔我编的题〕（结构来自书，数值独立验算自洽）</td></tr>
+          <tr><td>用三角形/相量图解释"模不能相加"</td><td>〔通识〕</td></tr>
+        </table>
+        <p class="muted">邱 PDF=印刷+24；李下印刷页码按 PDF−7 推算、以原书为准，故用章节号标注。H&amp;H 未摘正文，本课不引其章节号。正文见 <code>书籍/摘录/L2-07.md</code>，教案见 <code>lessons/drafts/L2-07-教案.md</code>。</p>
+      </details>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L2-07-power-factor';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L2-07 增量脚本：功率三角台 + 复功率守恒台 + 补偿台 + 匹配台 + 判定 + 重锁四门 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+    function sgn(v,d){
+      return (v<0?'−':'') + num(Math.abs(v), d==null?2:d);
+    }
+    function line(label,val){ return '<div class="res-line">'+label+' = '+val+'</div>'; }
+
+    /* ---------- 面板 A：单口功率三角 ---------- */
+    function solveA1(){
+      var U=parseFloat(el('A1-U').value), I=parseFloat(el('A1-I').value), phi=parseFloat(el('A1-phi').value);
+      set('A1-U-v',num(U,1)+' V'); set('A1-I-v',num(I,2)+' A');
+      set('A1-phi-v',sgn(phi,2)+'°');
+      var r=phi*Math.PI/180, S=U*I, P=S*Math.cos(r), Q=S*Math.sin(r), lam=Math.cos(r);
+      set('A1-S',num(S,2)+' V·A');
+      set('A1-P',num(P,2)+' W');
+      set('A1-Q',sgn(Q,2)+' var');
+      set('A1-lam',num(lam,3));
+      set('A1-nat', phi>0.5?'感性（滞后）':(phi<-0.5?'容性（超前）':'纯电阻 λ=1'));
+      set('A1-check','✓ 校核：√(P²+Q²) = '+num(Math.hypot(P,Q),2)+' V·A = S');
+      el('A1-wrong').textContent='✗ 算术和 P + Q = '+sgn(P+Q,2)+'（既非 W 也非 var 的物理量，别这么加）';
+    }
+    window.setA1=function(u,i,phi){ el('A1-U').value=u; el('A1-I').value=i; el('A1-phi').value=phi; solveA1(); };
+    ['A1-U','A1-I','A1-phi'].forEach(function(id){ el(id).addEventListener('input',solveA1); });
+
+    /* ---------- 面板 A：多负载复功率守恒 ---------- */
+    var nat1='c', nat2='l';
+    function solveA2(){
+      var P1=parseFloat(el('A2-P1').value), pf1=parseFloat(el('A2-pf1').value);
+      var P2=parseFloat(el('A2-P2').value), pf2=parseFloat(el('A2-pf2').value);
+      var U=parseFloat(el('A2-U').value);
+      set('A2-P1-v',num(P1,1)+' kW'); set('A2-pf1-v',num(pf1,2));
+      set('A2-P2-v',num(P2,1)+' kW'); set('A2-pf2-v',num(pf2,2));
+      set('A2-U-v',num(U,0)+' V');
+      var Q1=P1*Math.tan(Math.acos(pf1))*(nat1==='l'?1:-1);
+      var Q2=P2*Math.tan(Math.acos(pf2))*(nat2==='l'?1:-1);
+      var p1w=P1*1000, p2w=P2*1000, q1w=Q1*1000, q2w=Q2*1000;
+      el('A2-s1').innerHTML=line('S̃₁',num(p1w,0)+(q1w<0?' − j':' + j')+num(Math.abs(q1w),0)+' V·A');
+      el('A2-s2').innerHTML=line('S̃₂',num(p2w,0)+(q2w<0?' − j':' + j')+num(Math.abs(q2w),0)+' V·A');
+      var sp=p1w+p2w, sq=q1w+q2w, absS=Math.hypot(sp,sq), lam=sp/absS, I=absS/U;
+      var nature=(sq>1?'感性':sq<-1?'容性':'纯电阻');
+      set('A2-sp',num(p1w+p2w,0)+' W');
+      set('A2-sq',sgn(sq,0)+' var');
+      set('A2-abs',num(absS,0)+' V·A');
+      set('A2-lam',num(lam,3)+' '+nature);
+      set('A2-I',num(I,2)+' A');
+      var parts=P1/pf1+P2/pf2;
+      el('A2-note').innerHTML='✗ 视在不守恒：ΣS<sub>件</sub> = '+num(parts*1000,0)+' V·A ≠ |ΣS̃| = '+num(absS,0)+' V·A';
+    }
+    window.setA2Nat=function(which,nat){
+      if(which===1){ nat1=nat; el('A2-n1-c').classList.toggle('on',nat==='c'); el('A2-n1-l').classList.toggle('on',nat==='l'); }
+      else{ nat2=nat; el('A2-n2-c').classList.toggle('on',nat==='c'); el('A2-n2-l').classList.toggle('on',nat==='l'); }
+      solveA2();
+    };
+    window.setA2=function(p1,pf1,n1,p2,pf2,n2,u){
+      el('A2-P1').value=p1; el('A2-pf1').value=pf1; el('A2-P2').value=p2; el('A2-pf2').value=pf2; el('A2-U').value=u;
+      setA2Nat(1,n1); setA2Nat(2,n2); solveA2();
+    };
+    ['A2-P1','A2-pf1','A2-P2','A2-pf2','A2-U'].forEach(function(id){ el(id).addEventListener('input',solveA2); });
+    window.switchPanelA=function(which){
+      var single=(which==='single');
+      el('sub-a-single').classList.toggle('on',single); el('sub-a-multi').classList.toggle('on',!single);
+      el('tab-a-single').classList.toggle('on',single); el('tab-a-multi').classList.toggle('on',!single);
+    };
+
+    /* ---------- 面板 B：并联补偿 ---------- */
+    function solveB1(){
+      var U=parseFloat(el('B1-U').value), f=parseFloat(el('B1-f').value), P=parseFloat(el('B1-P').value);
+      var l1=parseFloat(el('B1-l1').value), l2=parseFloat(el('B1-l2').value);
+      set('B1-U-v',num(U,0)+' V'); set('B1-f-v',num(f,0)+' Hz'); set('B1-P-v',num(P,1)+' kW');
+      set('B1-l1-v',num(l1,2)); set('B1-l2-v',num(l2,2));
+      var p1=Math.acos(l1)*180/Math.PI, p2=Math.acos(l2)*180/Math.PI;
+      var w=2*Math.PI*f;
+      var C=P*1000*(Math.tan(Math.acos(l1))-Math.tan(Math.acos(l2)))/(w*U*U)*1e6;
+      var I1=P*1000/(U*l1), I=P*1000/(U*l2);
+      set('B1-p1',num(p1,2)+'°'); set('B1-p2',num(p2,2)+'°');
+      set('B1-C',num(C,1)+' μF');
+      set('B1-I1',num(I1,2)+' A'); set('B1-I',num(I,2)+' A');
+      el('B1-agree').textContent = (l2>l1 && I<I1)
+        ? '✓ I↓：P 不变，λ↑ ⇒ 电流↓（ '+num(I1,1)+' → '+num(I,1)+' A ）'
+        : '⚠ 目标 λ 需大于原 λ₁ 才是提高；当前设定不满足提高功率因数的前提。';
+      el('B1-agree').className = (l2>l1 && I<I1) ? 'agree' : 'warn-note';
+    }
+    window.setB1=function(u,f,p,l1,l2){ el('B1-U').value=u; el('B1-f').value=f; el('B1-P').value=p; el('B1-l1').value=l1; el('B1-l2').value=l2; solveB1(); };
+    ['B1-U','B1-f','B1-P','B1-l1','B1-l2'].forEach(function(id){ el(id).addEventListener('input',solveB1); });
+
+    /* ---------- 面板 B：最大功率 ---------- */
+    function solveB2(){
+      var Uoc=parseFloat(el('B2-Uoc').value), Ro=parseFloat(el('B2-Ro').value), Xo=parseFloat(el('B2-Xo').value);
+      var RL=parseFloat(el('B2-RL').value), XL=parseFloat(el('B2-XL').value);
+      set('B2-Uoc-v',num(Uoc,0)+' V'); set('B2-Ro-v',num(Ro,0)+' Ω'); set('B2-Xo-v',sgn(Xo,0)+' Ω');
+      set('B2-RL-v',num(RL,0)+' Ω'); set('B2-XL-v',sgn(XL,0)+' Ω');
+      var P=Uoc*Uoc*RL/((Ro+RL)*(Ro+RL)+(Xo+XL)*(Xo+XL)), Pmax=Uoc*Uoc/(4*Ro);
+      set('B2-zo',num(Ro,0)+(Xo<0?' − j':' + j')+num(Math.abs(Xo),0)+' Ω');
+      set('B2-zl',num(RL,0)+(XL<0?' − j':' + j')+num(Math.abs(XL),0)+' Ω');
+      set('B2-P',num(P,2)+' W'); set('B2-pmax',num(Pmax,2)+' W');
+      var matched=Math.abs(RL-Ro)<1e-9 && Math.abs(XL+Xo)<1e-9;
+      el('B2-status').className=matched?'agree':'warn-note';
+      el('B2-status').textContent = matched
+        ? '✓ 已匹配：Z_L = Z_o*（R_L=R_o 且 X_L=−X_o，效率 50%）'
+        : '✗ 失配：需 R_L='+num(Ro,0)+' Ω 且 X_L='+sgn(-Xo,0)+' Ω，两个条件缺一不可（当前 '+num(P,2)+' W < '+num(Pmax,2)+' W）';
+    }
+    window.setB2=function(uoc,ro,xo,rl,xl){ el('B2-Uoc').value=uoc; el('B2-Ro').value=ro; el('B2-Xo').value=xo; el('B2-RL').value=rl; el('B2-XL').value=xl; solveB2(); };
+    ['B2-Uoc','B2-Ro','B2-Xo','B2-RL','B2-XL'].forEach(function(id){ el(id).addEventListener('input',solveB2); });
+    window.switchPanelB=function(which){
+      var comp=(which==='comp');
+      el('sub-b-comp').classList.toggle('on',comp); el('sub-b-max').classList.toggle('on',!comp);
+      el('tab-b-comp').classList.toggle('on',comp); el('tab-b-max').classList.toggle('on',!comp);
+    };
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L2-07-power-factor');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,box,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    window.checkMulti=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var v=parseFloat((ins[i]||{}).value);
+        var t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+        if(isNaN(v)||Math.abs(v-expected[i])>t){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,box,fb);
+    };
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'').replace(/性$/,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'；文字空填"感"或"容"/"是"或"否"）。';
+      mark(id,ok,box,fb);
+    };
+
+    solveA1(); solveA2(); solveB1(); solveB2(); refresh();
+
+    /* ---------- 重来：共享 resetFlow 解锁全部后，重锁四个预测门并清空一切 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      setA1(100,0.6,-53.13);
+      setA2(10,0.8,'c',15,0.6,'l',2300);
+      setB1(380,50,20,0.6,0.9);
+      setB2(12,2,4,2,-4);
+      switchPanelA('single'); switchPanelB('comp');
+    };
+  })();
+  </script>
+</body>
+</html>
