@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>三相电路与非正弦周期量 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .pred-opt[disabled]{opacity:.42;cursor:not-allowed}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.9rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem;line-height:1.5}
+    .numcheck label{font-size:.88rem;line-height:2.1}
+    .numcheck input{width:92px}
+    .numcheck input.txtin{width:175px}
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .mode-btns{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+    .mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:var(--chalk-dim);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.85rem}
+    .mode-btn.active{background:rgba(255,224,138,.18);color:var(--chalk-yellow);border-color:var(--chalk-yellow);font-weight:700}
+    .cmp-tbl{border-collapse:collapse;font-size:.82rem;margin-top:8px;width:100%}
+    .cmp-tbl th,.cmp-tbl td{border:1px solid var(--line);padding:4px 6px;text-align:left}
+    .cmp-tbl th{color:var(--chalk-blue);font-weight:600}
+    .cmp-tbl td.mono{font-family:var(--mono);color:var(--chalk-green)}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}.cmp-tbl{font-size:.74rem}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">三相电路与非正弦周期量</span>
+    <span class="meta">教案先行 · 45 min · S3 第五课（工程认知）</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（只会一幅正弦 → 多路供电 → 非正弦 → 拆开算再合起来 → 守住边界）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1</a></li>
+        <li><a href="#stage-1">1 · 三路相加到底是什么（陈述① · 揭晓预测 1）</a></li>
+        <li><a href="#stage-2">2 · 两根火线之间有多少伏（陈述② · 揭晓预测 2）</a></li>
+        <li><a href="#stage-3">3 · 三路一起供电的功率与中性线（陈述③ · 揭晓预测 3）</a></li>
+        <li><a href="#stage-4">4 · 不是正弦的波形怎么办（陈述④ · 揭晓预测 4）</a></li>
+        <li><a href="#stage-5">5 · 两个实验台（多路供电台 / 波形分解台）</a></li>
+        <li><a href="#stage-6">6 · 独立练习与过关</a></li>
+        <li><a href="#stage-7">7 · 收尾与下一课钩子</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">一个核心问题：能不能把学过的相量工具和功率账，按"哪一路"或按"哪一种快慢"分开算、最后再合起来——既算得清多路供电的电压电流和功率，又看得懂非正弦波里各份贡献，并且说清这些简化在什么条件下才成立？</div>
+      <div class="mini">因果顺序：先判断三路相加会怎样 → 再看两根火线之间有多少伏 → 再算三路一起的功率 → 最后处理不是正弦的波形 → 实验台验证。<strong>不是时间安排</strong>；结论都在预测揭晓后才上板。</div>
+      <div class="mini">本课是<strong>工程认知</strong>：只求建立图景与边界。复杂的系数手算与不对称联立求解标为「了解即可」，不要求手算。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-05.md</code>（邱 §12-1~§12-5 + §13-1~§13-4、李下 §9-8~§9-9 + §10-4~§10-5 正文 OCR + 校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-05-教案.md</code>（独立审核复审通过）。目标、节奏、台账与答案在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（揭晓后才解锁）</div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>多路供电 · 关系速查</h4>
+      <div class="mini">Y 形：<code>U_l=√3 U_p</code>（线电压超前对应相电压 30°）、<code>I_l=I_p</code>；△ 形：<code>U_l=U_p</code>、<code>I_l=√3 I_p</code>（滞后 30°）。<strong>只在对称 + 定相序 + 定参考方向下成立。</strong></div>
+      <div class="mini">对称时中性线电流为零、可省；不对称断线则中性点位移、各相失衡。功率 <code>P=√3 U_l I_l cos φ</code>（φ=阻抗角）；二瓦计 <code>P₁+P₂=P</code>、单独一表无意义、|φ|&gt;60° 时一表可为负。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>波形分解 · 速查</h4>
+      <div class="mini"><code>f(t)=A₀+ΣA_k cos(kω₁t+φ_k)</code>：直流 + 基波 + 各次谐波，频谱离散。有效值 <code>U=√(U₀²+U₁²+…)</code>。</div>
+      <div class="mini">平均功率 <code>P=U₀I₀+ΣU_kI_kcosφ_k</code>：<strong>只有同频配对才贡献</strong>；不同频率不可合并成一个相量；直流按 ω=0 单独处理（L 短路、C 开路）。复杂系数手算 P3 了解即可。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 第五课（L3-05 · 工程认知）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">按哪一路拆 · 按哪一种快慢拆 · 合起来 · 守住边界</span>
+      </div>
+      <h1>三相电路与非正弦周期量</h1>
+      <p class="muted">前几课我们只会对付一幅正弦波。可电网是<strong>三路错开三分之一周期</strong>一起送来供电，充电器整流后的波形又根本不是正弦。<strong>这节课要问的是：能不能把已经学会的相量工具和功率账，按"哪一路"或按"哪一种快慢"分开算、最后再合起来——既算得清多路供电的电压电流和功率，又看得懂非正弦波里各份贡献，并且说清这些简化在什么条件下才成立？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">三路相加</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">两根火线之间</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">三路一起算功率</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">非正弦波</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">练习/过关</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="7">钩子</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（先别算，先判断三路相加会怎样）</div>
+        <div class="speak teacher">师：前几课我们只会对付一幅正弦波；可你家里插座、工厂电机的电，不是一路，是三路错开三分之一周期一起送来的。今天就把你会的相量工具搬到这个现实里，做法是一句话：按"哪一路"或按"哪一种快慢"拆开算，最后合起来。</div>
+
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上这条路线是今天全部工作的骨架：<strong>三路错开三分之一周期 → 拆开看每路 → 合起来看总量 → 守住简化成立的条件</strong>。先只回答一个问题：把这三路在任意时刻的电压加起来，会得到什么？</p>
+          </div>
+          <div class="fig-box md" aria-label="四步流程图：三路错开三分之一周期供电，先判断三路相加的结果，再看两根火线之间的电压与三路功率，最后处理非正弦波形，四步之间用箭头连接">
+            <svg class="svg-diag" viewBox="0 0 380 205" role="img">
+              <rect class="box" x="10" y="22" width="106" height="44" rx="7"/>
+              <text class="ylb" x="22" y="42">三路供电</text>
+              <text class="dim" x="22" y="58">错开⅓周期</text>
+              <path class="wire" d="M122 44 L152 44"/><path class="wire" d="M146 38 L154 44 L146 50" fill="none"/>
+              <rect class="box" x="160" y="22" width="104" height="44" rx="7"/>
+              <text class="lbl" x="172" y="42">按哪一路拆</text>
+              <text class="dim" x="172" y="58">相加会怎样？</text>
+              <path class="wire" d="M270 44 L296 44"/><path class="wire" d="M290 38 L298 44 L290 50" fill="none"/>
+              <rect class="box" x="304" y="22" width="66" height="44" rx="7"/>
+              <text class="glb" x="312" y="42">合起来</text>
+              <text class="dim" x="312" y="58">看总量</text>
+              <path class="wire" d="M338 70 L338 100"/><path class="wire" d="M332 94 L340 102 L346 94" fill="none"/>
+              <rect class="box" x="272" y="108" width="100" height="44" rx="7"/>
+              <text class="plb" x="282" y="128">非正弦波</text>
+              <text class="dim" x="282" y="144">按快慢拆</text>
+              <text class="dim" x="14" y="138">核心问题：相量工具和功率账能不能</text>
+              <text class="dim" x="14" y="156">"拆开算、再合起来"，且说清条件？</text>
+              <text class="ylb" x="14" y="188">先答：三路相加会得到什么？</text>
+            </svg>
+            <div class="fig-cap">图① · 今天四步路线（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>三路正弦彼此错开三分之一周期（也就是 120°），把它们在任意时刻的电压加起来，会得到什么？<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">A 还是同频正弦、幅度更大</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">B 恒等于零</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">C 一个恒定的数</button>
+          </div>
+          <p class="gate-note">先自己选。公布只到"三路相加的结果与原因"这一层；名字与定义在下一步"继续"里才给。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 1：三路相加的结果 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选 B 恒等于零。</strong>可用一个恒等式"可见地"推出来——把三路写成相差 120° 的同一个正弦：</p>
+          <div class="eq-line">cos θ + cos(θ−120°) + cos(θ+120°) = cos θ + 2cos θ·cos120° = cos θ + 2cos θ·(−1/2) = 0</div>
+          <p>所以对任意时刻 <code>u_A(t)+u_B(t)+u_C(t)=0</code>；由相量的线性性质，也有三个相量相加为零。<strong>这是后面所有简化的总根源</strong>——但此刻先别急着用它，名字与联结方式在下一步才给。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：三路相差 120° 的正弦，逐点相加恒为零。</strong>三条曲线彼此错开三分之一周期；把它们在同一时刻的高度相加，处处得到中间那条零线。这就是"和为零"的图像。</p>
+            </div>
+            <div class="fig-box lg" aria-label="三路相差120度的正弦波与相加为零示意图：三条彼此错开的正弦曲线叠加在同一坐标系，底部一条水平零线标注三路瞬时和恒为零，并写出余弦恒等式等于零">
+              <svg class="svg-diag" viewBox="0 0 440 150" role="img">
+                <line class="guide" x1="30" y1="70" x2="410" y2="70"/>
+                <polyline class="wire" style="stroke:var(--chalk-blue)" fill="none" points="30,70.0 35,67.2 40,64.4 45,61.7 50,59.0 55,56.3 60,53.8 65,51.4 70,49.1 75,47.0 80,45.0 85,43.2 90,41.5 95,40.1 100,38.9 105,37.8 110,37.0 115,36.5 120,36.1 125,36.0 130,36.1 135,36.5 140,37.0 145,37.8 150,38.9 155,40.1 160,41.5 165,43.2 170,45.0 175,47.0 180,49.1 185,51.4 190,53.8 195,56.3 200,59.0 205,61.7 210,64.4 215,67.2 220,70.0 225,72.8 230,75.6 235,78.3 240,81.0 245,83.7 250,86.2 255,88.6 260,90.9 265,93.0 270,95.0 275,96.8 280,98.5 285,99.9 290,101.1 295,102.2 300,103.0 305,103.5 310,103.9 315,104.0 320,103.9 325,103.5 330,103.0 335,102.2 340,101.1 345,99.9 350,98.5 355,96.8 360,95.0 365,93.0 370,90.9 375,88.6 380,86.2 385,83.7 390,81.0 395,78.3 400,75.6 405,72.8 410,70.0"/>
+                <polyline class="wire" style="stroke:var(--chalk-yellow)" fill="none" points="30,99.4 35,100.7 40,101.8 45,102.7 50,103.4 55,103.8 60,104.0 65,103.9 70,103.7 75,103.2 80,102.4 85,101.5 90,100.3 95,99.0 100,97.4 105,95.6 110,93.7 115,91.6 120,89.4 125,87.0 130,84.5 135,81.9 140,79.3 145,76.5 150,73.7 155,70.9 160,68.1 165,65.3 170,62.6 175,59.9 180,57.2 185,54.6 190,52.2 195,49.9 200,47.7 205,45.6 210,43.8 215,42.1 220,40.6 225,39.3 230,38.2 235,37.3 240,36.6 245,36.2 250,36.0 255,36.1 260,36.3 265,36.8 270,37.6 275,38.5 280,39.7 285,41.0 290,42.6 295,44.4 300,46.3 305,48.4 310,50.6 315,53.0 320,55.5 325,58.1 330,60.7 335,63.5 340,66.3 345,69.1 350,71.9 355,74.7 360,77.4 365,80.1 370,82.8 375,85.4 380,87.8 385,90.1 390,92.3 395,94.4 400,96.2 405,97.9 410,99.4"/>
+                <polyline class="wire" style="stroke:var(--chalk-green)" fill="none" points="30,40.6 35,42.1 40,43.8 45,45.6 50,47.7 55,49.9 60,52.2 65,54.6 70,57.2 75,59.9 80,62.6 85,65.3 90,68.1 95,70.9 100,73.7 105,76.5 110,79.3 115,81.9 120,84.5 125,87.0 130,89.4 135,91.6 140,93.7 145,95.6 150,97.4 155,99.0 160,100.3 165,101.5 170,102.4 175,103.2 180,103.7 185,103.9 190,104.0 195,103.8 200,103.4 205,102.7 210,101.8 215,100.7 220,99.4 225,97.9 230,96.2 235,94.4 240,92.3 245,90.1 250,87.8 255,85.4 260,82.8 265,80.1 270,77.4 275,74.7 280,71.9 285,69.1 290,66.3 295,63.5 300,60.7 305,58.1 310,55.5 315,53.0 320,50.6 325,48.4 330,46.3 335,44.4 340,42.6 345,41.0 350,39.7 355,38.5 360,37.6 365,36.8 370,36.3 375,36.1 380,36.0 385,36.2 390,36.6 395,37.3 400,38.2 405,39.3 410,40.6"/>
+                <text class="lbl" x="34" y="24">蓝/黄/绿：三路，彼此错开 120°</text>
+                <text class="plb" x="34" y="143">三路逐点相加 = 中间零线（恒为 0）</text>
+              </svg>
+              <div class="fig-cap">图② · 三路正弦与相加为零（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def1" data-stage="1" onclick="revealBlock(this)">继续：给这件事命名 + 定义（陈述时刻 1） →</button>
+          <div class="reveal" id="rev-def1">
+            <div class="ok-box"><strong>陈述时刻 1 · 对称三相电源、相序、Y/△ 联结、相电压与线电压</strong><br/><strong>全称/命名</strong>：对称三相电源（symmetrical three-phase source）、相序（phase sequence）、星形/Y 形联结与三角形/△ 形联结、中性点（neutral point）、相线（火线）、相电压（phase voltage）、线电压（line voltage）。<br/><strong>一句定义</strong>：三个幅值相等、频率相同、彼此相差 120° 的正弦电压源构成对称三相电源；若相量为 <code>U̇_A=U_p∠0°</code>、<code>U̇_B=U_p∠−120°</code>、<code>U̇_C=U_p∠120°</code>，则任意时刻 <code>u_A+u_B+u_C=0</code>、相量和 <code>U̇_A+U̇_B+U̇_C=0</code>。三相到达最大值的先后次序称相序。Y 形把三相末端接一公共点（中性点），引出三根相线，每相电压为相电压、相线间电压为线电压；△ 形始末端顺次相接，无中性点、线电压即相电压。<br/><strong>符号式</strong>：<code>U̇_A=U_p∠0°</code>、<code>U̇_B=U_p∠−120°</code>、<code>U̇_C=U_p∠120°</code>；<code>U̇_A+U̇_B+U̇_C=0</code>。〔邱 §12-1 / p.281–282；李下 §9-8 / PDF 103〕</div>
+            <div class="side-fig-row">
+              <div class="side-text">
+                <p><strong>图③：两种联结方式。</strong>Y 形把三相末端接成一点，这点就是中性点，从它引出的三根线叫相线；△ 形把始末端顺次接成闭合环，没有中性点，两根相线之间的电压就等于一相的电压。任一相接反会在 △ 形闭合回路里造成极大短路电流。</p>
+              </div>
+              <div class="fig-box md" aria-label="Y形与三角形联结结构对比示意图：左侧Y形三相末端接一公共中性点并引出三根相线，标注相电压是每相电压、线电压是两根相线之间电压；右侧三角形首尾顺次相接无中性点，标注线电压等于相电压">
+                <svg class="svg-diag" viewBox="0 0 380 195" role="img">
+                  <text class="ylb" x="14" y="20">Y 形联结（有中性点）</text>
+                  <text class="plb" x="206" y="20">△ 形联结（无中性点）</text>
+                  <line class="wire" x1="30" y1="44" x2="90" y2="100"/>
+                  <line class="wire" x1="90" y1="44" x2="90" y2="100"/>
+                  <line class="wire" x1="150" y1="44" x2="90" y2="100"/>
+                  <circle cx="30" cy="44" r="4" fill="var(--chalk-blue)"/><text class="lbl" x="16" y="36">A</text>
+                  <circle cx="90" cy="44" r="4" fill="var(--chalk-yellow)"/><text class="ylb" x="84" y="36">B</text>
+                  <circle cx="150" cy="44" r="4" fill="var(--chalk-green)"/><text class="glb" x="154" y="36">C</text>
+                  <circle cx="90" cy="100" r="5" fill="var(--chalk-pink)"/><text class="plb" x="100" y="104">N 中性点</text>
+                  <line class="guide" x1="90" y1="100" x2="90" y2="160"/>
+                  <text class="dim" x="18" y="134">每相电压 = 相电压</text>
+                  <text class="dim" x="18" y="152">两相线之间 = 线电压</text>
+                  <line class="wire" x1="224" y1="48" x2="344" y2="48"/>
+                  <line class="wire" x1="344" y1="48" x2="284" y2="150"/>
+                  <line class="wire" x1="284" y1="150" x2="224" y2="48"/>
+                  <circle cx="224" cy="48" r="4" fill="var(--chalk-blue)"/><text class="lbl" x="208" y="40">A</text>
+                  <circle cx="344" cy="48" r="4" fill="var(--chalk-yellow)"/><text class="ylb" x="350" y="40">B</text>
+                  <circle cx="284" cy="150" r="4" fill="var(--chalk-green)"/><text class="glb" x="290" y="156">C</text>
+                  <text class="dim" x="224" y="178">线电压 = 相电压（接反会短路）</text>
+                </svg>
+                <div class="fig-cap">图③ · Y/△ 联结结构（自包含示意）。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1：线值与相值 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 两根火线之间有多少伏（陈述时刻 2 · 揭晓预测 2）</div>
+        <div class="speak teacher">师："和为零"很漂亮，但用户拿到的是两根火线之间的电压——它跟每一路的电压差多少？先别看推导，猜一猜。</div>
+        <p class="muted">既然三路相量彼此差 120°，两根火线上的电压就是两路电压之差。用已学的 KVL 就能把这个差可见地算出来。</p>
+
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>Y 形接法里，两根相线之间的电压与每一路电压，幅度上是什么关系？每一路 220 V 时，两根相线之间大约多少伏？<strong>此时黑板上还没有推导，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred2')">A 一样，都是 220 V</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred2')">B 约 380 V（约 1.7 倍）</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred2')">C 约 110 V（一半）</button>
+          </div>
+          <p class="gate-note">先表态。推导此时还没上板；选定后才板书。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 2：两根火线之间的电压关系（陈述②） →</button>
+        <div class="reveal" id="rev-2">
+          <p><strong>选 B 约 380 V。</strong>由 KVL，两根相线之间的电压是两路电压之差，用相量减法可见地推出：</p>
+          <div class="eq-line">U̇_AB = U̇_A − U̇_B = U_p∠0° − U_p∠−120° = √3·U_p∠30°</div>
+          <p>两个等幅相量相差 120°，其差是 <code>√3</code> 倍且超前 30°。所以 Y 形 <code>U_l=√3 U_p</code>、线电压超前对应相电压 30°；相电压 220 V → 线电压约 381 V（工程标称取 380 V）。△ 形线电压等于相电压。电流关系：Y 形线电流=相电流；△ 形 <code>I_l=√3 I_p</code> 且滞后 30°。</p>
+          <p class="warn-note"><strong>边界（务必记住）：</strong>这套 √3/±30° 只在<strong>对称 + 固定相序 + 固定参考方向</strong>下成立，不能任意设定；非对称时不能套用。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：线电压为什么是 √3 倍且超前 30°。</strong>把 U̇_A 与 U̇_B 画成两根等长相量（相差 120°），从 U̇_B 端点指向 U̇_A 端点的差相量就是 U̇_AB：长度是 √3 倍，方向超前 U̇_A 30°。这就是上式在相量图上的样子。</p>
+            </div>
+            <div class="fig-box lg" aria-label="Y形相量图：U_A沿水平向右，U_B在左下方相差120度，U_AB是从U_B端点指向U_A端点的差相量，长度约1.732倍U_A且超前30度，标注U_l等于根号3倍U_p">
+              <svg class="svg-diag" viewBox="0 0 360 250" role="img">
+                <line class="guide" x1="150" y1="120" x2="300" y2="120"/>
+                <line class="guide" x1="150" y1="10" x2="150" y2="238"/>
+                <circle cx="150" cy="120" r="4" fill="var(--chalk)"/>
+                <text class="dim" x="140" y="134">O</text>
+                <line class="wire" style="stroke:var(--chalk-blue)" x1="150" y1="120" x2="268" y2="120"/>
+                <text class="lbl" x="272" y="116">U̇_A</text>
+                <line class="wire" style="stroke:var(--chalk-yellow)" x1="150" y1="120" x2="91" y2="222"/>
+                <text class="ylb" x="62" y="234">U̇_B</text>
+                <line class="wire" style="stroke:var(--chalk-green)" x1="150" y1="120" x2="91" y2="18"/>
+                <text class="glb" x="66" y="16">U̇_C</text>
+                <line class="wire" style="stroke:var(--chalk-pink);stroke-width:2.8" x1="91" y1="222" x2="327" y2="18"/>
+                <path d="M315 24 L327 18 L322 31" fill="none" stroke="var(--chalk-pink)" stroke-width="2.4"/>
+                <text class="plb" x="300" y="14">U̇_AB</text>
+                <line class="guide" x1="150" y1="120" x2="327" y2="18" stroke-dasharray="3 3"/>
+                <text class="dim" x="188" y="70">超前 30°</text>
+                <text class="dim" x="196" y="112">|U̇_AB| = √3·U_p</text>
+                <text class="ylb" x="14" y="168">Y 形：U_l = √3 U_p，超前对应相电压 30°</text>
+              </svg>
+              <div class="fig-cap">图④ · Y 形相量差（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def2" data-stage="2" onclick="revealBlock(this)">继续：给线值相值关系命名 + 定义（陈述时刻 2） →</button>
+          <div class="reveal" id="rev-def2">
+            <div class="ok-box"><strong>陈述时刻 2 · 线值与相值关系及其适用条件</strong><br/><strong>全称/命名</strong>：线电压与相电压、线电流与相电流的关系（line/phase quantities）。<br/><strong>一句定义</strong>：对称系统中，Y 形联结满足 <code>U_l=√3 U_p</code> 且线电压超前对应相电压 30°、<code>I_l=I_p</code>；△ 形联结满足 <code>U_l=U_p</code>、<code>I_l=√3 I_p</code> 且线电流滞后对应相电流 30°。这些关系由 KVL/KCL 在相量图上推出。<strong>适用条件</strong>：只在电源与负载对称、相序确定、参考方向按约定时成立，不能任意设定；非对称时不能套用。<br/><strong>符号式</strong>：Y 形 <code>U̇_AB=√3 U̇_A∠30°</code>、<code>U_l=√3 U_p</code>、<code>I_l=I_p</code>；△ 形 <code>U̇_AB=U̇_A</code>、<code>I_A=√3 I_AB∠−30°</code>。〔邱 §12-2 / p.283–284；李下 §9-8 / PDF 104〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2：一相计算、中性线与功率 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 三路一起供电的功率与中性线（陈述时刻 3 · 揭晓预测 3）</div>
+        <div class="speak teacher">师：前面看到三路电压相加为零。那三路一起供电时，瞬时功率是不是也像单相那样随时间脉动？只知道两根火线之间的电压、每根线的电流和功率因数，能不能一个式子算出总功率？两只表够不够测总量？先猜。</div>
+
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>① 三路一起供电的瞬时功率，是否随时间脉动？② 只知道两根火线之间的电压、每根线的电流和功率因数，能否一个式子算出总功率？③ 两只功率表够不够？<strong>此时黑板上没有功率公式，也没有两表结论，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred3')">①不脉动 ②有 ③两只表够，且和为总功率</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred3')">①仍脉动 ②没有 ③两只表不够</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred3')">①不脉动 ②没有 ③一只表就够</button>
+          </div>
+          <p class="gate-note">先表态。公式与两表结论此时都没上板；选定后才板书推导。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 3：功率账与测量的结论（陈述③） →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选第一项。</strong>分三步板书：</p>
+          <p><strong>① 对称时可只算一相、中线可省。</strong>对称 Y-Y 中负载中性点电压 <code>U̇_N'N=(U̇_A/Z+U̇_B/Z+U̇_C/Z)/(3/Z+1/Z_N)=0</code>（因三路电压相加为零），中线电流 <code>İ_N=İ_A+İ_B+İ_C=0</code>，所以只需算一相，中线可省。</p>
+          <p><strong>② 不对称时中线不可省。</strong>负载不对称时中性点位移 <code>U̇_N'N≠0</code>，各相互相牵连、电压严重失衡（书中算得某相低到 60 V）。中线阻抗接近零，能强使 <code>U̇_N'N≈0</code>、保证各相独立与安全。<strong>注意区分两种情形：</strong>中线接通时中线电流非零但各相电压仍对称、无位移告警；中线断开时中线电流为零、才发生中性点位移。</p>
+          <p><strong>③ 功率与二瓦计法。</strong>把三路瞬时功率相加，<code>p=3 U_p I_p cos φ</code> 是常量（瞬时功率平衡），总有功 <code>P=√3 U_l I_l cos φ</code>——<strong>φ 是负载阻抗角（相电压与相电流相位差），不是线电压与线电流夹角</strong>。三相三线制用两只功率表：<code>P₁=U_l I_l cos(φ−30°)</code>、<code>P₂=U_l I_l cos(φ+30°)</code>，<code>P₁+P₂=P</code>；|φ|&gt;60° 时一表可为负，单独一表无意义；不对称四线制不能用。例12-4：<code>P=2.5 kW</code>、<code>cos φ=0.866</code>、<code>U_l=380 V</code> → <code>I_l≈4.386 A</code>，<code>P₁≈1666.68 W</code>、<code>P₂≈833.34 W</code>。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑤：中线接与断的两种情形。</strong>左图中线接通，负载中性点 N′ 被钳住在电源中性点 N，各相电压保持相等（220 V），但中线电流非零；右图中线断开，N′ 偏移，一相电压掉到 60 V、另两相偏高——这就是"中性点位移"，此时各相电流不能再按 220/Z 简单算。</p>
+            </div>
+            <div class="fig-box lg" aria-label="中性点位移示意图：左侧中线接通，电源中性点N与负载中性点N prime重合，标注各相220伏且中线电流非零无位移；右侧中线断开画红叉，N prime偏移，标注中性点位移、某相低至60伏、各相失衡">
+              <svg class="svg-diag" viewBox="0 0 460 205" role="img">
+                <text class="ylb" x="12" y="20">中线接通（有回路）</text>
+                <text class="plb" x="248" y="20">中线断开（三相三线）</text>
+                <!-- left: neutral connected -->
+                <circle cx="90" cy="52" r="4" fill="var(--chalk)"/><text class="dim" x="78" y="44">N</text>
+                <line class="wire" x1="90" y1="52" x2="42" y2="96"/><line class="wire" x1="90" y1="52" x2="90" y2="96"/><line class="wire" x1="90" y1="52" x2="138" y2="96"/>
+                <circle cx="90" cy="140" r="4" fill="var(--chalk-pink)"/><text class="glb" x="98" y="144">N′=N</text>
+                <line class="wire" x1="42" y1="96" x2="90" y2="140"/><line class="wire" x1="138" y1="96" x2="90" y2="140"/>
+                <line class="wire" style="stroke:var(--chalk-green);stroke-width:2.6" x1="90" y1="52" x2="90" y2="140"/>
+                <text class="dim" x="16" y="166">各相仍 220 V，无位移</text>
+                <text class="glb" x="16" y="184">中线电流 11 A（非零）</text>
+                <line class="guide" x1="228" y1="12" x2="228" y2="196"/>
+                <!-- right: neutral open -->
+                <circle cx="320" cy="52" r="4" fill="var(--chalk)"/><text class="dim" x="308" y="44">N</text>
+                <line class="wire" x1="320" y1="52" x2="272" y2="96"/><line class="wire" x1="320" y1="52" x2="320" y2="96"/><line class="wire" x1="320" y1="52" x2="368" y2="96"/>
+                <circle cx="360" cy="138" r="4" fill="var(--chalk-pink)"/><text class="plb" x="368" y="142">N′ 偏移</text>
+                <line class="wire" x1="272" y1="96" x2="360" y2="138"/><line class="wire" x1="368" y1="96" x2="360" y2="138"/>
+                <line class="wire" style="stroke:var(--chalk-pink);stroke-dasharray:4 3" x1="320" y1="52" x2="320" y2="94"/>
+                <path d="M312 76 L328 92 M328 76 L312 92" stroke="var(--chalk-pink)" stroke-width="2.4" fill="none"/>
+                <text class="plb" x="250" y="166">⚠ 中性点位移 U̇_N'N≠0</text>
+                <text class="plb" x="250" y="184">某相低至 60 V，各相失衡</text>
+              </svg>
+              <div class="fig-cap">图⑤ · 中线通断两种情形（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def3" data-stage="3" onclick="revealBlock(this)">继续：给一相计算、中性线与功率命名 + 定义（陈述时刻 3） →</button>
+          <div class="reveal" id="rev-def3">
+            <div class="ok-box"><strong>陈述时刻 3 · 一相计算法、中性线的作用、三相功率与二瓦计法</strong><br/><strong>全称/命名</strong>：归结为一相的计算、中性点位移（neutral-point displacement）、瞬时功率平衡、二瓦计法（two-wattmeter method）。<br/><strong>一句定义</strong>：对称 Y-Y 电路因三路电压相加为零，有 <code>U̇_N'N=0</code>、中线电流为零，可只算一相、中线可省；不对称时中性点位移 <code>U̇_N'N≠0</code> 使各相电压失衡、彼此牵连，中性线能强使 <code>U̇_N'N≈0</code>、保证各相独立与安全（接通时中线电流非零但无位移，断开时电流为零才位移）。对称三相瞬时功率 <code>p=3 U_p I_p cos φ</code> 为常量、等于平均功率；<code>P=√3 U_l I_l cos φ</code>，φ 是负载阻抗角。三相三线制用两只功率表，<code>P₁=U_l I_l cos(φ−30°)</code>、<code>P₂=U_l I_l cos(φ+30°)</code>、<code>P₁+P₂=P</code>，单独一表无意义，不对称四线制不可用。<br/><strong>符号式</strong>：<code>U̇_N'N=(U̇_A Y_A+U̇_B Y_B+U̇_C Y_C)/(Y_A+Y_B+Y_C)</code>；<code>P=√3 U_l I_l cos φ</code>；<code>P₁+P₂=P</code>。〔邱 §12-3~§12-5 / p.285–290；李下 §9-8~§9-9 / PDF 106、110–114〕</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 A（多路供电实验台）已解锁，见第 5 节。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3：非正弦 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 不是正弦的波形怎么办（陈述时刻 4 · 揭晓预测 4）</div>
+        <div class="speak teacher">师：三路供电再"标准"也还是正弦。可整流的方波、脉冲根本不是正弦——最后一问：怎么用只会算正弦的工具处理它？</div>
+
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>一个非正弦的周期波形（比如方波），怎么用只会算正弦的工具处理？能不能直接把它当成一个相量？<strong>此时黑板上还没有处理办法，也没有功率规则，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred4')">A 直接当成一个相量来算</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred4')">B 看成几种不同快慢的正弦叠在一起，分别算再合起来</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred4')">C 完全没法用正弦工具算</button>
+          </div>
+          <p class="gate-note">先选。分解式与功率规则此时都不在黑板上；选定后才板书。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="4" onclick="revealBlock(this)" disabled>公布预测 4：非正弦的处理办法（陈述④） →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>选 B。</strong>满足条件的周期函数可以展开成傅里叶级数：</p>
+          <div class="eq-line">f(t) = A₀ + Σ A_k cos(kω₁t + φ_k)　＝ 直流 + 基波 + 各次谐波</div>
+          <p><code>A₀</code> 是直流分量、<code>k=1</code> 是基波、<code>k&gt;1</code> 是各次谐波，各次频率是基频的整数倍，频谱是离散的线频谱。收敛快慢看波形光滑程度：方波/脉冲要很多项（取到 11 次约 0.95、35 次仍约 2% 误差），光滑波形几项就够——<strong>复杂系数手算 P3 了解即可</strong>。</p>
+          <p>有效值由正交性得 <code>U=√(U₀²+U₁²+…)</code>；平均功率 <code>P=U₀I₀+ΣU_k I_k cos φ_k</code>——<strong>不同频率分量的乘积积分为零，只有同频配对才贡献平均功率</strong>。例10-9：<code>u=[100+100cos t+50cos2t+30cos3t] V</code>、<code>i=[10cos(t−60°)+2cos(3t−135°)] A</code>，直流与 2 次电压无对应电流、不贡献，基波 250 W、3 次 −21.2 W，总 228.8 W。谐波分析法：逐频建相量模型求同频响应，再在时域相加；<strong>不能把不同频率合并成一个相量</strong>；直流按 ω=0 单独处理（电感短路、电容开路）。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑥：方波 = 基波 + 3 次 + 5 次…</strong>左边把方波写成若干正弦分量之和（取 1、3、5 次已有明显方波模样），右边是离散频谱：只在整数倍频率处有线，幅度随次数下降。这就是"按快慢拆开"的图像。</p>
+            </div>
+            <div class="fig-box lg" aria-label="非正弦分解示意图：左图方波由基波加三次加五次谐波叠加逼近，右图离散频谱在1、3、5次频率处画竖线高度依次降低，标注直流加基波加各次谐波">
+              <svg class="svg-diag" viewBox="0 0 460 200" role="img">
+                <text class="ylb" x="12" y="18">方波 ≈ 基波 + 3次 + 5次（波形）</text>
+                <line class="guide" x1="30" y1="105" x2="220" y2="105"/>
+                <polyline class="wire" style="stroke:var(--chalk-pink)" fill="none" points="30,105.0 34,94.6 38,84.7 42,75.8 46,68.2 50,62.3 54,58.2 58,55.8 62,55.1 66,55.7 70,57.4 74,59.6 78,62.1 82,64.5 86,66.4 90,67.5 94,68.0 98,67.6 102,66.5 106,65.0 110,63.2 114,61.4 118,60.0 122,59.0 126,58.7 130,59.0 134,60.0 138,61.4 142,63.2 146,65.0 150,66.5 154,67.6 158,68.0 162,67.5 166,66.4 170,64.5 174,62.1 178,59.6 182,57.4 186,55.7 190,55.1 194,55.8 198,58.2 202,62.3 206,68.2 210,75.8 214,84.7 218,94.6"/>
+                <text class="dim" x="30" y="150">逼近方波（取 1/3/5 次）</text>
+                <text class="dim" x="30" y="168">越光滑的波，需要的项越少</text>
+                <line class="guide" x1="238" y1="12" x2="238" y2="188"/>
+                <text class="plb" x="252" y="18">离散频谱（只在整数倍频率有线）</text>
+                <line class="guide" x1="262" y1="160" x2="440" y2="160"/>
+                <line class="wire" style="stroke:var(--chalk-blue);stroke-width:9" x1="284" y1="160" x2="284" y2="66"/>
+                <line class="wire" style="stroke:var(--chalk-yellow);stroke-width:9" x1="340" y1="160" x2="340" y2="126"/>
+                <line class="wire" style="stroke:var(--chalk-green);stroke-width:9" x1="396" y1="160" x2="396" y2="138"/>
+                <text class="lbl" x="274" y="180">基波 1</text>
+                <text class="ylb" x="328" y="180">3次</text>
+                <text class="glb" x="384" y="180">5次</text>
+                <text class="dim" x="252" y="46">幅度 ∝ 1/k，只在 k=1,3,5…</text>
+              </svg>
+              <div class="fig-cap">图⑥ · 非正弦分解与离散频谱（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def4" data-stage="4" onclick="revealBlock(this)">继续：给分解与功率规则命名 + 定义（陈述时刻 4） →</button>
+          <div class="reveal" id="rev-def4">
+            <div class="ok-box"><strong>陈述时刻 4 · 傅里叶级数、有效值平方和、平均功率同频配对、谐波分析法</strong><br/><strong>全称/命名</strong>：傅里叶级数（Fourier series）、直流分量/基波/高次谐波、幅度频谱、谐波分析法（harmonic analysis method）。<br/><strong>一句定义</strong>：非正弦周期量可分解为 <code>f(t)=A₀+ΣA_kcos(kω₁t+φ_k)</code>=直流+基波+各次谐波，各次频率为基频正整数倍、频谱离散。有效值 <code>U=√(U₀²+U₁²+…)</code>。平均功率 <code>P=U₀I₀+ΣU_kI_kcosφ_k</code>：不同频率分量乘积的积分为零，<strong>只有同频电压电流才产生平均功率</strong>。谐波分析法=按傅里叶分解激励 → 每个频率单独建相量模型求同频响应 → 时域叠加；<strong>不同频率不能合并成一个相量</strong>，直流按 ω=0 单独处理（电感短路、电容开路）。复杂系数手算 P3 了解即可。<br/><strong>符号式</strong>：<code>f(t)=A₀+ΣA_kcos(kω₁t+φ_k)</code>；<code>U=√(U₀²+U₁²+…)</code>；<code>P=U₀I₀+ΣU_kI_kcosφ_k</code>。〔邱 §13-2~§13-4 / p.296–306；李下 §10-4~§10-5 / PDF 134–145〕</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 B（波形分解实验台）与独立练习已解锁，见第 5、6 节；四个预测全部揭晓。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4：双实验台 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 两个实验台（多路供电台 / 波形分解台）</div>
+        <p class="muted">拖动滑块看同一组公式怎样联动：面板 A 演示多路供电的电压电流与两只表的读数，并区分中线通断两种情形；面板 B 把一个非正弦波形按不同快慢拆开，看每一份贡献如何相加成总功率。</p>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · 多路供电实验台（预测 3 揭晓后启用）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 3 揭晓后解锁（此刻显示会提前泄露后续结论）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="mode-btns">
+              <button class="mode-btn active" data-conn="Y" onclick="setConn('Y')">Y 形</button>
+              <button class="mode-btn" data-conn="D" onclick="setConn('D')">△ 形</button>
+              <span style="width:12px"></span>
+              <button class="mode-btn active" data-sym="sym" onclick="setSym('sym')">对称</button>
+              <button class="mode-btn" data-sym="asym" onclick="setSym('asym')">不对称</button>
+            </div>
+            <div class="mode-btns" id="A-neu-group">
+              <button class="mode-btn active" data-neu="on" onclick="setNeu('on')">中线接通</button>
+              <button class="mode-btn" data-neu="off" onclick="setNeu('off')">中线断开</button>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>每路电压 U_p（V）<span id="A-Up-v">220 V</span></label>
+                <input type="range" id="A-Up" min="110" max="260" step="10" value="220" />
+                <label>阻抗角 φ（°）<span id="A-phi-v">30°</span></label>
+                <input type="range" id="A-phi" min="-80" max="80" step="5" value="30" />
+                <label>阻抗模 |Z|（Ω）<span id="A-Z-v">10 Ω</span></label>
+                <input type="range" id="A-Z" min="2" max="40" step="1" value="10" />
+              </div>
+              <div class="th-panel">
+                <h5>实时结果（三路相量 / 线值 / 功率）</h5>
+                <div class="res-line" id="A-phasors">—</div>
+                <div class="th-row"><span class="k">线电压 U_l</span><span class="v" id="A-Ul">—</span></div>
+                <div class="th-row"><span class="k">U̇_AB</span><span class="v" id="A-Uab">—</span></div>
+                <div class="th-row"><span class="k">相电流（一相）</span><span class="v" id="A-Ip">—</span></div>
+                <div class="th-row"><span class="k">线电流 I_l</span><span class="v" id="A-Il">—</span></div>
+                <div class="th-row"><span class="k">A 相电流 İ_A</span><span class="v" id="A-IA">—</span></div>
+                <div class="th-row"><span class="k">中线电流 İ_N</span><span class="v" id="A-IN">—</span></div>
+                <div class="th-row"><span class="k">表 1 / 表 2</span><span class="v" id="A-P12">—</span></div>
+                <div class="th-row"><span class="k">总有功 P</span><span class="v" id="A-P">—</span></div>
+                <div class="warn-note" id="A-warn">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认对称 Y：<code>U_p=220 V、φ=30°、|Z|=10 Ω</code> → <code>U_l=381 V</code>、<code>İ_A=22∠−30° A</code>、<code>P₁=8382 W、P₂=4191 W、P=12573 W</code>（两表之和恰等于总功率）。切"不对称"时：中线接通→中线电流 11 A、各相电压仍 220 V、无位移；中线断开→中线电流为零、中性点位移告警。</p>
+          </div>
+        </div>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · 波形分解实验台（预测 4 揭晓后启用）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 4 揭晓后解锁（此刻显示会提前泄露后续结论）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>直流 U₀（V）<span id="B-U0-v">100 V</span></label>
+                <input type="range" id="B-U0" min="0" max="200" step="10" value="100" />
+                <label>基波电压幅值 U₁m（V）<span id="B-U1m-v">100 V</span></label>
+                <input type="range" id="B-U1m" min="0" max="200" step="10" value="100" />
+                <label>基波电流幅值 I₁m（A）<span id="B-I1m-v">10 A</span></label>
+                <input type="range" id="B-I1m" min="0" max="20" step="1" value="10" />
+                <label>基波相位差 φ₁（°）<span id="B-phi1-v">60°</span></label>
+                <input type="range" id="B-phi1" min="-180" max="180" step="5" value="60" />
+                <label>2 次电压幅值 U₂m（V）<span id="B-U2m-v">50 V</span></label>
+                <input type="range" id="B-U2m" min="0" max="100" step="10" value="50" />
+                <label>3 次电压幅值 U₃m（V）<span id="B-U3m-v">30 V</span></label>
+                <input type="range" id="B-U3m" min="0" max="100" step="5" value="30" />
+                <label>3 次电流幅值 I₃m（A）<span id="B-I3m-v">2 A</span></label>
+                <input type="range" id="B-I3m" min="0" max="10" step="0.5" value="2" />
+                <label>3 次相位差 φ₃（°）<span id="B-phi3-v">135°</span></label>
+                <input type="range" id="B-phi3" min="-180" max="180" step="5" value="135" />
+              </div>
+              <div class="th-panel">
+                <h5>逐频配对表（只有同频才贡献功率）</h5>
+                <table class="cmp-tbl">
+                  <tr><th>次数 k</th><th>U 有效值</th><th>I 有效值</th><th>相位差</th><th>功率</th></tr>
+                  <tr><td>0 直流</td><td class="mono" id="B-u0">—</td><td class="mono" id="B-i0">—</td><td class="mono">—</td><td class="mono" id="B-p0">—</td></tr>
+                  <tr><td>1 基波</td><td class="mono" id="B-u1">—</td><td class="mono" id="B-i1">—</td><td class="mono" id="B-a1">—</td><td class="mono" id="B-p1">—</td></tr>
+                  <tr><td>2 次</td><td class="mono" id="B-u2">—</td><td class="mono" id="B-i2">—</td><td class="mono">—</td><td class="mono" id="B-p2">—</td></tr>
+                  <tr><td>3 次</td><td class="mono" id="B-u3">—</td><td class="mono" id="B-i3">—</td><td class="mono" id="B-a3">—</td><td class="mono" id="B-p3">—</td></tr>
+                </table>
+                <div class="th-row" style="margin-top:6px"><span class="k">总功率 P</span><span class="v" id="B-ptot">—</span></div>
+                <div class="th-row"><span class="k">波形有效值 U</span><span class="v" id="B-ueff">—</span></div>
+                <div class="th-row"><span class="k">电流有效值 I</span><span class="v" id="B-ieff">—</span></div>
+                <div class="warn-note" id="B-note">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认（例10-9）：直流与 2 次电压没有对应电流 → 不贡献；基波 <code>250 W</code>、3 次 <code>−21.2 W</code>，总 <code>228.8 W</code>；有效值 <code>U≈129.2 V</code>、<code>I≈7.21 A</code>。3 次功率为负表示该分量端口在送功率。改滑块按同频配对公式联动。</p>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：独立练习 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习（8 题，先作答再判定）与过关</div>
+        <div class="lock-note" id="ex-lock">🔒 独立练习在四个预测全部揭晓后出现（题干会用到前面刚揭晓的结论）。</div>
+        <div id="ex-body" style="display:none;">
+          <p class="muted">形态一 · 多路供电（1–4）；形态二 · 非正弦按频率拆（5–8）。都不是前面例题的近邻复制。</p>
+
+          <div class="qrow">
+            <div class="qt">练习 1（形态一）· 对称 Y 形电源每路 220 V。求两根相线之间的电压有效值（V），并写出 U̇_AB 相对 U̇_A 的相位关系（填"超前30°"或"滞后30°"）。</div>
+            <div class="numcheck" id="q-1" data-qid="q-1"><label>线电压 <input type="text" placeholder="如：381" /> V，相位 <input class="txtin" type="text" placeholder="如：超前30°" /></label><button class="btn-sm" onclick="checkNum1()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 2（形态一）· 对称 Y 形负载每相 <code>Z=4+j3 Ω</code>（|Z|=5 Ω、φ=36.87°），取 U̇_A=220∠0° V。求 İ_A 的模与相角，并按对称顺序写出 İ_B、İ_C 的相角（单位 °）。</div>
+            <div class="numcheck" id="q-2" data-qid="q-2"><label>|İ_A| <input type="text" placeholder="如：44" /> A，∠İ_A <input type="text" placeholder="如：−36.87" />°，∠İ_B <input type="text" placeholder="如：−156.87" />°，∠İ_C <input type="text" placeholder="如：83.13" />°</label><button class="btn-sm" onclick="checkNum2()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 3（形态一）· 对称负载线电压 380 V、线电流 10 A、<code>cos φ=0.866</code>（φ=30°，感性）。求总有功 P、二瓦计两表 P₁/P₂（单位 W）。</div>
+            <div class="numcheck" id="q-3" data-qid="q-3"><label>P <input type="text" placeholder="如：5700" />，P₁ <input type="text" placeholder="如：3800" />，P₂ <input type="text" placeholder="如：1900" /></label><button class="btn-sm" onclick="checkNum3()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 4（形态一 · 填空辨析）· 对称 Y-Y 电路中线电流为多少（填 0）、中线能否省（填"能"或"不能"）？若负载不对称且中线断开，会出现什么现象（填"中性点位移"或"电压失衡"）？</div>
+            <div class="numcheck" id="q-4" data-qid="q-4"><label>中线电流 <input type="text" placeholder="如：0" />，能否省 <input class="txtin" type="text" placeholder="如：能" />，断线现象 <input class="txtin" type="text" placeholder="如：中性点位移" /></label><button class="btn-sm" onclick="checkTextAny('q-4',[['0','零'],['能','可以'],['位移','失衡','60']],'对称时中线电流为 0、可省；不对称且断中线时发生中性点位移、各相电压严重失衡，中线必须保留。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 5（形态二）· 求 <code>u(t)=[100+100cos t+50cos2t] V</code> 的有效值（V）。（直流按 100 V 计入，谐波用有效值。）</div>
+            <div class="numcheck" id="q-5" data-qid="q-5"><label>U <input type="text" placeholder="如：127.5" /> V</label><button class="btn-sm" onclick="checkNum5()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 6（形态二）· 端口 <code>u(t)=100cos t+30cos3t V</code>、<code>i(t)=10cos(t−60°) A</code>（无 3 次电流）。求平均功率（W）。</div>
+            <div class="numcheck" id="q-6" data-qid="q-6"><label>P <input type="text" placeholder="如：250" /> W</label><button class="btn-sm" onclick="checkNum6()">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 7（形态二 · 选择）· 关于非正弦周期量，正确的是？<br/>①可以把不同频率的分量写成一个相量相加；②只有同频的电压电流分量才产生平均功率，不同频率乘积的积分为零；③直流分量必须丢掉；④傅里叶级数只含正弦项。</div>
+            <div class="choicebox" id="q-7" data-qid="q-7" data-hint="不同频率不能合成一个相量；直流要计入（ω=0 单独处理）；傅里叶级数含 cos 与 sin 项，不限于正弦项。" data-explain="选②：只有同频分量配对才产生平均功率。"><label><input type="radio" name="q-7" value="a"/> ①</label><label><input type="radio" name="q-7" value="b"/> ②</label><label><input type="radio" name="q-7" value="c"/> ③</label><label><input type="radio" name="q-7" value="d"/> ④</label><button class="btn-sm" onclick="checkChoice('q-7','b')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 8（形态二 · 辨析三空）· 谐波分析法里直流分量怎么处理（ω=0 时电感、电容各等效成什么）？邱例13-2 中电流振幅没按 1/k 衰减、7 次反而较大，说明"取几项够"为什么不能只看激励谐波？</div>
+            <div class="numcheck" id="q-8" data-qid="q-8"><label>电感 <input class="txtin" type="text" placeholder="如：短路" />，电容 <input class="txtin" type="text" placeholder="如：开路" />，原因 <input class="txtin" type="text" placeholder="含 谐振/频率特性" /></label><button class="btn-sm" onclick="checkTextAny('q-8',[['短路'],['开路'],['谐振','带通','频率特性']],'直流按 ω=0 处理：电感短路、电容开路；例13-2 电路对 7 次谐波串联谐振、呈带通，响应由网络频率特性决定，故「取几项够」要结合网络判断。')">判定</button><div class="fb"></div></div>
+          </div>
+
+          <div class="ok-box" style="margin-top:14px;">
+            <strong>过关自检（合上笔记能说出）</strong>：① 为什么三路相加恒为零、它带来了哪些简化？② 为什么线电压是相电压的 √3 倍且超前 30°、这套关系何时不成立？③ 为什么对称时可只算一相、中线可省；不对称断线为何发生位移？④ 为什么功率公式里的角是阻抗角、两表之和为何等于总功率？⑤ 为什么只有同频分量才产生平均功率、直流为何按 ω=0 单独处理、不同频率为何不能合并相量？
+          </div>
+          <div class="warn-note">下一课钩子（若排 L3-06）：今天看到"波形越陡、需要的谐波越多"。高频分量一多，导线就不再只是导线——什么时候必须启动信号完整性（SI）思维，留给下一课。</div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：收尾 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 收尾与钩子</div>
+        <div class="speak teacher" data-leak style="display:none;">师：回扣核心问题——把相量工具和功率账"按哪一路"或"按哪一种快慢"拆开算、最后合起来：多路供电因三路相加为零，可只算一相、线值是相值的 √3 倍、功率 √3·U·I·cos φ；非正弦分解为直流+基波+谐波，只有同频配对才产生平均功率，逐频算完时域相加。<strong>但这些简化都有条件——对称、定相序、定参考方向、同频、直流 ω=0，越过边界就不成立。</strong></div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏、来源台账与答案区（页尾资料）</summary>
+          <h4>学习目标（学完应能自己说出）</h4>
+          <p class="muted">"这节课解决的是——把相量/功率工具搬到两类工程现实：多路供电按'相'算（三路相差 120° 相加为零，所以能只算一相、线值是相值的 √3 倍、功率 √3 U_l I_l cos φ），非正弦按'频率'算（分解成直流+基波+谐波，只有同频才产生平均功率，逐频算完时域相加），而且这些简化都有适用条件。"</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 6′ · 三路相加为零（陈述①）8′ · 线值相值（陈述②）9′ · 一相计算与功率（陈述③）10′ · 非正弦与谐波（陈述④）9′ · 两实验台与练习 3′ · 收尾钩子。预算非配额，因果链完整前提下可压缩低增益重复。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>三路 120°、相加为零、相序、Y/△、相/线电压</td><td>〔书 p.281–282〕邱 §12-1；〔书·李下 §9-8〕PDF 103</td></tr>
+            <tr><td>线值相值 √3/±30° 及边界；例9-16</td><td>〔书 p.283–284〕邱 §12-2；〔书·李下 §9-8〕PDF 104、110</td></tr>
+            <tr><td>一相计算、中线通断、中性点位移；例9-18</td><td>〔书 p.285–288〕邱 §12-3/§12-4；〔书·李下 §9-9〕PDF 112–114</td></tr>
+            <tr><td>例12-4 <code>I_l≈4.386 A、P₁≈1666.68/P₂≈833.34 W</code></td><td>〔书 p.288–290〕邱 §12-5 例12-4</td></tr>
+            <tr><td>三相功率 <code>P=√3U_lI_lcosφ</code>（φ=阻抗角）、二瓦计 <code>P₁+P₂=P</code></td><td>〔书 p.288–290〕邱 §12-5；〔书·李下 §9-8〕PDF 106、110</td></tr>
+            <tr><td>傅里叶级数、频谱、收敛；有效值平方和、平均功率同频配对、谐波分析法</td><td>〔书 p.296–306〕邱 §13-2/§13-3/§13-4；〔书·李下 §10-4/§10-5〕PDF 134–145</td></tr>
+            <tr><td>例10-9 <code>P=228.8 W</code>（OCR 的 "50 W" 已校为 250 W）、例13-2 <code>P≈1337.63 W</code></td><td>〔书·李下 §10-5〕PDF 144–145；〔书 p.305–306〕邱 §13-4</td></tr>
+            <tr><td>"按相/按频率拆开算再合起来"工程图景与边界、两实验台与练习</td><td>〔通识〕由上述正文 + L2-07 相量功率工具推导 /〔我编的题〕（数值已验算自洽）</td></tr>
+          </table>
+          <p class="muted">邱 PDF=印刷+24（§12-1 p.281→PDF 305、§12-2 p.283→307、§12-3 p.285→309、§12-5 p.288→312、§13-2 p.296→320、§13-3 p.303→327、§13-4 p.305→329）；李下印刷页码以原书为准、目录无页码，故用章节号 + PDF 页；H&amp;H 未摘正文，不引章节号；邱 §13-5~§13-7 未摘、不引章节号，标为 P3「了解即可」。记号统一：<code>U_p/I_p</code> 相值、<code>U_l/I_l</code> 线值、<code>U_k/I_k</code> 第 k 次谐波有效值、<code>φ</code> 负载阻抗角。正文见 <code>书籍/摘录/L3-05.md</code>，教案见 <code>lessons/drafts/L3-05-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：B 恒等于零（cos 恒等式）；预测 2：B 约 380 V（√3 倍、超前 30°）；预测 3：①不脉动 ②有 ③两只表够且和为总功率；预测 4：B 看成不同快慢的正弦分别算再合起来。练习：1 381 V / 超前30°；2 44 A / −36.87° / −156.87° / 83.13°；3 5700 / 3800 / 1900 W；4 0 / 能 / 中性点位移；5 127.5 V；6 250 W；7 ②；8 短路 / 开路 / 7次谐振（网络频率特性）。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-05-three-phase-nonsinusoidal';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-05 增量脚本：四预测门禁 + 陈述卡 gating + 双面板 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(!isFinite(v)) return '—';
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+
+    /* ---------- 严格顺序：前一个预测揭晓后才解锁下一预测的选项 ---------- */
+    function unlockPred(n){
+      var wrap=document.querySelector('[data-pred="q-p'+n+'"]');
+      if(!wrap) return;
+      wrap.querySelectorAll('.pred-opt').forEach(function(b){ b.disabled=false; });
+    }
+    var aUnlocked=false, bUnlocked=false, cheatUnlocked=false, exUnlocked=false;
+    function unlockA(){ if(aUnlocked) return; aUnlocked=true; el('A-lock').style.display='none'; el('A-body').style.display=''; solveA(); }
+    function unlockB(){ if(bUnlocked) return; bUnlocked=true; el('B-lock').style.display='none'; el('B-body').style.display=''; solveB(); }
+    function unlockCheat(){ if(cheatUnlocked) return; cheatUnlocked=true; document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display=''; }); }
+    function unlockEx(){ if(exUnlocked) return; exUnlocked=true; el('ex-lock').style.display='none'; el('ex-body').style.display=''; }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred1') unlockPred(2);
+      if(btn.id==='gate-pred2') unlockPred(3);
+      if(btn.id==='gate-pred3'){ unlockPred(4); unlockA(); }
+      if(btn.id==='gate-pred4'){ unlockB(); unlockEx(); unlockCheat(); }
+    };
+
+    /* ---------- 面板 A：多路供电实验台 ---------- */
+    var ast = {conn:'Y', sym:'sym', neu:'on'};
+    function syncModeBtns(){
+      document.querySelectorAll('[data-conn]').forEach(function(b){ b.classList.toggle('active', b.dataset.conn===ast.conn); });
+      document.querySelectorAll('[data-sym]').forEach(function(b){ b.classList.toggle('active', b.dataset.sym===ast.sym); });
+      document.querySelectorAll('[data-neu]').forEach(function(b){ b.classList.toggle('active', b.dataset.neu===ast.neu); });
+      el('A-neu-group').style.display = (ast.conn==='Y' && ast.sym==='asym') ? '' : 'none';
+    }
+    window.setConn=function(c){ if(!aUnlocked) return; ast.conn=c; if(c==='D') ast.sym='sym'; syncModeBtns(); solveA(); };
+    window.setSym=function(s){ if(!aUnlocked) return; ast.sym=s; syncModeBtns(); solveA(); };
+    window.setNeu=function(n){ if(!aUnlocked) return; ast.neu=n; syncModeBtns(); solveA(); };
+
+    function solveA(){
+      if(!aUnlocked) return;
+      var Up=parseFloat(el('A-Up').value), phi=parseFloat(el('A-phi').value), Z=parseFloat(el('A-Z').value);
+      set('A-Up-v',num(Up,0)+' V'); set('A-phi-v',num(phi,0)+'°'); set('A-Z-v',num(Z,1)+' Ω');
+      var Ip=Up/Z;
+      set('A-phasors','U̇_A='+num(Up,0)+'∠0° V ｜ U̇_B='+num(Up,0)+'∠−120° ｜ U̇_C='+num(Up,0)+'∠120° ；三相和=0');
+      if(ast.conn==='Y'){
+        var Ul=Math.round(Math.sqrt(3)*Up);
+        set('A-Ul',num(Ul,0)+' V');
+        set('A-Uab',num(Ul,0)+'∠30° V');
+        set('A-Ip',num(Ip,2)+'∠'+num(-phi,1)+'° A');
+        set('A-Il',num(Ip,2)+' A（= 相电流）');
+        if(ast.sym==='sym'){
+          set('A-IA',num(Ip,2)+'∠'+num(-phi,1)+'° A');
+          set('A-IN','0 A（可省）');
+          var P1=Ul*Ip*Math.cos((phi-30)*Math.PI/180);
+          var P2=Ul*Ip*Math.cos((phi+30)*Math.PI/180);
+          set('A-P12',num(P1,0)+' / '+num(P2,0)+' W');
+          set('A-P',num(P1+P2,0)+' W');
+          set('A-warn','对称：各相电压仍 '+num(Up,0)+' V，中线电流为 0、中线可省；两表之和恰等于总功率。');
+        } else if(ast.neu==='on'){
+          var InMag=Ip/2, InAng=180-phi;
+          set('A-IA',num(Ip/2,2)+'∠'+num(-phi,1)+'° A（A 相阻抗加倍，电流减半）');
+          set('A-IN',num(InMag,2)+'∠'+num(InAng,1)+'° A（非零）');
+          set('A-P12','—'); set('A-P','—');
+          set('A-warn','中线接通：中线电流非零但把负载中性点钳住在电源中性点 → 各相电压仍 '+num(Up,0)+' V、无中性点位移。二瓦计法不适用（不对称四线制）。');
+        } else {
+          set('A-IA','不能直接按 '+num(Up,0)+'/'+num(Z,1)+' 算，须联立求解（P3 本课不展开）');
+          set('A-IN','0 A（无中线可流）');
+          set('A-P12','—'); set('A-P','—');
+          set('A-warn','⚠ 中性点位移：负载中性点 N′ 偏移，各相电压严重失衡（书中算得某相低至 60 V）、彼此牵连；中线必须保留。');
+        }
+      } else {
+        set('A-Ul',num(Up,0)+' V（= 相电压）');
+        set('A-Uab',num(Up,0)+'∠0° V（线电压即相电压）');
+        set('A-Ip',num(Ip,2)+'∠'+num(-phi,1)+'° A');
+        set('A-Il',num(Math.sqrt(3)*Ip,2)+' A（= √3 × 相电流，滞后 30°）');
+        set('A-IA','—（△ 形无中性点）');
+        set('A-IN','—（△ 形无中线）');
+        var Il2=Math.sqrt(3)*Ip;
+        var P1d=Up*Il2*Math.cos((phi-30)*Math.PI/180), P2d=Up*Il2*Math.cos((phi+30)*Math.PI/180);
+        set('A-P12',num(P1d,0)+' / '+num(P2d,0)+' W');
+        set('A-P',num(P1d+P2d,0)+' W');
+        set('A-warn','△ 形：无中性点，线电压等于相电压；此处只演示对称情形。');
+      }
+    }
+    ['A-Up','A-phi','A-Z'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：同频配对逐频功率 ---------- */
+    function solveB(){
+      if(!bUnlocked) return;
+      var U0=parseFloat(el('B-U0').value), U1m=parseFloat(el('B-U1m').value), I1m=parseFloat(el('B-I1m').value);
+      var phi1=parseFloat(el('B-phi1').value), U2m=parseFloat(el('B-U2m').value);
+      var U3m=parseFloat(el('B-U3m').value), I3m=parseFloat(el('B-I3m').value), phi3=parseFloat(el('B-phi3').value);
+      set('B-U0-v',num(U0,0)+' V'); set('B-U1m-v',num(U1m,0)+' V'); set('B-I1m-v',num(I1m,1)+' A');
+      set('B-phi1-v',num(phi1,0)+'°'); set('B-U2m-v',num(U2m,0)+' V'); set('B-U3m-v',num(U3m,0)+' V');
+      set('B-I3m-v',num(I3m,1)+' A'); set('B-phi3-v',num(phi3,0)+'°');
+      var U1=U1m/Math.SQRT2, I1=I1m/Math.SQRT2, U2=U2m/Math.SQRT2, U3=U3m/Math.SQRT2, I3=I3m/Math.SQRT2;
+      var p1=U1*I1*Math.cos(phi1*Math.PI/180), p3=U3*I3*Math.cos(phi3*Math.PI/180);
+      set('B-u0',num(U0,2)+' V'); set('B-i0','0 A'); set('B-p0','0 W（无对应电流）');
+      set('B-u1',num(U1,2)+' V'); set('B-i1',num(I1,2)+' A'); set('B-a1',num(phi1,0)+'°'); set('B-p1',num(p1,1)+' W');
+      set('B-u2',num(U2,2)+' V'); set('B-i2','0 A'); set('B-p2','0 W（无对应电流）');
+      set('B-u3',num(U3,2)+' V'); set('B-i3',num(I3,2)+' A'); set('B-a3',num(phi3,0)+'°'); set('B-p3',num(p3,1)+' W');
+      set('B-ptot',num(p1+p3,1)+' W');
+      set('B-ueff',num(Math.sqrt(U0*U0+U1*U1+U2*U2+U3*U3),2)+' V');
+      set('B-ieff',num(Math.sqrt(I1*I1+I3*I3),2)+' A');
+      set('B-note', p3<0 ? '3 次功率为负：该分量端口在送功率；只有同频配对才贡献平均功率。' : '直流与 2 次无对应电流 → 不贡献；只有同频配对才贡献平均功率。');
+    }
+    ['B-U0','B-U1m','B-I1m','B-phi1','B-U2m','B-U3m','B-I3m','B-phi3'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-05');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    function numOk(v,exp,tol){ var x=parseFloat(v); return !isNaN(x) && Math.abs(x-exp)<=(tol||0.02); }
+    window.checkNum1=function(){
+      var b=el('q-1'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,381,2) && /超前/.test(ins[1].value) && /30/.test(ins[1].value);
+      if(fb) fb.dataset.hint='U_l=√3×220≈381 V（工程取 380）；U̇_AB=√3 U̇_A∠30°，超前 U̇_A 30°。';
+      mark('q-1',ok,fb);
+    };
+    window.checkNum2=function(){
+      var b=el('q-2'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,44,0.5) && numOk(ins[1].value,-36.87,0.5) && numOk(ins[2].value,-156.87,0.5) && numOk(ins[3].value,83.13,0.5);
+      if(fb) fb.dataset.hint='İ_A=220/(4+j3)=44∠−36.87° A；İ_B 再减 120°=−156.87°；İ_C 再加 120°=83.13°。';
+      mark('q-2',ok,fb);
+    };
+    window.checkNum3=function(){
+      var b=el('q-3'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,5700,3) && numOk(ins[1].value,3800,3) && numOk(ins[2].value,1900,3);
+      if(fb) fb.dataset.hint='P=√3×380×10×0.866≈5700 W；P₁=380×10×cos0°=3800 W；P₂=380×10×cos60°=1900 W。';
+      mark('q-3',ok,fb);
+    };
+    window.checkTextAny=function(id,keys,hint){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<keys.length;i++){
+        var raw=(((ins[i]||{}).value)||'').toLowerCase().replace(/\s/g,'');
+        var hit=false;
+        for(var j=0;j<keys[i].length;j++){ if(raw.indexOf(keys[i][j].toLowerCase().replace(/\s/g,''))>=0){ hit=true; break; } }
+        if(!hit){ ok=false; break; }
+      }
+      if(fb) fb.dataset.hint=hint||'再想想：按顺序核对每个空。';
+      mark(id,ok,fb);
+    };
+    window.checkNum5=function(){
+      var b=el('q-5'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,127.5,0.5);
+      if(fb) fb.dataset.hint='U=√(100²+(100/√2)²+(50/√2)²)=√(10000+5000+1250)=√16250≈127.5 V。';
+      mark('q-5',ok,fb);
+    };
+    window.checkNum6=function(){
+      var b=el('q-6'), ins=b.querySelectorAll('input'), fb=b.querySelector('.fb');
+      var ok=numOk(ins[0].value,250,1);
+      if(fb) fb.dataset.hint='只有基波配对：P=(100/√2)(10/√2)cos60°=250 W；3 次电压无对应电流 → 0。';
+      mark('q-6',ok,fb);
+    };
+    refresh();
+
+    /* ---------- 重来：重锁四门与下一预测选项，清空反馈/输入/选项/面板/开关 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('[data-pred="q-p2"] .pred-opt, [data-pred="q-p3"] .pred-opt, [data-pred="q-p4"] .pred-opt').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display='none'; });
+      /* 面板 A */
+      aUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ast={conn:'Y',sym:'sym',neu:'on'}; syncModeBtns();
+      ['A-phasors','A-Ul','A-Uab','A-Ip','A-Il','A-IA','A-IN','A-P12','A-P','A-warn'].forEach(function(id){ set(id,'—'); });
+      el('A-Up').value=220; el('A-phi').value=30; el('A-Z').value=10;
+      /* 面板 B */
+      bUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      ['B-u0','B-i0','B-p0','B-u1','B-i1','B-a1','B-p1','B-u2','B-i2','B-p2','B-u3','B-i3','B-a3','B-p3','B-ptot','B-ueff','B-ieff','B-note'].forEach(function(id){ set(id,'—'); });
+      el('B-U0').value=100; el('B-U1m').value=100; el('B-I1m').value=10; el('B-phi1').value=60;
+      el('B-U2m').value=50; el('B-U3m').value=30; el('B-I3m').value=2; el('B-phi3').value=135;
+      /* 练习 */
+      exUnlocked=false; el('ex-lock').style.display=''; el('ex-body').style.display='none';
+      cheatUnlocked=false;
+      refresh();
+    };
+    syncModeBtns();
+  })();
+  </script>
+</body>
+</html>
