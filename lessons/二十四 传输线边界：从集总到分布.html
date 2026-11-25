@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>传输线边界：从集总到分布 - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}.fig-box.md{max-width:390px}.fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.82rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 260px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:12px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .guide{stroke:var(--chalk-faint);stroke-width:1;stroke-dasharray:4 3;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .glb{fill:var(--chalk-green);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:11px}
+    .svg-diag .box{stroke:var(--chalk-dim);stroke-width:1.5;fill:rgba(255,255,255,.05)}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .pred-opt[disabled]{opacity:.42;cursor:not-allowed}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .eq-line{font-family:var(--mono);font-size:.9rem;color:var(--chalk-yellow);text-align:center;padding:6px;margin:6px 0;border:1px dashed rgba(255,224,138,.5);border-radius:6px;background:rgba(0,0,0,.15)}
+    .qrow{margin:10px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .qrow .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px;font-size:.92rem;line-height:1.5}
+    .numcheck label{font-size:.88rem;line-height:2.1}
+    .numcheck input{width:92px}
+    .numcheck input.txtin{width:190px}
+    .calc-lab{margin:12px 0;padding:12px;border:1px solid rgba(183,240,192,.35);border-radius:8px;background:rgba(183,240,192,.04)}
+    .calc-lab h4{margin:0 0 6px;color:var(--chalk-green)}
+    .lab-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .lab-ctrl label{display:flex;justify-content:space-between;font-size:.82rem;color:var(--chalk-dim);margin:6px 0 2px}
+    .lab-ctrl input[type=range]{width:100%}
+    .th-panel{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:rgba(0,0,0,.2)}
+    .th-panel h5{margin:0 0 6px;font-size:.92rem;color:var(--chalk-yellow)}
+    .th-row{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;padding:3px 0;border-bottom:1px dotted rgba(255,255,255,.1)}
+    .th-row .k{color:var(--chalk-dim);white-space:nowrap}
+    .th-row .v{font-family:var(--mono);font-weight:700;color:var(--chalk-green);text-align:right}
+    .th-row .v.hi{color:var(--chalk-pink)}
+    .res-line{font-family:var(--mono);font-size:.84rem;color:var(--chalk-blue);padding:3px 0;word-break:break-word}
+    .lock-note{font-size:.82rem;color:var(--chalk-pink);margin:8px 0;line-height:1.5;padding:8px 10px;border:1px dashed rgba(255,140,150,.4);border-radius:6px}
+    .warn-note{font-size:.8rem;color:var(--chalk-pink);margin-top:8px;line-height:1.5}
+    .mode-btns{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 6px}
+    .mode-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.22);color:var(--chalk-dim);border-radius:8px;padding:5px 11px;cursor:pointer;font-size:.85rem}
+    .mode-btn.active{background:rgba(255,224,138,.18);color:var(--chalk-yellow);border-color:var(--chalk-yellow);font-weight:700}
+    .cmp-tbl{border-collapse:collapse;font-size:.82rem;margin-top:8px;width:100%}
+    .cmp-tbl th,.cmp-tbl td{border:1px solid var(--line);padding:4px 6px;text-align:left}
+    .cmp-tbl th{color:var(--chalk-blue);font-weight:600}
+    .cmp-tbl td.mono{font-family:var(--mono);color:var(--chalk-green)}
+    @media(max-width:1100px){.lab-grid{grid-template-columns:1fr}}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}.cmp-tbl{font-size:.74rem}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">一根导线何时不再是「一根线」</span>
+    <span class="meta">教案先行 · 45 min · S3 第六课</span>
+    <span class="spacer"></span>
+    <span class="hint">先预测，再推导；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（审一个默认 → 长短由什么决定 → 导线怎么建模 → 末端会怎样 → 两实验台 → 练习）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与预测 1（陈述时刻 1 · 揭晓预测 1）</a></li>
+        <li><a href="#stage-1">1 · 长短到底由什么决定（陈述时刻 2 · 揭晓预测 2）</a></li>
+        <li><a href="#stage-2">2 · 导线还能怎么建模（陈述时刻 3 · 揭晓预测 3）</a></li>
+        <li><a href="#stage-3">3 · 走到末端的信号（陈述时刻 4 · 揭晓预测 4）</a></li>
+        <li><a href="#stage-4">4 · 两个实验台（判据台 / 折返台）</a></li>
+        <li><a href="#stage-5">5 · 独立练习与过关</a></li>
+        <li><a href="#stage-6">6 · 收尾与钩子</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>全课宪法</h4>
+      <div class="mini">一个核心问题：一根导线什么时候还能当成「一根理想的线」，什么时候必须换成「另一种看法」——沿线电压电流随位置变化、有延迟和折返？怎样在布线之前就判断出来？</div>
+      <div class="mini">因果顺序：先审这个默认 → 再看「长短」由什么决定 → 再给导线换模型 → 再看信号走到末端会怎样 → 两实验台验证 → 独立练习。<strong>不是时间安排</strong>；结论都在预测揭晓后才上板。</div>
+      <div class="mini">本课是<strong>工程认知</strong>：只求建立判据与边界直觉。方程求解、传播常数、端接网络标为「了解即可」，不要求手算。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">正文依据：<code>书籍/摘录/L3-06.md</code>（邱 §18-1~§18-2、李下 13-1 正文 OCR + 校对）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-06-教案.md</code>（初审退 3 项已修、复审通过）。学习目标、节奏、台账与答案在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（揭晓后才解锁）</div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>判据 · 速查</h4>
+      <div class="mini"><code>λ=v/f</code>；正弦取信号频率，数字边沿取 <code>f_knee≈0.35/t_r</code>（<code>t_r</code>=上升沿时间，〔通识〕经验）。飞行时间 <code>t_d=l/v</code>；<code>t_d>t_r/6</code> ⇒ 启动 SI 思维。</div>
+      <div class="mini"><code>l≪λ</code> 可当集总，等价于 <code>l/v≪T</code>。<strong>「长」相对波长而言</strong>：50 Hz λ=6000 km，30 GHz λ=1 cm。</div>
+    </div>
+    <div class="side-block" data-leak style="display:none;">
+      <h4>模型与末端 · 速查</h4>
+      <div class="mini">原参数 <code>R₀ L₀ C₀ G₀</code>（每单位长度）；切成 <code>dx</code> 小段由 KCL/KVL 得电报方程。<code>−∂u/∂x=R₀i+L₀∂i/∂t</code>、<code>−∂i/∂x=G₀u+C₀∂u/∂t</code>。</div>
+      <div class="mini"><code>Γ=(Z_L−Z₀)/(Z_L+Z₀)</code>、负载端 <code>1+Γ</code> 倍：匹配 0→1、开路 +1→2、短路 −1→0。推导 P3 留 S13。</div>
+    </div>
+    <div class="side-block">
+      <h4>练习进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 0</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">学完仍有真实卡点，再用终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 第六课（L3-06 · 工程认知）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">审默认 · 定长短 · 换模型 · 看末端 · 守边界</span>
+      </div>
+      <h1>一根导线什么时候不再是「一根线」</h1>
+      <p class="muted">前面所有课，我们量过电阻、电容、电感，却从来没量过导线有多长，还一直默认「导线两端电压相同、电流处处相同」。<strong>今天专门来审这个默认：一根导线什么时候还能当成「一根理想的线」，什么时候必须换成「另一种看法」（沿线电压电流随位置变化、有延迟和折返）？我们怎样在布线之前就判断出来？</strong></p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">核心问题</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">长短由什么定</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">导线怎么建模</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">走到末端</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">实验台</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">练习/过关</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="6">钩子</span>
+      </div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与预测 1（陈述时刻 1 · 揭晓预测 1）</div>
+        <div class="speak teacher">师：前面所有课，我们从来没量过导线有多长，却一直默认导线两端电压相同、电流处处相同。今天专门来审这个默认。先别急着判，先回答：它是不是永远成立？</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">图上这条路线是今天全部工作的骨架：<strong>审这个默认 → 看「长短」由什么决定 → 给导线换一种模型 → 看信号走到末端会怎样</strong>。先只回答一个问题：导线两端电压相同、电流处处相同——这个默认有没有条件？</p>
+          </div>
+          <div class="fig-box md" aria-label="四步流程图：先审导线两端电压相同的默认，再看长短由什么决定，再给导线换模型，最后看信号走到末端，四步用箭头连接">
+            <svg class="svg-diag" viewBox="0 0 380 205" role="img">
+              <rect class="box" x="10" y="22" width="106" height="44" rx="7"/>
+              <text class="ylb" x="22" y="42">审这个默认</text>
+              <text class="dim" x="22" y="58">有没有条件？</text>
+              <path class="wire" d="M122 44 L152 44"/><path class="wire" d="M146 38 L154 44 L146 50" fill="none"/>
+              <rect class="box" x="160" y="22" width="104" height="44" rx="7"/>
+              <text class="lbl" x="172" y="42">长短谁定</text>
+              <text class="dim" x="172" y="58">由什么衡量？</text>
+              <path class="wire" d="M270 44 L296 44"/><path class="wire" d="M290 38 L298 44 L290 50" fill="none"/>
+              <rect class="box" x="304" y="22" width="66" height="44" rx="7"/>
+              <text class="glb" x="312" y="42">换模型</text>
+              <text class="dim" x="312" y="58">还能算吗</text>
+              <path class="wire" d="M338 70 L338 100"/><path class="wire" d="M332 94 L340 102 L346 94" fill="none"/>
+              <rect class="box" x="272" y="108" width="100" height="44" rx="7"/>
+              <text class="plb" x="282" y="128">走到末端</text>
+              <text class="dim" x="282" y="144">会怎样？</text>
+              <text class="dim" x="14" y="138">核心问题：一根导线何时必须</text>
+              <text class="dim" x="14" y="156">换成另一种看法？</text>
+              <text class="ylb" x="14" y="188">先答：这个默认有没有条件？</text>
+            </svg>
+            <div class="fig-cap">图① · 今天四步路线（自包含示意，不引用书内图号）。</div>
+          </div>
+        </div>
+
+        <div class="pred" data-pred="q-p1">
+          <p class="ask"><strong>先预测 1：</strong>「导线两端电压相同、电流处处相同」这个默认：A 永远成立 / B 有条件，取决于信号有多快、电路有多大 / C 只在直流成立。<strong>选定后才解锁揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" onclick="pickPred(this,'a');enableGate('gate-pred1')">A 永远成立</button>
+            <button class="pred-opt" onclick="pickPred(this,'b');enableGate('gate-pred1')">B 有条件，取决于信号有多快、电路有多大</button>
+            <button class="pred-opt" onclick="pickPred(this,'c');enableGate('gate-pred1')">C 只在直流成立</button>
+          </div>
+          <p class="gate-note">先自己选。公布只到「这个默认的条件与名字」这一层；完整定义与符号式在下一步「继续」里才给。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred1" data-gate data-target="rev-1" data-stage="0" onclick="revealBlock(this)" disabled>公布预测 1：这个默认到底有没有条件 →</button>
+        <div class="reveal" id="rev-1">
+          <p><strong>选 B：有条件。</strong>回扣教材原文：在这种电路里，<strong>尺寸是无关紧要的</strong>——电流只是时间 t 的函数，谈不上是空间位置 x 的函数；任一时刻从元件一端流入的电流等于另一端流出的电流，才有「支路电流」「支路电压」，才谈得上 VCR、KCL、KVL。采用这个模型的条件是：<strong>电路尺寸远小于其正常工作频率所对应的波长、传播推迟可以忽略</strong>。</p>
+          <div class="eq-line">i = i(t)，u = u(t)（与位置无关）；　l ≪ λ ⇒ 可当一根理想的线</div>
+          <p>其中 <code>λ</code> 读作「信号波长」，是一个长度尺度；它的算法下一步才给。反过来，一旦尺寸和这个长度尺度可比，两端就不再处处相同——这就是今天要认出的边界。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图②：两种看法的对照。</strong>左边：导线两端电压、电流处处相同，整根线可以缩成一个点。右边：同一时刻沿线电压高低起伏、随位置而变，导线必须当成一条「有长度的-path」来看。这就是「理想连接」与「另一种看法」的分界。</p>
+            </div>
+            <div class="fig-box lg" aria-label="两种导线看法对比示意图：左侧一根短导线两端电压和电流处处相同可缩成一点，右侧一根长导线沿线的电压波形高低起伏、随位置变化并标出两端电压不同">
+              <svg class="svg-diag" viewBox="0 0 440 190" role="img">
+                <text class="ylb" x="14" y="18">左边：可当一根理想的线</text>
+                <text class="plb" x="248" y="18">右边：必须换一种看法</text>
+                <line class="guide" x1="222" y1="10" x2="222" y2="180"/>
+                <line class="wire" x1="30" y1="70" x2="200" y2="70"/>
+                <circle cx="30" cy="70" r="4" fill="var(--chalk-blue)"/><circle cx="200" cy="70" r="4" fill="var(--chalk-blue)"/>
+                <text class="lbl" x="24" y="56">u₁</text><text class="lbl" x="192" y="56">u₂</text>
+                <text class="glb" x="72" y="94">u₁ = u₂，电流处处相同</text>
+                <text class="dim" x="72" y="116">整根线缩成空间中的一个点</text>
+                <text class="dim" x="72" y="138">i = i(t)，u = u(t)</text>
+                <line class="wire" x1="252" y1="70" x2="420" y2="70"/>
+                <circle cx="252" cy="70" r="4" fill="var(--chalk-pink)"/><circle cx="420" cy="70" r="4" fill="var(--chalk-pink)"/>
+                <text class="plb" x="246" y="56">u(0)</text><text class="plb" x="412" y="56">u(l)</text>
+                <polyline class="wire" style="stroke:var(--chalk-yellow);stroke-width:2.6" fill="none" points="252,70 276,48 300,34 324,52 348,92 372,108 396,84 420,58"/>
+                <text class="ylb" x="268" y="132">同一时刻：沿线高低起伏</text>
+                <text class="dim" x="268" y="154">u = u(x, t)，两端一般不同</text>
+                <text class="plb" x="268" y="176">u(0) ≠ u(l)</text>
+              </svg>
+              <div class="fig-cap">图② · 两种导线看法对照（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def1" data-stage="0" onclick="revealBlock(this)">继续：给这个默认命名 + 定义（陈述时刻 1） →</button>
+          <div class="reveal" id="rev-def1">
+            <div class="ok-box"><strong>陈述时刻 1 · 集总参数电路（集总假设）</strong><br/><strong>全称/命名</strong>：集总参数电路（lumped-parameter circuit）与集总假设。<br/><strong>一句定义</strong>：当电路的几何尺寸远小于信号波长、电磁作用的传播推迟可忽略时，可把元件视为空间中的点，元件电流只随时间 t 变化、不随位置 x 变化；只有在这种电路里才谈得上支路电流/电压、VCR、KCL 与 KVL。这里 <code>λ</code> 是「信号波长」这个长度尺度，其算法见陈述时刻 2。<br/><strong>符号式</strong>：<code>l ≪ λ ⇒ i=i(t), u=u(t)</code>。〔邱 §18-1 / p.450–451；李下 13-1 / PDF 232〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1：长短由什么决定 ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 长短到底由什么决定（陈述时刻 2 · 揭晓预测 2）</div>
+        <div class="speak teacher">师：既然这个默认有条件，那条件到底怎么量？先看两个真实场景：50 Hz 的电力线跑几百公里，板子上一条 10 cm 走线——谁更「长」？先别看公式，猜一猜。</div>
+        <div class="pred" data-pred="q-p2">
+          <p class="ask"><strong>先预测 2：</strong>50 Hz 几百公里的电力线，和板上一条 10 cm 走线，为什么「长」「短」会反过来？A 由绝对长度决定 / B 相对信号本身的变化快慢与几何尺寸而言 / C 由电压高低决定。<strong>此时黑板上没有公式，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred2')">A 由绝对长度决定</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred2')">B 相对信号本身的变化快慢与几何尺寸而言</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred2')">C 由电压高低决定</button>
+          </div>
+          <p class="gate-note">先表态。公式与数值此时还没上板；选定后才板书。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred2" data-gate data-target="rev-2" data-stage="1" onclick="revealBlock(this)" disabled>公布预测 2：长短由什么决定 →</button>
+        <div class="reveal" id="rev-2">
+          <p><strong>选 B：「长」是相对量。</strong>教材用正弦信号的波长来量它：</p>
+          <div class="eq-line">λ = v / f （真空 v = c）；　l ≪ λ ⇒ 可当集总；　l 可与 λ 比较 ⇒ 长线</div>
+          <p><code>f</code> 是工作频率，<code>v</code> 是传播速度。50 Hz 时 <code>λ=3×10⁸/50=6000 km</code>，一般部件都满足 <code>l≪λ</code>；300 MHz 时 <code>λ=1 m</code>，30 GHz 时 <code>λ=1 cm</code>——此时 10 cm 走线就是长线，再按一根理想的线处理会算出错误结果。</p>
+          <p><strong>同一判据的时域说法是推出来的，不是背的：</strong>把 <code>l ≪ λ</code> 两边同除以速度 <code>v</code>，得 <code>l/v ≪ λ/v</code>；而 <code>λ/v = 1/f = T</code>（周期），所以 <code>Δt = l/v ≪ T</code>。含义是：在电磁作用传过全线的时间内，电源值几乎没变，自然看不到沿线波动。</p>
+          <p><strong>迁移到数字信号（〔通识〕工程经验，不冒充书中公式）：</strong><code>t_r</code> 是<strong>上升沿时间</strong>（电平从低跳到高所需的时间），度量信号有多快；边沿主导时把 <code>f_knee≈0.35/t_r</code> 代入上面的 <code>λ=v/f</code>，得到飞行时间 <code>t_d=l/v</code> 与 <code>t_r/6</code> 比较：<code>t_d &gt; t_r/6</code> ⇒ 启动 SI 思维。正弦题则直接用信号的正弦频率（见练习 2）。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图③：同一条 10 cm 走线，在不同频率下身份不同。</strong>上面一条正弦在 50 Hz 下波长极大，走线只占极小一段（短）；下面一条在 30 GHz 下波长仅 1 cm，同样这条走线跨了十个波长（长）。右侧是时域说法：<code>Δt=l/v</code> 是波从一端飞到另一端的时间，与周期（或边沿）比大小。</p>
+            </div>
+            <div class="fig-box lg" aria-label="波长与飞行时间对照示意图：上方50赫兹正弦波长极长而10厘米走线只占极小一段标注短线，下方30吉赫兹正弦波长仅1厘米而10厘米走线跨十个波长标注长线，右侧画导线并标出波从始端飞到终端的时间等于线长除以速度">
+              <svg class="svg-diag" viewBox="0 0 440 205" role="img">
+                <text class="ylb" x="12" y="18">50 Hz：λ=6000 km → 这条线很短</text>
+                <line class="guide" x1="20" y1="58" x2="250" y2="58"/>
+                <polyline class="wire" style="stroke:var(--chalk-blue)" fill="none" points="20,58 70,36 120,58 170,80 220,58"/>
+                <rect x="104" y="52" width="9" height="12" fill="var(--chalk-pink)" opacity=".9"/>
+                <text class="plb" x="116" y="48">10 cm</text>
+                <text class="plb" x="264" y="46">l ≪ λ</text>
+                <text class="ylb" x="12" y="112">30 GHz：λ=1 cm → 这条线很长</text>
+                <line class="guide" x1="20" y1="152" x2="250" y2="152"/>
+                <polyline class="wire" style="stroke:var(--chalk-yellow)" fill="none" points="20,152 32,130 44,152 56,130 68,152 80,130 92,152 104,130 116,152 128,130 140,152 152,130 164,152 176,130 188,152 200,130 212,152 224,130 236,152 248,130"/>
+                <rect x="104" y="146" width="9" height="12" fill="var(--chalk-pink)" opacity=".9"/>
+                <text class="plb" x="264" y="140">l ≈ 10 λ</text>
+                <line class="guide" x1="272" y1="20" x2="272" y2="192"/>
+                <text class="glb" x="286" y="30">时域说法：飞行时间</text>
+                <line class="wire" x1="290" y1="86" x2="424" y2="86"/>
+                <circle cx="290" cy="86" r="4" fill="var(--chalk-blue)"/><circle cx="424" cy="86" r="4" fill="var(--chalk-blue)"/>
+                <text class="lbl" x="286" y="74">始端</text><text class="lbl" x="412" y="74">终端</text>
+                <path class="wire" d="M300 112 L360 112"/><path class="wire" d="M354 106 L362 112 L354 118" fill="none"/>
+                <text class="glb" x="290" y="136">t_d = l / v</text>
+                <text class="dim" x="290" y="158">把它与周期 T（或边沿 t_r）比</text>
+                <text class="plb" x="290" y="182">t_d ≪ T ⇒ 可当集总</text>
+              </svg>
+              <div class="fig-cap">图③ · 波长的相对性与飞行时间（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def2" data-stage="1" onclick="revealBlock(this)">继续：命名 + 完整定义（陈述时刻 2） →</button>
+          <div class="reveal" id="rev-def2">
+            <div class="ok-box"><strong>陈述时刻 2 · 长线、波长判据与飞行时间</strong><br/><strong>全称/命名</strong>：长线（electrically long line）、工作波长、飞行时间（flight time）、上升沿时间、膝点频率。<br/><strong>一句定义</strong>：线长 <code>l</code> 与工作波长 <code>λ</code> 可相比较的传输线称为长线；<code>λ=v/f</code>（真空 <code>v=c</code>）。<code>l≪λ</code> 可用集总模型；两边同除以 <code>v</code> 得等价时域判据 <code>Δt=l/v≪T</code>；<code>l</code> 可与 <code>λ</code> 比较时沿线电压电流明显波动、必须用分布模型。对边沿主导的数字信号，取 <code>f_knee≈0.35/t_r</code>（<code>t_r</code> 为上升沿时间），若 <code>t_d=l/v&gt;t_r/6</code> 则启动 SI 思维（0.35 与 1/6 都是〔通识〕工程经验，推导留 S13）。<br/><strong>符号式</strong>：<code>λ=v/f</code>；<code>l≪λ ⇔ l/v≪T</code>；<code>t_d=l/v</code>，<code>t_d&gt;t_r/6</code>。〔邱 §18-1 / p.452–453；李下 13-1 / PDF 233〕<br/><strong>三条边界（务必记住）</strong>：①「长」相对波长而言，同一走线在不同频率下身份不同；②直流/低频若关心沿线电压电流变化，也可能要用分布模型；③两端 T/π 等效的参数是在某一频率下由分布模型求出的，不是集总模型的简单替代。</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2：导线还能怎么建模 ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 导线还能怎么建模（陈述时刻 3 · 揭晓预测 3）</div>
+        <div class="speak teacher">师：当一根线不能再当理想连接，是不是就没办法用电路方法了？先猜：还能不能把导线拆成更小的电路来算？</div>
+        <div class="pred" data-pred="q-p3">
+          <p class="ask"><strong>先预测 3：</strong>不能用原来的办法了，导线还能用电路模型来算吗？A 完全不能，只能上电磁场 / B 切成无穷多小段，每段用小电阻、电感、电容、电导 / C 直接把整根线当一个大电阻。<strong>此时黑板上没有模型，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred3')">A 完全不能，只能上电磁场</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred3')">B 切成无穷多小段，每段用小电阻、电感、电容、电导</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred3')">C 直接把整根线当一个大电阻</button>
+          </div>
+          <p class="gate-note">先表态。模型的样子此时还没上板；选定后才板书。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred3" data-gate data-target="rev-3" data-stage="2" onclick="revealBlock(this)" disabled>公布预测 3：导线还能怎么建模 →</button>
+        <div class="reveal" id="rev-3">
+          <p><strong>选 B。</strong>教材的做法是：把导线切成无穷多长度元 <code>dx</code>——每段导线上有电阻 <code>R₀ dx</code> 和电感 <code>L₀ dx</code>，两导线之间有电导 <code>G₀ dx</code> 和电容 <code>C₀ dx</code>。这样构成的模型是「集总参数元件构成的极限情况」：每一小段仍是你会的小集总电路。</p>
+          <p>在 <code>dx</code> 左端电压为 <code>u</code>、电流为 <code>i</code>，右端为 <code>u+du</code>、<code>i+di</code>；对这一小段写 KVL 与 KCL、略去二阶无穷小量、约去 <code>dx</code>，就<strong>可见地推出</strong>下面两条偏微分方程——<strong>这是从已学工具走过去的桥，不是新定律</strong>：</p>
+          <div class="eq-line">−∂u/∂x = R₀ i + L₀ ∂i/∂t　｜　−∂i/∂x = G₀ u + C₀ ∂u/∂t　（电报方程）</div>
+          <p>其中 <code>R₀ L₀ C₀ G₀</code> 是<strong>每单位长度</strong>的原参数；沿线处处相等就叫均匀传输线。<strong>求解方程、传播常数、特性阻抗的严格推导属 P3「了解即可」，本课不展开，留后续深入。</strong></p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图④：一小段 <code>dx</code> 长什么样。</strong>上支路串 <code>R₀dx</code> 与 <code>L₀dx</code>（来线），下支路是回线，两线之间并上 <code>G₀dx</code> 与 <code>C₀dx</code>。左端是 <code>u,i</code>，右端是 <code>u+du, i+di</code>。把无数个这样的小段首尾相接，就得到整根线的分布模型。</p>
+            </div>
+            <div class="fig-box lg" aria-label="传输线一小段dx的梯形等效电路图：上支路串联电阻R0dx和电感L0dx，下支路为回线，两条导线之间并联电导G0dx和电容C0dx，左端标注电压u电流i，右端标注u加du与i加di，并标出始端终端">
+              <svg class="svg-diag" viewBox="0 0 440 200" role="img">
+                <text class="ylb" x="12" y="16">始端 → 终端（来线与回线）</text>
+                <text class="dim" x="12" y="188">把无数个 dx 首尾相接 = 整根线的模型</text>
+                <line class="wire" x1="34" y1="52" x2="86" y2="52"/>
+                <rect class="box" x="86" y="42" width="52" height="20" rx="3"/><text class="dim" x="92" y="57">R₀dx</text>
+                <line class="wire" x1="138" y1="52" x2="176" y2="52"/>
+                <rect class="box" x="176" y="42" width="52" height="20" rx="3"/><text class="dim" x="182" y="57">L₀dx</text>
+                <line class="wire" x1="228" y1="52" x2="404" y2="52"/>
+                <line class="wire" x1="34" y1="140" x2="404" y2="140"/>
+                <line class="wire" x1="120" y1="52" x2="120" y2="86"/>
+                <rect class="box" x="96" y="86" width="48" height="20" rx="3"/><text class="dim" x="102" y="101">G₀dx</text>
+                <line class="wire" x1="120" y1="106" x2="120" y2="140"/>
+                <line class="wire" x1="272" y1="52" x2="272" y2="86"/>
+                <rect class="box" x="248" y="86" width="48" height="20" rx="3"/><text class="dim" x="254" y="101">C₀dx</text>
+                <line class="wire" x1="272" y1="106" x2="272" y2="140"/>
+                <text class="lbl" x="14" y="72">u , i</text>
+                <text class="plb" x="368" y="72">u+du , i+di</text>
+                <text class="dim" x="20" y="126">dx</text>
+                <text class="glb" x="300" y="120">一小段仍是小集总电路</text>
+              </svg>
+              <div class="fig-cap">图④ · 一小段 dx 的等效（自包含示意，不引用书内图号）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def3" data-stage="2" onclick="revealBlock(this)">继续：命名 + 完整定义（陈述时刻 3） →</button>
+          <div class="reveal" id="rev-def3">
+            <div class="ok-box"><strong>陈述时刻 3 · 均匀传输线与分布参数模型</strong><br/><strong>全称/命名</strong>：原参数（primary constants）、均匀传输线（uniform transmission line）、分布参数模型、电报方程（telegrapher's equations）。<br/><strong>一句定义</strong>：每单位长度的电阻 <code>R₀</code>、电感 <code>L₀</code>、电容 <code>C₀</code>、电导 <code>G₀</code> 称为传输线的原参数；沿线处处相等即均匀传输线。把线切成 <code>dx</code> 小段、每段串 <code>R₀dx</code>+<code>L₀dx</code>、段间并 <code>G₀dx</code>+<code>C₀dx</code>，由已学的 KCL/KVL 略去二阶无穷小量得电报方程；电压电流是位置 x 与时间 t 的二元函数。<br/><strong>符号式</strong>：<code>−∂u/∂x=R₀i+L₀∂i/∂t</code>，<code>−∂i/∂x=G₀u+C₀∂u/∂t</code>。〔邱 §18-2 / p.453–455；李下 13-1 / PDF 233〕<br/><strong>边界</strong>：方程求解、传播常数、特性阻抗的严格推导标 P3「了解即可」，本课只看到「从集总到分布」这座桥。</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 A（判据实验台）已解锁，见第 4 节。</p>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3：走到末端的信号 ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 走到末端的信号（陈述时刻 4 · 揭晓预测 4）</div>
+        <div class="speak teacher">师：信号沿线跑到末端，末端接的负载会不会影响它？先猜会发生什么——这也是把 L3-03 见过的振铃现象追到根上的一步。</div>
+        <div class="pred" data-pred="q-p4">
+          <p class="ask"><strong>先预测 4：</strong>信号走到线的末端后，末端接的负载会不会影响它？A 原样到达、没有影响 / B 有一部分会折返回来、与后来的波叠加 / C 电流必为零。<strong>此时黑板上没有结论，选定后才揭晓。</strong></p>
+          <div class="pred-opts">
+            <button class="pred-opt" disabled onclick="pickPred(this,'a');enableGate('gate-pred4')">A 原样到达、没有影响</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'b');enableGate('gate-pred4')">B 有一部分会折返回来、与后来的波叠加</button>
+            <button class="pred-opt" disabled onclick="pickPred(this,'c');enableGate('gate-pred4')">C 电流必为零</button>
+          </div>
+          <p class="gate-note">先选。结论与公式此时都不在黑板上；选定后才板书。</p>
+        </div>
+        <button class="reveal-btn" id="gate-pred4" data-gate data-target="rev-4" data-stage="3" onclick="revealBlock(this)" disabled>公布预测 4：末端负载会不会影响信号 →</button>
+        <div class="reveal" id="rev-4">
+          <p><strong>选 B。</strong>当负载阻抗与线的特性阻抗不等时，入射波在终端发生反射：一部分能量折返回来，与后来的波叠加，于是在时域看到过冲、振铃——<strong>机理是波的折返，不是 L3-03 那种集中 LCR 谐振</strong>。反射系数（〔通识〕，推导 P3）：</p>
+          <div class="eq-line">Γ = (Z_L − Z₀)/(Z_L + Z₀)；　负载端首次阶跃电压 = (1 + Γ) × 入射电压</div>
+          <p>三种典型情形：<code>Γ=0</code> 匹配（无折返，电压原样到达）；<code>Γ=+1</code> 开路（全部折返且同向叠加，电压<strong>翻倍</strong>）；<code>Γ=−1</code> 短路（全部折返且反相，电压为零）。这些是现象认知，公式推导与端接设计留后续深入。</p>
+          <div class="side-fig-row">
+            <div class="side-text">
+              <p><strong>图⑤：入射波到达负载后折返。</strong>上排箭头向右是入射波，下排箭头向左是折返波；三个小图分别是匹配（无折返）、开路（同向叠加翻倍）、短路（反相抵消为零）。线段高度表示电压大小。</p>
+            </div>
+            <div class="fig-box lg" aria-label="末端反射示意图：入射波沿导线向右到达负载，反射波向左返回；并列三个小情形分别标注匹配无反射电压不变、开路同向叠加电压翻倍、短路反相叠加电压为零">
+              <svg class="svg-diag" viewBox="0 0 440 195" role="img">
+                <line class="wire" x1="20" y1="46" x2="180" y2="46"/><path class="wire" d="M110 40 L150 46 L110 52" fill="none"/>
+                <text class="lbl" x="24" y="34">入射波 →</text>
+                <line class="wire" style="stroke:var(--chalk-pink)" x1="180" y1="76" x2="20" y2="76"/><path class="wire" style="stroke:var(--chalk-pink)" d="M90 70 L50 76 L90 82" fill="none"/>
+                <text class="plb" x="24" y="94">← 折返波</text>
+                <circle cx="180" cy="61" r="5" fill="var(--chalk-yellow)"/><text class="ylb" x="188" y="66">负载</text>
+                <line class="guide" x1="212" y1="12" x2="212" y2="188"/>
+                <text class="glb" x="226" y="20">匹配：Γ=0，无折返</text>
+                <line class="guide" x1="230" y1="60" x2="418" y2="60"/>
+                <line class="wire" style="stroke:var(--chalk-blue);stroke-width:3" x1="230" y1="85" x2="418" y2="85"/>
+                <text class="dim" x="230" y="104">原样到达（1×）</text>
+                <text class="ylb" x="226" y="132">开路：Γ=+1，翻倍</text>
+                <line class="guide" x1="230" y1="168" x2="418" y2="168"/>
+                <line class="wire" style="stroke:var(--chalk-pink);stroke-width:3" x1="230" y1="150" x2="418" y2="150"/>
+                <text class="dim" x="230" y="188">同向叠加（2×）</text>
+              </svg>
+              <div class="fig-cap">图⑤ · 末端折返与三种情形（自包含示意，不按精确比例）。</div>
+            </div>
+          </div>
+          <button class="reveal-btn" data-target="rev-def4" data-stage="3" onclick="revealBlock(this)">继续：命名 + 完整定义（陈述时刻 4） →</button>
+          <div class="reveal" id="rev-def4">
+            <div class="ok-box"><strong>陈述时刻 4 · 反射、阻抗失配与现象认知</strong><br/><strong>全称/命名</strong>：反射（reflection）、反射系数、阻抗匹配（impedance matching）、过冲与振铃。<br/><strong>一句定义</strong>：负载阻抗与特性阻抗不等时，入射波在终端发生反射；<code>Γ=(Z_L−Z₀)/(Z_L+Z₀)</code>（〔通识〕，推导 P3），负载端首次阶跃电压为入射的 <code>1+Γ</code> 倍：匹配 <code>Γ=0</code>、开路 <code>Γ=+1</code>（翻倍）、短路 <code>Γ=−1</code>（为零）。反射与延时在时域表现为过冲/振铃，机理与集中参数谐振不同。<br/><strong>符号式</strong>：<code>Γ=(Z_L−Z₀)/(Z_L+Z₀)</code>；<code>u_load首=(1+Γ)u_inc</code>。<br/><strong>边界</strong>：公式推导、特性阻抗严格定义、端接网络与 S 参数属 P3，留 S13 深入；本课只做现象认知。</div>
+          </div>
+          <p class="muted" style="margin-top:8px;">→ 面板 B（折返实验台）与独立练习已解锁，见第 4、5 节；四个预测全部揭晓。</p>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4：两个实验台 ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 两个实验台（判据台 / 折返台）</div>
+        <p class="muted">拖动滑块看同一组公式怎样联动：面板 A 把「边沿快慢 + 走线长度 + 介质」变成一条判据；面板 B 看末端负载如何决定折返的强弱与电压倍数。</p>
+
+        <!-- 面板 A -->
+        <div class="calc-lab">
+          <h4>面板 A · 判据实验台（预测 3 揭晓后启用）</h4>
+          <div class="lock-note" id="A-lock">🔒 面板 A 在预测 3 揭晓后解锁（此刻显示会提前泄露后续结论）。先完成上面的预测。</div>
+          <div id="A-body" style="display:none;">
+            <div class="mode-btns">
+              <button class="mode-btn" data-med="air" onclick="setMed('air')">空气（v=30 cm/ns）</button>
+              <button class="mode-btn active" data-med="fr4" onclick="setMed('fr4')">FR4（v=15 cm/ns）</button>
+              <button class="mode-btn" data-med="pe" onclick="setMed('pe')">聚乙烯（v=20 cm/ns）</button>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>信号上升沿 t_r（ns）<span id="A-tr-v">1.0 ns</span></label>
+                <input type="range" id="A-tr" min="0.1" max="20" step="0.1" value="1" />
+                <label>走线长度 l（cm）<span id="A-l-v">10 cm</span></label>
+                <input type="range" id="A-l" min="1" max="100" step="1" value="10" />
+                <p class="gate-note">判据：f_knee=0.35/t_r → λ=v/f_knee；t_d=l/v 与 t_r/6 比。三档里的「0.5」只是保守裕量提示，不改变判据 r6&gt;1。</p>
+              </div>
+              <div class="th-panel">
+                <h5>实时结果</h5>
+                <div class="th-row"><span class="k">传播速度 v</span><span class="v" id="A-v">—</span></div>
+                <div class="th-row"><span class="k">膝点频率 f_knee</span><span class="v" id="A-fk">—</span></div>
+                <div class="th-row"><span class="k">波长 λ</span><span class="v" id="A-lam">—</span></div>
+                <div class="th-row"><span class="k">飞行时间 t_d=l/v</span><span class="v" id="A-td">—</span></div>
+                <div class="th-row"><span class="k">t_r/6</span><span class="v" id="A-t6">—</span></div>
+                <div class="th-row"><span class="k">比值 r6=t_d÷(t_r/6)</span><span class="v" id="A-r6">—</span></div>
+                <div class="th-row"><span class="k">l/λ</span><span class="v" id="A-lr">—</span></div>
+                <div class="th-row"><span class="k">判定</span><span class="v hi" id="A-verdict">—</span></div>
+                <div class="warn-note" id="A-note">—</div>
+              </div>
+            </div>
+            <p class="muted" style="margin-top:8px;">默认：<code>t_r=1 ns、l=10 cm、FR4 v=15 cm/ns</code> → <code>f_knee=0.35 GHz、λ≈42.86 cm、t_d≈0.667 ns、t_r/6≈0.167 ns、r6=4.0、l/λ≈0.233</code>，判为分布域。把 <code>t_r</code> 拉到 20 ns，<code>r6≈0.2</code>，回到集总域。</p>
+          </div>
+        </div>
+
+        <!-- 面板 B -->
+        <div class="calc-lab">
+          <h4>面板 B · 折返实验台（预测 4 揭晓后启用）</h4>
+          <div class="lock-note" id="B-lock">🔒 面板 B 在预测 4 揭晓后解锁（此刻显示会提前泄露后续结论）。先完成上面的预测。</div>
+          <div id="B-body" style="display:none;">
+            <div class="mode-btns">
+              <button class="mode-btn" data-load="short" onclick="setLoad('short')">短路</button>
+              <button class="mode-btn" data-load="match" onclick="setLoad('match')">匹配（Z_L=Z₀）</button>
+              <button class="mode-btn active" data-load="open" onclick="setLoad('open')">开路</button>
+              <button class="mode-btn" data-load="custom" onclick="setLoad('custom')">自定义负载</button>
+            </div>
+            <div class="lab-grid">
+              <div class="lab-ctrl">
+                <label>特性阻抗 Z₀（Ω）<span id="B-z0-v">50 Ω</span></label>
+                <input type="range" id="B-z0" min="25" max="100" step="5" value="50" />
+                <div id="B-rl-group" style="display:none;">
+                  <label>自定义负载 R_L（Ω）<span id="B-rl-v">100 Ω</span></label>
+                  <input type="range" id="B-rl" min="1" max="200" step="1" value="100" />
+                </div>
+                <p class="gate-note">公式 Γ=(Z_L−Z₀)/(Z_L+Z₀) 属〔通识〕现象认知，推导 P3 留 S13。</p>
+              </div>
+              <div class="th-panel">
+                <h5>实时结果</h5>
+                <div class="th-row"><span class="k">负载 Z_L</span><span class="v" id="B-zl">—</span></div>
+                <div class="th-row"><span class="k">反射系数 Γ</span><span class="v hi" id="B-gamma">—</span></div>
+                <div class="th-row"><span class="k">负载端电压倍数 1+Γ</span><span class="v hi" id="B-mult">—</span></div>
+                <div class="warn-note" id="B-note">—</div>
+              </div>
+            </div>
+            <div class="side-fig-row" style="margin-top:10px;">
+              <div class="side-text">
+                <p><strong>图⑥：负载端阶跃的定性波形。</strong>蓝线是入射波（幅度记为 1），粉线是负载端合成后的电压。拖动上面的负载选项，粉线的高度按 <code>1+Γ</code> 变：开路升到 2 倍、短路落到 0、匹配时与入射重合。</p>
+              </div>
+              <div class="fig-box md" aria-label="负载端阶跃波形示意图：横轴为时间，蓝色入射波在负载端跳到幅度1，粉色合成波按1加反射系数的倍数跳到相应高度">
+                <svg class="svg-diag" viewBox="0 0 400 140" role="img">
+                  <line class="guide" x1="30" y1="70" x2="380" y2="70"/>
+                  <line class="guide" x1="180" y1="16" x2="180" y2="126"/>
+                  <text class="dim" x="176" y="134">负载端</text>
+                  <polyline class="wire" style="stroke:var(--chalk-blue);stroke-width:2.6" fill="none" points="30,70 180,70 180,50 370,50"/>
+                  <text class="lbl" x="34" y="24">入射波（幅度 1）</text>
+                  <polyline id="B-wave-tot" class="wire" style="stroke:var(--chalk-pink);stroke-width:3.2" fill="none" points="30,70 180,70 180,30 370,30"/>
+                  <text id="B-wave-lbl" class="plb" x="230" y="22">—</text>
+                </svg>
+                <div class="fig-cap">图⑥ · 负载端波形随负载联动（自包含示意，不按精确比例）。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5：独立练习 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 独立练习（8 题，先作答再判定）与过关</div>
+        <div class="lock-note" id="ex-lock">🔒 独立练习在四个预测全部揭晓后出现（题干会用到前面刚揭晓的结论）。</div>
+        <div id="ex-body" style="display:none;">
+          <p class="muted">形态一 · 自己判（1–4）；形态二 · 看现象反推（5–8）。都不是前面例题的近邻复制。数值题容差 ±2%，文字按关键词匹配（不区分大小写）。</p>
+
+          <div class="qrow">
+            <div class="qt">练习 1（形态一）· t_r=2 ns、l=30 cm、FR4（v=15 cm/ns）。求飞行时间 t_d 多少 ns？判集总还是分布。</div>
+            <div class="numcheck" id="q-1" data-qid="q-1"><label>t_d <input type="text" placeholder="如：2" /> ns，判定 <input class="txtin" type="text" placeholder="如：分布" /></label><button class="btn-sm" onclick="checkRow('q-1',[{n:2,tol:0.02},{keys:['分布']}],'t_d=30/15=2 ns；t_r/6≈0.33 ns，t_d>t_r/6 ⇒ 分布。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 2（形态一）· 空气中正弦 f=300 MHz（v=30 cm/ns），走线 l=3 cm。求波长 λ 多少 cm？判短线还是长线。</div>
+            <div class="numcheck" id="q-2" data-qid="q-2"><label>λ <input type="text" placeholder="如：100" /> cm，判定 <input class="txtin" type="text" placeholder="如：集总/短线" /></label><button class="btn-sm" onclick="checkRow('q-2',[{n:100,tol:0.5},{keys:['集总','短线','短']}],'λ=30/0.3=100 cm；l/λ=0.03 ≪ 1 ⇒ 集总/短线。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 3（形态一）· 50 Hz 电力线长 600 km，λ=6000 km。能不能当集总？依据是什么？</div>
+            <div class="numcheck" id="q-3" data-qid="q-3"><label>能否 <input class="txtin" type="text" placeholder="如：不能" />，依据 <input class="txtin" type="text" placeholder="含 波长/比较/0.1" /></label><button class="btn-sm" onclick="checkRow('q-3',[{keys:['不能','否']},{keys:['波长','比较','0.1','十分之一']}],'l/λ=600/6000=0.1，可与波长比较 ⇒ 长线，不能当集总。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 4（形态一 · 辨析）· 时钟只有 1 MHz，但上升沿 1 ns、走线 10 cm FR4。该看「时钟频率」还是「上升沿」？结论是什么？</div>
+            <div class="numcheck" id="q-4" data-qid="q-4"><label>看什么 <input class="txtin" type="text" placeholder="如：上升沿" />，结论 <input class="txtin" type="text" placeholder="如：分布" /></label><button class="btn-sm" onclick="checkRow('q-4',[{keys:['上升沿','边沿']},{keys:['分布']}],'快边沿含更高频分量：t_d≈0.67 ns > t_r/6≈0.17 ns ⇒ 分布；低时钟频率不等于安全。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 5（形态二）· 远端测到电压约为源端的 2 倍，且沿线电压各处不同。负载最可能是什么？Γ 多少？</div>
+            <div class="numcheck" id="q-5" data-qid="q-5"><label>负载 <input class="txtin" type="text" placeholder="如：开路" />，Γ <input type="text" placeholder="如：1" /></label><button class="btn-sm" onclick="checkRow('q-5',[{keys:['开路']},{n:1,tol:0.02}],'开路：Γ=+1，全部折返且同向叠加，负载端首次阶跃电压约为入射的 2 倍。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 6（形态二）· 负载等于特性阻抗时，远端阶跃电压与源端相同、无振铃。Γ 多少？这叫什么状态？</div>
+            <div class="numcheck" id="q-6" data-qid="q-6"><label>Γ <input type="text" placeholder="如：0" />，状态 <input class="txtin" type="text" placeholder="如：匹配" /></label><button class="btn-sm" onclick="checkRow('q-6',[{n:0,tol:0.02},{keys:['匹配']}],'Γ=0：没有折返，电压原样到达，称为阻抗匹配。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 7（形态二）· 把一段走线等效成 T 型集总网络后，得到的 R、L、C 能不能当频率无关的值直接用到别的频率？为什么？</div>
+            <div class="numcheck" id="q-7" data-qid="q-7"><label>能否 <input class="txtin" type="text" placeholder="如：不能" />，原因 <input class="txtin" type="text" placeholder="含 频率/分布模型" /></label><button class="btn-sm" onclick="checkRow('q-7',[{keys:['不能','否']},{keys:['频率','某一频率','分布模型']}],'不能：两端 T/π 等效的参数是在某一频率下由分布模型求出的，不是集总模型的简单替代。')">判定</button><div class="fb"></div></div>
+          </div>
+          <div class="qrow">
+            <div class="qt">练习 8（形态二）·「长」是相对什么而言？写出本课两个等价判据各一个。</div>
+            <div class="numcheck" id="q-8" data-qid="q-8"><label>相对 <input class="txtin" type="text" placeholder="如：波长" />，两判据 <input class="txtin" type="text" placeholder="如：l≪λ 与 t_d≪T" /></label><button class="btn-sm" onclick="checkRow('q-8',[{keys:['波长']},{keys:['周期','上升沿','飞行时间','t_d','l≪λ']}],'相对波长而言；频域 l≪λ，时域 Δt=l/v≪T（数字电路用 t_r 比较）。')">判定</button><div class="fb"></div></div>
+          </div>
+
+          <div class="ok-box" style="margin-top:14px;">
+            <strong>过关自检（合上笔记能说出）</strong>：① 前面所有工具偷偷用了什么假设、它凭什么成立？② 为什么「长」是相对波长（或边沿）而言，时域判据怎么从频域推出来？③ 不能用集总了怎么建模，电报方程是从哪两条定律来的？④ 末端负载为什么会让电压翻倍/归零，与 L3-03 的振铃机理有何不同？⑤ 三条边界各是什么？
+          </div>
+          <div class="warn-note">下一课钩子：下一课 `L3-E` 阶段考核会把本课的判据与边界纳入 S3 综合检验；信号完整性的深水区（特性阻抗、端接、回流路径、串扰）留后续 S13 深入。</div>
+        </div>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 环节 6：收尾 ============ -->
+      <section class="stage" id="stage-6">
+        <div class="stage-h">6 · 收尾与钩子</div>
+        <div class="speak teacher" data-leak style="display:none;">师：回扣核心问题——一根导线什么时候还能当理想的线？答案是<strong>看尺寸相对信号波长（或边沿快慢）是否足够小</strong>：<code>l≪λ</code>（时域 <code>t_d≪T</code>）时可当集总，前面所有工具照用；可与波长比较时就必须按分布域处理，用 <code>R₀ L₀ C₀ G₀</code> 建模，末端还会出现反射与振铃。三条边界同时成立：「长」是相对量、直流低频也可能分布、两端等效参数只在某一频率下有效。<strong>我们不是推翻前 23 课，而是给它们标出适用边界。</strong></div>
+        <!-- QA:stage-6:BEGIN -->
+        <!-- QA:stage-6:END -->
+      </section>
+
+      <!-- ============ 页尾资料 ============ -->
+      <div class="appendix">
+        <details>
+          <summary>学习目标、节奏、来源台账与答案区（页尾资料）</summary>
+          <h4>本课正式标题与学习目标（学完应能自己说出）</h4>
+          <p class="muted">L3-06「传输线边界：从集总到分布」。这节课解决的是——一根导线什么时候还能当成理想的线，什么时候必须换成分布域的看法；用「尺寸相对波长（或边沿快慢）」这一条判据在布线之前判断，并说清进入分布域后会看到延时、反射与振铃，以及这套判断的三条边界。</p>
+          <h4>时间预算（45′，预算非配额）</h4>
+          <p class="muted">核心问题与预测1 6′ · 集总假设（陈述①）7′ · 波长判据与飞行时间（陈述②）10′ · 分布参数模型（陈述③）10′ · 折返与现象（陈述④）7′ · 两实验台与练习 5′ · 收尾钩子。预算非配额，因果链完整前提下可压缩低增益重复。</p>
+          <h4>来源台账</h4>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>集总元件/集总模型、尺寸≪波长才可用集总、集总电路才谈 VCR/KCL/KVL</td><td>〔书 p.450–451〕邱 §18-1；〔书·李下 13-1〕PDF 232</td></tr>
+            <tr><td>λ=v/f=c/f、50 Hz λ=6000 km / 300 MHz λ=1 m / 30 GHz λ=1 cm、长线定义、l≪λ、Δt≪T</td><td>〔书 p.452–453〕邱 §18-1；〔书·李下 13-1〕PDF 233</td></tr>
+            <tr><td>有限传播速度推迟、两端 T/π 等效参数由分布模型在特定频率求出</td><td>〔书 p.450、453〕邱 §18-1 导读与正文；〔书·李下 13-1〕PDF 233</td></tr>
+            <tr><td>R₀ L₀ C₀ G₀ 原参数、均匀传输线、dx 梯形网络、电报方程 (18-1)</td><td>〔书 p.453–455〕邱 §18-2；〔书·李下 13-1〕PDF 233</td></tr>
+            <tr><td>t_d&gt;t_r/6、f_knee≈0.35/t_r、Γ=(Z_L−Z₀)/(Z_L+Z₀) 与 1+Γ 倍数</td><td>〔通识〕工程经验与后续 SI 知识的认知化引入；推导标 P3，不冒充书中原文</td></tr>
+            <tr><td>两面板数值、8 道练习与容差</td><td>〔我编的题〕已按公式独立验算</td></tr>
+            <tr><td>Bogatin / 后续 S13、邱 §18-3 起、李下 §13-2 起</td><td>未摘正文，不引章节号；标 P3「了解即可」，只作后续阅读提示</td></tr>
+          </table>
+          <p class="muted">邱 PDF=印刷+24（§18-1 p.450→PDF 474、§18-2 p.453→PDF 477）；李下印刷页码以原书为准、目录无页码，故用章节号 + PDF 页（13-1 PDF 232–233）。Bogatin 未摘正文，不引章节号。记号统一：<code>l</code> 线长、<code>v</code> 传播速度、<code>λ</code> 波长、<code>t_r</code> 上升沿、<code>t_d</code> 飞行时间、<code>Γ</code> 反射系数。正文见 <code>书籍/摘录/L3-06.md</code>，教案见 <code>lessons/drafts/L3-06-教案.md</code>。</p>
+          <h4>答案区（默认折叠，不提前泄露）</h4>
+          <p class="muted">预测 1：B 有条件；预测 2：B「长」相对波长（边沿快慢）而言；预测 3：B 切成无穷多小段用小集总元件；预测 4：B 一部分折返回来与后来的波叠加。练习：1 t_d=2 ns / 分布；2 λ=100 cm / 集总短线；3 不能 / l/λ=0.1 可与波长比较；4 看上升沿 / 分布；5 开路 / Γ=+1；6 Γ=0 / 匹配；7 不能 / 某一频率下由分布模型求出；8 相对波长 / l≪λ 与 t_d≪T（或 t_r 比较）。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+  <script>window.LESSON_ID = 'L3-06-lumped-to-distributed';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-06 增量脚本：四预测门禁 + 陈述卡 gating + 双面板 + 判定 + 重来 ===== */
+  (function(){
+    window.enableGate = function(id){ var b=document.getElementById(id); if(b) b.disabled=false; };
+    function el(id){ return document.getElementById(id); }
+    function set(id,v){ var e=el(id); if(e) e.textContent=v; }
+    function num(v,d){
+      if(!isFinite(v)) return '—';
+      if(Math.abs(v)<1e-9) return '0';
+      if(Math.abs(v-Math.round(v))<1e-9) return String(Math.round(v));
+      return String(parseFloat(v.toFixed(d==null?2:d)));
+    }
+
+    /* ---------- 严格顺序：前一个预测揭晓后才解锁下一预测的选项 ---------- */
+    function unlockPred(n){
+      var wrap=document.querySelector('[data-pred="q-p'+n+'"]');
+      if(!wrap) return;
+      wrap.querySelectorAll('.pred-opt').forEach(function(b){ b.disabled=false; });
+    }
+    var aUnlocked=false, bUnlocked=false, cheatUnlocked=false, exUnlocked=false;
+    function unlockA(){ if(aUnlocked) return; aUnlocked=true; el('A-lock').style.display='none'; el('A-body').style.display=''; solveA(); }
+    function unlockB(){ if(bUnlocked) return; bUnlocked=true; el('B-lock').style.display='none'; el('B-body').style.display=''; solveB(); }
+    function unlockCheat(){ if(cheatUnlocked) return; cheatUnlocked=true; document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display=''; }); }
+    function unlockEx(){ if(exUnlocked) return; exUnlocked=true; el('ex-lock').style.display='none'; el('ex-body').style.display=''; }
+    var baseReveal=window.revealBlock;
+    window.revealBlock=function(btn){
+      baseReveal(btn);
+      if(!btn) return;
+      if(btn.id==='gate-pred1') unlockPred(2);
+      if(btn.id==='gate-pred2') unlockPred(3);
+      if(btn.id==='gate-pred3'){ unlockPred(4); unlockA(); }
+      if(btn.id==='gate-pred4'){ unlockB(); unlockEx(); unlockCheat(); }
+    };
+
+    /* ---------- 面板 A：判据实验台 ---------- */
+    var ast={med:'fr4'};
+    var MED={air:30, fr4:15, pe:20};
+    function syncMed(){
+      document.querySelectorAll('[data-med]').forEach(function(b){ b.classList.toggle('active', b.dataset.med===ast.med); });
+    }
+    window.setMed=function(m){ if(!aUnlocked) return; ast.med=m; syncMed(); solveA(); };
+    function solveA(){
+      if(!aUnlocked) return;
+      var tr=parseFloat(el('A-tr').value), l=parseFloat(el('A-l').value), v=MED[ast.med];
+      set('A-tr-v',num(tr,1)+' ns'); set('A-l-v',num(l,0)+' cm'); set('A-v',num(v,0)+' cm/ns');
+      var fk=0.35/tr;        // GHz（ns 的倒数）
+      var lam=v/fk;          // cm
+      var td=l/v;            // ns
+      var t6=tr/6;           // ns
+      var r6=td/t6;
+      var lr=l/lam;
+      set('A-fk',num(fk,4)+' GHz');
+      set('A-lam',num(lam,2)+' cm');
+      set('A-td',num(td,3)+' ns');
+      set('A-t6',num(t6,3)+' ns');
+      set('A-r6',num(r6,2));
+      set('A-lr',num(lr,3));
+      var verdict, note;
+      if(r6>1){
+        verdict='分布域 · 启动 SI 思维';
+        note='t_d > t_r/6：飞行时间已超过边沿的六分之一，导线不能再当理想连接。';
+      } else if(r6>=0.5){
+        verdict='接近临界 · 建议按分布留裕量';
+        note='判据 r6>1 尚未触发，但已接近；0.5 只是保守裕量提示，不改变判据。';
+      } else {
+        verdict='集总域 · 可当理想连接';
+        note='t_d < t_r/6：传播推迟可忽略，前面学过的集总工具照常可用。';
+      }
+      set('A-verdict',verdict);
+      set('A-note',note+'　l/λ='+num(lr,3)+'。');
+    }
+    ['A-tr','A-l'].forEach(function(id){ el(id).addEventListener('input',solveA); });
+
+    /* ---------- 面板 B：折返实验台 ---------- */
+    var bst={load:'open', z0:50, rl:100};
+    function syncLoad(){
+      document.querySelectorAll('[data-load]').forEach(function(b){ b.classList.toggle('active', b.dataset.load===bst.load); });
+      el('B-rl-group').style.display = (bst.load==='custom') ? '' : 'none';
+    }
+    window.setLoad=function(m){ if(!bUnlocked) return; bst.load=m; syncLoad(); solveB(); };
+    function solveB(){
+      if(!bUnlocked) return;
+      var z0=parseFloat(el('B-z0').value), rl=parseFloat(el('B-rl').value);
+      bst.z0=z0; bst.rl=rl;
+      set('B-z0-v',num(z0,0)+' Ω'); set('B-rl-v',num(rl,0)+' Ω');
+      var zlt, gam;
+      if(bst.load==='short'){ zlt='0 Ω（短路）'; gam=-1; }
+      else if(bst.load==='match'){ zlt=num(z0,0)+' Ω（= Z₀）'; gam=0; }
+      else if(bst.load==='open'){ zlt='∞（开路）'; gam=1; }
+      else { zlt=num(rl,0)+' Ω（自定义）'; gam=(rl-z0)/(rl+z0); }
+      var mult=1+gam;
+      set('B-zl',zlt);
+      set('B-gamma',(gam>=0?'+':'')+num(gam,3));
+      set('B-mult',num(mult,3)+' ×');
+      var note;
+      if(bst.load==='open') note='开路：全部折返且同向叠加，负载端首次阶跃电压约为入射的 2 倍。';
+      else if(bst.load==='short') note='短路：全部折返且反相，负载端电压约为 0。';
+      else if(bst.load==='match') note='匹配：没有折返，电压原样到达、无振铃。';
+      else note='阻抗不等：部分折返；'+(mult>1?'同向叠加使电压偏高。':'反相叠加使电压偏低。');
+      set('B-note',note+' 反射系数公式推导属 P3，留 S13 深入。');
+      var y=70-20*mult;
+      var wave=el('B-wave-tot');
+      if(wave) wave.setAttribute('points','30,70 180,70 180,'+num(y,1)+' 370,'+num(y,1));
+      set('B-wave-lbl','负载端合成：'+num(mult,3)+' ×');
+    }
+    ['B-z0','B-rl'].forEach(function(id){ el(id).addEventListener('input',solveB); });
+
+    /* ---------- 判定：与 lesson.js 共用进度键 ---------- */
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-06');
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    /* specs: {n:期望数值, tol:容差} 或 {keys:[关键词…]}；文字匹配大小写不敏感 */
+    window.checkRow=function(qid,specs,hint){
+      var box=el(qid); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<specs.length;i++){
+        var raw=(((ins[i]||{}).value)||'').trim().toLowerCase().replace(/\s/g,'');
+        var s=specs[i];
+        if(s.n!=null){
+          var x=parseFloat(raw);
+          if(isNaN(x) || Math.abs(x-s.n)>(s.tol||0.02)) ok=false;
+        } else {
+          var hit=false;
+          for(var j=0;j<s.keys.length;j++){ if(raw.indexOf(s.keys[j].toLowerCase().replace(/\s/g,''))>=0){ hit=true; break; } }
+          if(!hit) ok=false;
+        }
+      }
+      if(fb) fb.dataset.hint=hint||'再想想：按顺序核对每个空。';
+      mark(qid,ok,fb);
+    };
+    refresh();
+
+    /* ---------- 重来：重锁四门与下一预测选项，清空反馈/输入/选项/面板/速查 ---------- */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('[data-pred="q-p2"] .pred-opt, [data-pred="q-p3"] .pred-opt, [data-pred="q-p4"] .pred-opt').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('[data-leak]').forEach(function(e){ e.style.display='none'; });
+      /* 面板 A */
+      aUnlocked=false;
+      el('A-lock').style.display=''; el('A-body').style.display='none';
+      ast={med:'fr4'}; syncMed();
+      ['A-v','A-fk','A-lam','A-td','A-t6','A-r6','A-lr','A-verdict','A-note'].forEach(function(id){ set(id,'—'); });
+      el('A-tr').value=1; el('A-l').value=10; set('A-tr-v','1.0 ns'); set('A-l-v','10 cm');
+      /* 面板 B */
+      bUnlocked=false;
+      el('B-lock').style.display=''; el('B-body').style.display='none';
+      bst={load:'open', z0:50, rl:100}; syncLoad();
+      ['B-zl','B-gamma','B-mult','B-note','B-wave-lbl'].forEach(function(id){ set(id,'—'); });
+      el('B-z0').value=50; el('B-rl').value=100; set('B-z0-v','50 Ω'); set('B-rl-v','100 Ω');
+      var wave=el('B-wave-tot'); if(wave) wave.setAttribute('points','30,70 180,70 180,30 370,30');
+      /* 练习 */
+      exUnlocked=false; el('ex-lock').style.display=''; el('ex-body').style.display='none';
+      cheatUnlocked=false;
+      refresh();
+    };
+    syncMed(); syncLoad();
+  })();
+  </script>
+</body>
+</html>
