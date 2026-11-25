@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>S3 阶段综合考核与补弱（L3-E） - 硬件修炼场</title>
+<link rel="stylesheet" href="../assets/lesson.css" />
+  <style>
+    /* 增量组件，仅本页使用，不改 assets/lesson.css 的已有选择器 */
+    .fig-box{margin:8px 0;padding:6px 8px;border:1px solid rgba(255,255,255,.18);border-radius:8px;background:rgba(0,0,0,.18);max-width:520px}
+    .fig-box.sm{max-width:300px}
+    .fig-box.md{max-width:390px}
+    .fig-box.lg{max-width:480px}
+    .fig-cap{font-size:.84rem;color:var(--chalk-faint);margin-top:4px;line-height:1.45}
+    .svg-diag{display:block;width:100%;height:auto}
+    .side-fig-row{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;margin:6px 0}
+    .side-fig-row .side-text{flex:1 1 240px;min-width:220px}
+    .side-fig-row .fig-box{flex:0 0 auto;margin:0}
+    .side-fig-row .qbig{margin-top:0}
+    .svg-diag text{font-family:var(--mono);fill:var(--chalk);font-size:14px}
+    .svg-diag .wire{stroke:var(--chalk-dim);stroke-width:2.2;fill:none}
+    .svg-diag .elem{stroke:var(--chalk-blue);stroke-width:2.2;fill:rgba(159,211,255,.08)}
+    .svg-diag .accent{stroke:var(--chalk-blue);stroke-width:2.8;fill:none}
+    .svg-diag .lbl{fill:var(--chalk-blue);font-weight:700}
+    .svg-diag .ylb{fill:var(--chalk-yellow);font-weight:700}
+    .svg-diag .plb{fill:var(--chalk-pink);font-weight:700}
+    .svg-diag .dim{fill:var(--chalk-faint);font-size:12.5px}
+    .svg-diag .nodept{fill:var(--chalk-yellow)}
+    .svg-diag .box{stroke:var(--chalk-blue);stroke-width:2;fill:rgba(159,211,255,.06)}
+    .spec-bar{stroke-width:3.2;stroke-linecap:round}
+    .gate-note{font-size:.8rem;color:var(--chalk-faint);margin:2px 0 0}
+    .choicebox label{display:block;font-size:.9rem;margin:4px 0;cursor:pointer}
+    table.mini-t{border-collapse:collapse;margin:8px 0;font-size:.85rem;max-width:100%}
+    table.mini-t th,table.mini-t td{border:1px solid var(--line);padding:4px 8px;text-align:left}
+    table.mini-t th{color:var(--chalk-yellow)}
+    .card-note{border-left:3px solid var(--chalk-yellow);background:rgba(255,231,145,.06);padding:8px 12px;margin:10px 0;border-radius:0 6px 6px 0;font-size:.9rem;line-height:1.55}
+    .card-note b{color:var(--chalk-yellow)}
+    .exam-q{margin:12px 0;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:rgba(0,0,0,.16)}
+    .exam-q .qt{font-weight:700;color:var(--chalk-blue);margin-bottom:4px}
+    .rev-grid{display:grid;grid-template-columns:1fr;gap:2px}
+    .rev-grid p{margin:3px 0;line-height:1.5}
+    .weak-t td:first-child{font-family:var(--mono);color:var(--chalk-blue)}
+    @media(max-width:760px){.side-fig-row .fig-box{margin:0 auto}}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a class="home" href="../index.html">← 课程导航</a>
+    <span class="title">S3 阶段综合考核与补弱（L3-E）</span>
+    <span class="meta">教案先行 · 45 min · S3 电路分析进阶工具 · 阶段考核</span>
+    <span class="spacer"></span>
+    <span class="hint">先独立作答，再揭晓讲评；答案不会提前出现</span>
+    <button class="reveal-btn" onclick="resetFlow()" style="margin:0;">重来</button>
+    <button class="fs-btn" id="btn-fs" onclick="toggleFullscreen()" title="切换浏览器全屏（Esc 退出）">⛶ 全屏</button>
+  </div>
+
+  <div class="edge-trigger left" id="edge-left"></div>
+  <div class="edge-trigger right" id="edge-right"></div>
+  <div class="edge-tab left">主线</div>
+  <div class="edge-tab right">速查</div>
+
+  <aside class="sidebar left" id="leftbar">
+    <div class="side-title">本课主线（作答 → 讲评 → 补弱）</div>
+    <div class="side-block">
+      <ul class="toc">
+        <li><a href="#stage-0">0 · 核心问题与考纲地图</a></li>
+        <li><a href="#stage-1">1 · 板块 A：概念辨析（4 题）</a></li>
+        <li><a href="#stage-2">2 · 板块 B：公式计算（3 题）</a></li>
+        <li><a href="#stage-3">3 · 板块 C：读图综合（4 空）</a></li>
+        <li><a href="#stage-4">4 · 板块 D：边界辨析（2 题）</a></li>
+        <li><a href="#stage-5">5 · 错因定位与补弱路线</a></li>
+      </ul>
+    </div>
+    <div class="side-block">
+      <h4>本课边界</h4>
+      <div class="mini">这是<strong>阶段考核课</strong>，不引入新定理、新公式、新记号——考的是 L3-01~06 全部 P1 的混合检验。</div>
+      <div class="mini">两种任务形态：<strong>形态一</strong>概念辨析与求解（A1/A4/B/C）、<strong>形态二</strong>工具选择与边界辨析（A2/A3/D1/D2）。</div>
+      <div class="mini">每题先独立作答，讲评含<strong>正解＋依据＋错因＋补弱指向</strong>。变比全课统一 <code>n=N₁/N₂</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>资料</h4>
+      <div class="mini">答案依据：<code>书籍/摘录/L3-E.md</code>（把前六课已校对正文按 C1~C6 汇编，不新增章节号）。</div>
+      <div class="mini">教案：<code>lessons/drafts/L3-E-教案.md</code>（独立审核通过）。学习目标、节奏、来源台账在<strong>页尾折叠区</strong>。</div>
+    </div>
+  </aside>
+
+  <aside class="sidebar right" id="rightbar">
+    <div class="side-title">速查（只留要随时查的）</div>
+    <div class="side-block">
+      <h4>S3 公式速查（考卷不提供，先自己想）</h4>
+      <div class="mini">变压器：<code>n=N₁/N₂</code>、<code>u₁=nu₂</code>、<code>i₁=−i₂/n</code>、<code>Z_in=n²Z_L</code>、<code>u₁i₁+u₂i₂=0</code>。</div>
+      <div class="mini">运放：虚断 <code>i₊=i₋=0</code>、虚短 <code>u₊=u₋</code>（线性区+负反馈）；反相 <code>−R₂/R₁</code>、同相 <code>1+R₂/R₁</code>、跟随 <code>1</code>。</div>
+      <div class="mini">二阶：<code>α=R/(2L)</code>、<code>ω₀=1/√(LC)</code>、<code>R_c=2√(L/C)</code>；<code>R&gt;R_c</code> 过阻尼 / <code>=</code> 临界 / <code>&lt;</code> 欠阻尼 / <code>R=0</code> 等幅。</div>
+      <div class="mini">s 域：<code>Z_L=sL</code>、<code>Z_C=1/sC</code>（把 <code>jω</code> 换 <code>s</code>）；分母根＝特征根。</div>
+      <div class="mini">三相/非正弦：<code>P=√3U_lI_lcosφ</code>（φ 是阻抗角）；<code>I=√ΣI_k²</code>；只有同频配对生成功率。</div>
+      <div class="mini">传输线：<code>l≪λ</code>（<code>Δt=l/v≪T</code>）才集总；<code>Γ=(Z_L−Z₀)/(Z_L+Z₀)</code>。</div>
+    </div>
+    <div class="side-block">
+      <h4>答题进度（本机记录）</h4>
+      <div class="mini" id="ex-text">练习进度：0 / 10</div>
+      <div class="progress-mini"><span id="ex-bar" style="width:0%"></span></div>
+      <div class="mini" id="pass-text" style="margin-top:4px;">达标进度：0 / 10（≥7 且关键题无原则性错误）</div>
+    </div>
+    <div class="side-block">
+      <h4>本页疑问（真实卡点）</h4>
+      <div class="q-index">
+        <!-- QA-INDEX:BEGIN -->
+
+<!-- QA-INDEX:END -->
+      </div>
+      <div class="mini" style="margin-top:6px;">补弱后仍有真实卡点，再在终端提问；现在不预置。</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="board">
+      <div class="lesson-meta">
+        <span class="pill">S3 · 阶段考核（L3-E）</span>
+        <span class="pill">45 分钟</span>
+        <span class="pill">覆盖 L3-01~06 全部 P1 · 不引入新知识</span>
+      </div>
+      <h1>S3 阶段综合考核与补弱</h1>
+      <p class="muted">六课下来，变压器、运放、二阶形态、s 域、三相、传输线——每件你都学过。<strong>把题目打乱、不告诉用哪一套，你还能判断它在考变换、建模还是适用边界，选对工具、算对数值，并在算完后发现自己的错吗？</strong>这节课就用一套覆盖全部 P1 的卷子回答："我到底真正掌握了什么、哪里还有漏洞。"每题<strong>先独立作答，讲评才解锁</strong>——不仅给对错，更定位你错在哪一步、该回哪一课补。</p>
+
+      <div class="chain" id="chain">
+        <span class="chain-node" data-stage="0">考纲地图</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="1">板块 A 概念</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="2">板块 B 计算</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="3">板块 C 综合</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="4">板块 D 边界辨析</span><span class="chain-arrow">→</span>
+        <span class="chain-node" data-stage="5">补弱路线</span>
+      </div>
+      <div class="flow-note">上方链条是交卷与讲评的<strong>顺序</strong>：先按 A→D 独立作答，再逐题看讲评定位错因，最后按补弱路线回炉。不是时间安排。</div>
+
+      <!-- ============ 环节 0 ============ -->
+      <section class="stage" id="stage-0">
+        <div class="stage-h">0 · 核心问题与考纲地图：考什么、怎么算分</div>
+        <p class="qbig">这不是"边学边测"，而是<strong>先作答后揭晓</strong>：题目先出现，你先选、先算、先提交，讲评（正解＋依据＋错因＋补弱）才解锁。这样批改的是你<strong>第一反应的真实水平</strong>，而不是看完提示后的水平。</p>
+        <p class="speak teacher">“这节课没有新知识，只有一张考纲地图。它列的全是你学过的东西——我把它打乱，看你能不能自己认出来、选对招、算对数值、查出错因。”</p>
+        <p class="muted">全卷按 <strong>C1~C6 六大能力点</strong>命题，全部来自前六课摘录。先展开总纲——它是整卷的"宪法"。</p>
+
+        <button class="reveal-btn" data-target="rev-0a" data-stage="0" onclick="revealBlock(this)">展开：工具选择总纲与考纲对照表 →</button>
+        <div class="reveal" id="rev-0a">
+          <div class="card-note"><b>陈述卡 0 · 工具选择总纲（复述，可抄笔记）</b><br>① 先看对象：耦合线圈/变压器 → 匝数比与折算；运放 → 虚短虚断 + 线性区/负反馈；二阶换路 → 先判形态；复杂暂态 → s 域；三相/非正弦 → 按相、按频分开算；高频走线 → 先判集总还是分布。② 再查适用条件（对称、同频、线性区、负反馈、<code>l≪λ</code>）。③ 求解后做守恒/量级校验。<strong>判据来自适用条件，不是题目有没有线圈、电容或"高频"两个字。</strong>〔据 L3-01~L3-06 各课陈述〕</div>
+          <table class="mini-t">
+            <tr><th>能力点</th><th>考什么</th><th>出处</th><th>板块</th></tr>
+            <tr><td>C1 变压器</td><td><code>n=N₁/N₂</code>、<code>Z_in=n²Z_L</code>、功率守恒</td><td>邱 §10-1~§10-5〔L3-01〕</td><td>A1</td></tr>
+            <tr><td>C2 运放</td><td>虚断/虚短及前提、四种增益、输出端不列 KCL</td><td>邱 §5-1~§5-3〔L3-02〕</td><td>A2、A4、D1</td></tr>
+            <tr><td>C3 二阶形态</td><td><code>R_c=2√(L/C)</code>、<code>α=R/(2L)</code>、四形态</td><td>邱 §7-5/§7-6〔L3-03〕</td><td>B1、D2</td></tr>
+            <tr><td>C4 s 域</td><td><code>Z_L=sL</code>/<code>Z_C=1/sC</code>、分母根＝特征根</td><td>邱 §14-1~§14-5〔L3-04〕</td><td>B2、D1</td></tr>
+            <tr><td>C5 三相/非正弦</td><td><code>P=√3U_lI_lcosφ</code>、有效值、同频配对</td><td>邱 §12-1~§13-4〔L3-05〕</td><td>B3、C、D1</td></tr>
+            <tr><td>C6 传输线边界</td><td><code>l≪λ</code>、飞行时间 vs 上升沿、<code>Γ</code>、T/π 边界</td><td>邱 §18-1/§18-2〔L3-06〕</td><td>A3、D2</td></tr>
+          </table>
+          <p class="muted">达标线：<strong>≥70%（10 题至少答对 7 题）且关键题（C1 变压器 A1、C2 运放 A2/A4、C3 判形态 B1、C6 边界 A3/D2）无原则性错误</strong>方可通过 S3。</p>
+        </div>
+        <!-- QA:stage-0:BEGIN -->
+        <!-- QA:stage-0:END -->
+      </section>
+
+      <!-- ============ 环节 1 · 板块 A ============ -->
+      <section class="stage" id="stage-1">
+        <div class="stage-h">1 · 板块 A：概念与定理辨析（形态一 + 形态二，4 题）</div>
+        <p class="muted">每题先选/先算并提交，讲评才解锁。讲评统一四段：<strong>正解 → 依据（书证）→ 常见错因 → 补弱指向</strong>。</p>
+
+        <div class="exam-q">
+          <div class="qt">A1（C1 理想变压器，形态一）· <code>n=N₁/N₂=2</code>，一次侧加 <code>U₁=20 V</code>（有效值），二次侧接 <code>R_L=5 Ω</code>。求四量：</div>
+          <div class="numcheck" id="q-a1" data-qid="q-a1">
+            <label>① <code>U₂</code> = <input type="text" placeholder="例如 10" /> V　② <code>|I₂|</code> = <input type="text" placeholder="例如 2" /> A</label>
+            <label>③ <code>|I₁|</code> = <input type="text" placeholder="例如 1" /> A　④ <code>Z_in</code> = <input type="text" placeholder="例如 20" /> Ω</label>
+            <button class="btn-sm" onclick="answerFields('gate-a1','q-a1',[10,2,1,20],[0.01,0.01,0.01,0.01],4)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">四空都填过才解锁讲评（注意变比口径 <code>n=N₁/N₂</code>）。</p>
+          <button class="reveal-btn" id="gate-a1" data-gate data-target="rev-a1" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A1 讲评 →</button>
+          <div class="reveal" id="rev-a1">
+            <div class="rev-grid">
+              <p><strong>正解：① <code>U₂=10 V</code>　② <code>|I₂|=2 A</code>　③ <code>|I₁|=1 A</code>　④ <code>Z_in=20 Ω</code></strong>。</p>
+              <p><strong>依据</strong>〔邱 §10-5 / p.251–254；L3-01〕：<code>U₂=U₁/n=20/2=10 V</code>；<code>|I₂|=U₂/R_L=10/5=2 A</code>；<code>|I₁|=|I₂|/n=2/2=1 A</code>（电流比 <code>i₁=−i₂/n</code>，负号是参考方向，这里问大小）；<code>Z_in=n²R_L=2²×5=20 Ω</code>。</p>
+              <p><strong>校验</strong>：<code>U₁|I₁|=20×1=20 W</code>、<code>U₂|I₂|=10×2=20 W</code>，输入功率=负载功率（<code>u₁i₁+u₂i₂=0</code>）。</p>
+              <p><strong>常见错因</strong>：<code>n</code> 取倒数（用李下口径）导致全盘错——本课<strong>统一 <code>n=N₁/N₂</code></strong>；或 <code>Z_in</code> 漏平方。</p>
+              <p><strong>补弱</strong>：回 L3-01（理想变压器 VCR 与阻抗变换）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 1 · 理想变压器（复述，可抄笔记）</b><br>三条件（无损耗、<code>k=1</code>、<code>L→∞</code>）极限出理想变压器，<strong>不耗能、不储能</strong>。变比全课统一 <code>n=N₁/N₂</code>：<code>u₁=n·u₂</code>、<code>i₁=−(1/n)·i₂</code>（两式独立、非联立；负号来自电流都取流入同名端）；阻抗变换 <code>Z_in=n²Z_L</code>（二次负载乘 <code>n²</code> 折到一次侧）；功率守恒 <code>u₁i₁+u₂i₂=0</code>。〔邱 §10-5 / p.251–254〕</div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A2（C2 虚短虚断前提，形态二）· 关于理想运放的虚短、虚断，下列说法正确的是？</div>
+          <div class="choicebox" data-qid="q-a2" data-hint="判据是线性区 + 负反馈 + 输出未饱和，不是 A→∞ 一条。" data-explain="虚断来自 R_i→∞、虚短来自 A→∞ 且输出有限并工作在线性区；正反馈或饱和时虚短不成立。">
+            <label><input type="radio" name="q-a2" value="a"/> ① 只要 <code>A→∞</code>，不管正反馈负反馈、饱和与否，虚短都成立</label>
+            <label><input type="radio" name="q-a2" value="b"/> ② 只有在<strong>线性区、负反馈且输出未饱和</strong>时，才能用 <code>u₊=u₋</code> 与 <code>i₊=i₋=0</code></label>
+            <label><input type="radio" name="q-a2" value="c"/> ③ 虚短意味着两输入端真的短接、有电流流过</label>
+            <button class="btn-sm" onclick="answerChoice('gate-a2','q-a2','b')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a2" data-gate data-target="rev-a2" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A2 讲评 →</button>
+          <div class="reveal" id="rev-a2">
+            <div class="rev-grid">
+              <p><strong>正解：②</strong>。</p>
+              <p><strong>依据</strong>〔邱 §5-1/§5-3；L3-02〕：虚断来自 <code>R_i→∞</code>（输入端不取电流）、虚短来自 <code>A→∞</code> 且 <code>u_o</code> 有限、工作在线性区；<strong>正反馈或饱和时虚短不成立</strong>。①错在丢了前提；③错在把"虚"当真——虚短≠真短路（电流为零）、虚断≠真开路（电压可非零）。</p>
+              <p><strong>常见错因</strong>：把虚短虚断当无条件真理到处套。</p>
+              <p><strong>补弱</strong>：回 L3-02（虚短虚断的来源与前提）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A3（C6 集总/分布边界，形态二）· <code>l=10 cm</code> 走线，速度 <code>v=15 cm/ns</code>，上升沿 <code>t_r=60 ns</code>。比较飞行时间 <code>t_d=l/v</code> 与 <code>t_r/6</code>，该按哪种处理？</div>
+          <div class="choicebox" data-qid="q-a3" data-hint="判据是 t_d 相对 t_r/6 是否远小于；"长/短"是相对波长或上升沿的。" data-explain="t_d=10/15≈0.67ns，t_r/6=60/6=10ns，t_d≪t_r/6 → 集总成立。">
+            <label><input type="radio" name="q-a3" value="a"/> ① <code>t_d≈0.67 ns ≪ t_r/6≈10 ns</code>，按<strong>集总</strong></label>
+            <label><input type="radio" name="q-a3" value="b"/> ② <code>t_d</code> 与 <code>t_r/6</code> 可比，必须按<strong>分布</strong></label>
+            <label><input type="radio" name="q-a3" value="c"/> ③ 只要走线有长度就该按分布</label>
+            <button class="btn-sm" onclick="answerChoice('gate-a3','q-a3','a')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a3" data-gate data-target="rev-a3" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A3 讲评 →</button>
+          <div class="reveal" id="rev-a3">
+            <div class="rev-grid">
+              <p><strong>正解：①</strong>。</p>
+              <p><strong>依据</strong>〔邱 §18-1 / p.452 / PDF 476；L3-06，飞行时间判据为〔通识〕工程经验〕：<code>t_d=l/v=10/15≈0.67 ns</code>，<code>t_r/6=60/6=10 ns</code>，<code>t_d≪t_r/6</code>（约 1/15）→ 电磁作用传遍全线期间信号几乎没变 → 集总成立。②算反了；③错在把"长/短"当绝对属性——<strong>判据是 <code>l</code> 相对 <code>λ</code>（或 <code>t_d</code> 相对 <code>t_r/6</code>）</strong>。</p>
+              <p><strong>常见错因</strong>：见"走线/高频"就喊分布，不做相对比较；或忽略"≪"只比大小。</p>
+              <p><strong>补弱</strong>：回 L3-06（集总假设与波长/上升沿判据）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">A4（C2 四种组态增益，形态一）· 同相比例器 <code>R₁=10 kΩ</code>、<code>R₂=20 kΩ</code>，输入 <code>u_i=1 V</code>。求输出 <code>u_o=</code> ? V。</div>
+          <div class="numcheck" id="q-a4" data-qid="q-a4">
+            <label><code>u_o</code> = <input type="text" placeholder="例如 3" /> V</label>
+            <button class="btn-sm" onclick="answerNum('gate-a4','q-a4',3)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-a4" data-gate data-target="rev-a4" data-stage="1" onclick="revealBlock(this)" disabled>揭晓 A4 讲评 →</button>
+          <div class="reveal" id="rev-a4">
+            <div class="rev-grid">
+              <p><strong>正解：<code>u_o=3 V</code></strong>。</p>
+              <p><strong>依据</strong>〔邱 §5-3 例5-1；L3-02〕：同相增益 <code>u_o=(1+R₂/R₁)u_i=(1+20/10)×1=3 V</code>。虚断使分压支路不受输入电流影响 → <code>u_+=u_i</code>；虚短使 <code>u_-=u_+=u_i</code>。</p>
+              <p><strong>常见错因</strong>：误用反相增益 <code>−R₂/R₁=−2</code>（那是反相比例器，符号与公式都不同）；或漏掉 <code>1+</code>。</p>
+              <p><strong>补弱</strong>：回 L3-02（四种组态增益对照）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 2 · 虚短虚断与四种组态（复述，可抄笔记）</b><br>理想化 <code>A→∞/R_i→∞/R_o→0</code> 且运放在<strong>线性区、负反馈、输出未饱和</strong>时：虚断 <code>i₊=i₋=0</code>、虚短 <code>u₊=u₋</code>（虚地是特例）。四种组态：反相 <code>−R₂/R₁</code>、同相 <code>1+R₂/R₁</code>、跟随器 <code>1</code>（隔离）、加法（等电阻）<code>−(u₁+…+u_n)</code>。只在<strong>输入节点</strong>列 KCL，<strong>不在输出端列方程</strong>。〔邱 §5-1~§5-3；李上 §2-3〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-1:BEGIN -->
+        <!-- QA:stage-1:END -->
+      </section>
+
+      <!-- ============ 环节 2 · 板块 B ============ -->
+      <section class="stage" id="stage-2">
+        <div class="stage-h">2 · 板块 B：公式计算（形态一，3 题）</div>
+
+        <div class="exam-q">
+          <div class="qt">B1（C3 二阶形态，形态一）· RLC 串联 <code>L=1 H</code>、<code>C=1 µF</code>、<code>R=400 Ω</code>。求：</div>
+          <div class="numcheck" id="q-b1" data-qid="q-b1">
+            <label>① <code>ω₀</code> = <input type="text" placeholder="rad/s" /> rad/s　② <code>R_c</code> = <input type="text" placeholder="Ω" /> Ω</label>
+            <label>③ <code>α</code> = <input type="text" placeholder="s⁻¹" /> s⁻¹　④ 形态 = <input type="text" placeholder="例如 欠阻尼" />（过阻尼/临界/欠阻尼/等幅）</label>
+            <button class="btn-sm" onclick="answerFields('gate-b1','q-b1',[1000,2000,200,'欠阻尼'],[0.5,0.5,0.5,0],3)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">四空都填过才解锁讲评。</p>
+          <button class="reveal-btn" id="gate-b1" data-gate data-target="rev-b1" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B1 讲评 →</button>
+          <div class="reveal" id="rev-b1">
+            <div class="rev-grid">
+              <p><strong>正解：① <code>ω₀=1000</code> rad/s　② <code>R_c=2000</code> Ω　③ <code>α=200</code> s⁻¹　④ <code>欠阻尼</code></strong>。</p>
+              <p><strong>依据</strong>〔邱 §7-5；L3-03〕：<code>ω₀=1/√(LC)=1/√(1×10⁻⁶)=1000</code>；<code>R_c=2√(L/C)=2√(1/10⁻⁶)=2000 Ω</code>；<code>α=R/(2L)=400/2=200 s⁻¹</code>。<code>α=200&lt;ω₀=1000</code>（等价 <code>R=400&lt;R_c=2000</code>）→ 共轭复根 → <strong>欠阻尼（衰减振铃）</strong>。</p>
+              <p><strong>常见错因</strong>：<code>µF</code> 不当 <code>10⁻⁶ F</code>；把 <code>ω₀=1/√(LC)</code> 写成 <code>1/(LC)</code>；或临界电阻漏 <code>2</code>。</p>
+              <p><strong>补弱</strong>：回 L3-03（二阶形态判据与临界电阻）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">B2（C4 s 域阻抗，形态一）· <code>L=1 H</code>，复频率 <code>s=−1+j2</code>。求 <code>Z_L=sL</code> 的：</div>
+          <div class="numcheck" id="q-b2" data-qid="q-b2">
+            <label>① 实部 = <input type="text" placeholder="例如 0" />　② 虚部 = <input type="text" placeholder="例如 0" /></label>
+            <label>③ 模 <code>|Z_L|</code> = <input type="text" placeholder="例如 2.24" />　④ 辐角 = <input type="text" placeholder="例如 116.6" /> °</label>
+            <button class="btn-sm" onclick="answerFields('gate-b2','q-b2',[-1,2,2.24,116.6],[0.02,0.02,0.05,0.5],4)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">四空都填过才解锁讲评（实部含负号）。</p>
+          <button class="reveal-btn" id="gate-b2" data-gate data-target="rev-b2" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B2 讲评 →</button>
+          <div class="reveal" id="rev-b2">
+            <div class="rev-grid">
+              <p><strong>正解：① 实部 <code>−1</code>　② 虚部 <code>+2</code>（即 <code>Z_L=−1+j2</code> Ω）　③ <code>|Z_L|=√5≈2.24</code>　④ <code>∠Z_L≈116.6°</code></strong>。</p>
+              <p><strong>依据</strong>〔邱 §14-4；李下 §12-3；L3-04〕：<code>Z_L=sL=(−1+j2)×1=−1+j2</code>；<code>|Z_L|=√(1+4)=√5≈2.24</code>；点在第二象限，<code>∠=180°−arctan(2/1)=180°−63.4°≈116.6°</code>。</p>
+              <p><strong>常见错因</strong>：仍用 <code>jωL</code> 代 <code>sL</code>（忽略实部 σ）；或辐角按第一象限算成 63.4°。</p>
+              <p><strong>补弱</strong>：回 L3-04（广义阻抗、"把 jω 换成 s"）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">B3（C5 三相功率与二瓦计，形态一）· 对称三相 <code>U_l=381 V</code>、<code>I_l=22 A</code>、<code>λ=cosφ=0.866</code>（感性，<code>φ=30°</code>）。求：</div>
+          <div class="numcheck" id="q-b3" data-qid="q-b3">
+            <label>① <code>P</code> = <input type="text" placeholder="W" /> W　② <code>P₁</code> = <input type="text" placeholder="W" /> W</label>
+            <label>③ <code>P₂</code> = <input type="text" placeholder="W" /> W</label>
+            <button class="btn-sm" onclick="answerFields('gate-b3','q-b3',[12573,8382,4191],[2,1,1],3)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">三空都填过才解锁讲评（<code>√3≈1.732</code>，精确值以讲评为准）。</p>
+          <button class="reveal-btn" id="gate-b3" data-gate data-target="rev-b3" data-stage="2" onclick="revealBlock(this)" disabled>揭晓 B3 讲评 →</button>
+          <div class="reveal" id="rev-b3">
+            <div class="rev-grid">
+              <p><strong>正解：① <code>P=12573 W</code>　② <code>P₁=8382 W</code>　③ <code>P₂=4191 W</code></strong>。</p>
+              <p><strong>依据</strong>〔邱 §12-5；L3-05〕：<code>φ=30°</code>，<code>cosφ=cos30°=√3/2</code>，故 <code>P=√3U_lI_lcosφ=√3×381×22×(√3/2)=381×22×3/2=8382×1.5=12573 W</code>（用精确值 <code>√3·cos30°=3/2</code>，恰好整数；若取 <code>√3≈1.732</code>、<code>cosφ≈0.866</code> 直算得 12572 W，为舍入差，以精确值为准）；<code>P₁=U_lI_lcos(φ−30°)=381×22×cos0°=8382 W</code>；<code>P₂=U_lI_lcos(φ+30°)=381×22×cos60°=4191 W</code>。</p>
+              <p><strong>校验</strong>：<code>P₁+P₂=8382+4191=12573=P</code> ✓。</p>
+              <p><strong>常见错因</strong>：<code>φ</code> 误当线电压与线电流夹角（书明确 <code>φ</code> 是<strong>阻抗角</strong>）；或把 <code>cos(φ±30°)</code> 记成 <code>cosφ±30°</code>。</p>
+              <p><strong>补弱</strong>：回 L3-05（三相功率与二瓦计法）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 3 · 二阶形态与 s 域（复述，可抄笔记）</b><br>二阶形态只由 R/L/C 定、与激励初值无关：<code>α=R/(2L)</code>、<code>ω₀=1/√(LC)</code>、<code>R_c=2√(L/C)</code>，<code>R&gt;R_c</code> 过阻尼 / <code>=</code> 临界 / <code>&lt;R_c</code> 欠阻尼 / <code>R=0</code> 等幅（串联判据，并联对偶）。s 域把 <code>jω</code> 换 <code>s</code>：<code>Z_L=sL</code>、<code>Z_C=1/sC</code>，微分 <code>sF(s)−f(0₋)</code> 自动带初值；<strong>s 域分母的根＝响应模态＝L3-03 的特征根</strong>。〔邱 §7-5/§7-6、§14-1~§14-5〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-2:BEGIN -->
+        <!-- QA:stage-2:END -->
+      </section>
+
+      <!-- ============ 环节 3 · 板块 C ============ -->
+      <section class="stage" id="stage-3">
+        <div class="stage-h">3 · 板块 C：读图综合求解（形态一，覆盖 C5）</div>
+        <div class="side-fig-row">
+          <div class="side-text">
+            <p class="muted">本板块考"非正弦功率按频率配对"：给定电压、电流表达式，自己按频率配对、只用同频分量算功率，判断哪些分量不贡献。图只是把题干表达式画成频谱，<strong>不标注哪几路有对应电流、不提示"只算同频"</strong>——对应关系由你在作答区自己判断。</p>
+            <p class="qbig">某单口：<br><code>u(t)=[60 + 120cos t + 40cos(2t) + 24cos(3t)] V</code><br><code>i(t)=[8cos(t−45°) + 3cos(3t−120°)] A</code><br>（角频率单位 rad/s，幅值为<strong>峰值</strong>，功率用有效值。）</p>
+            <p class="speak teacher">“先别急着乘——不同频率的电压电流是不相干的。谁和谁能产生平均功率，你自己按频率配一遍。”</p>
+          </div>
+          <div class="fig-box md" aria-label="非正弦电压电流的离散频谱示意">
+            <svg class="svg-diag" viewBox="0 0 440 240" role="img">
+              <title>离散频谱：上栏为电压 u(t) 的直流/基波/2次/3次分量，下栏为电流 i(t) 的基波/3次分量，按题干表达式绘制</title>
+              <text class="dim" x="14" y="20">离散频谱（按题干表达式绘制）</text>
+              <!-- 上栏：电压 u(t)，基线 y=112 -->
+              <text class="lbl" x="14" y="72">u(t)</text>
+              <line class="wire" x1="52" y1="112" x2="410" y2="112"/>
+              <line class="spec-bar" x1="82" y1="112" x2="82" y2="82" stroke="var(--chalk-blue)"/>
+              <line class="spec-bar" x1="176" y1="112" x2="176" y2="52" stroke="var(--chalk-blue)"/>
+              <line class="spec-bar" x1="270" y1="112" x2="270" y2="92" stroke="var(--chalk-blue)"/>
+              <line class="spec-bar" x1="364" y1="112" x2="364" y2="100" stroke="var(--chalk-blue)"/>
+              <circle class="nodept" cx="82" cy="82" r="3"/>
+              <circle class="nodept" cx="176" cy="52" r="3"/>
+              <circle class="nodept" cx="270" cy="92" r="3"/>
+              <circle class="nodept" cx="364" cy="100" r="3"/>
+              <!-- 下栏：电流 i(t)，基线 y=192 -->
+              <text class="ylb" x="14" y="152">i(t)</text>
+              <line class="wire" x1="52" y1="192" x2="410" y2="192"/>
+              <line class="spec-bar" x1="176" y1="192" x2="176" y2="137" stroke="var(--chalk-yellow)"/>
+              <line class="spec-bar" x1="364" y1="192" x2="364" y2="171" stroke="var(--chalk-yellow)"/>
+              <circle class="nodept" cx="176" cy="137" r="3"/>
+              <circle class="nodept" cx="364" cy="171" r="3"/>
+              <!-- 共用频率刻度 -->
+              <text class="dim" x="76" y="212">0</text>
+              <text class="dim" x="166" y="212">ω₁</text>
+              <text class="dim" x="258" y="212">2ω₁</text>
+              <text class="dim" x="352" y="212">3ω₁</text>
+              <text class="dim" x="412" y="212">频率</text>
+              <text class="dim" x="14" y="232">蓝：电压各次分量　黄：电流各次分量（谱线高度∝幅值）</text>
+            </svg>
+            <div class="fig-cap">自包含频谱示意：上栏题干 <code>u(t)</code> 的直流/基波/2次/3次，下栏 <code>i(t)</code> 的基波/3次；仅可视化题干，不含解题判断。</div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">先独立作答四空：</div>
+          <div class="numcheck" id="q-c" data-qid="q-c">
+            <label>① 直流贡献 <code>P₀</code> = <input type="text" placeholder="例如 0" /> W　② 基波 <code>P₁</code> = <input type="text" placeholder="例如 339.4" /> W</label>
+            <label>③ 3 次 <code>P₃</code> = <input type="text" placeholder="例如 -18" /> W　④ 总 <code>P</code> = <input type="text" placeholder="例如 321.4" /> W</label>
+            <button class="btn-sm" onclick="answerFields('gate-c','q-c',[0,339.4,-18,321.4],[0.01,0.5,0.5,0.5],4)">提交答案</button><div class="fb"></div>
+          </div>
+          <p class="gate-note">四空都填过才解锁完整讲评。</p>
+          <button class="reveal-btn" id="gate-c" data-gate data-target="rev-c" data-stage="3" onclick="revealBlock(this)" disabled>揭晓 C 板块完整讲评 →</button>
+          <div class="reveal" id="rev-c">
+            <div class="rev-grid">
+              <p><strong>正解：① <code>P₀=0 W</code>　② <code>P₁≈339.4 W</code>　③ <code>P₃=−18 W</code>　④ <code>P≈321.4 W</code></strong>。</p>
+              <p><strong>① 按频率配对</strong>：<code>u</code> 有直流、基波、2 次、3 次；<code>i</code> 只有基波、3 次。直流 60 V 无对应直流电流 → 不贡献；2 次电压 40 无对应 2 次电流 → 不贡献。<strong>只有同频配对才产生平均功率</strong>（陈述卡 4）。</p>
+              <p><strong>② 基波</strong>（峰值→有效值除以 √2）：<code>U₁=120/√2</code>、<code>I₁=8/√2</code>、<code>φ₁=0−(−45°)=45°</code>，<code>P₁=U₁I₁cosφ₁=(120/√2)(8/√2)cos45°=480×0.7071≈339.4 W</code>。</p>
+              <p><strong>③ 3 次</strong>：<code>U₃=24/√2</code>、<code>I₃=3/√2</code>、<code>φ₃=0−(−120°)=120°</code>，<code>P₃=U₃I₃cosφ₃=(24/√2)(3/√2)cos120°=36×(−0.5)=−18 W</code>（负号：该分量在送功率）。</p>
+              <p><strong>④ 总平均功率</strong>：<code>P=P₀+P₁+P₂+P₃=0+339.4+0−18=321.4 W</code>。</p>
+              <p><strong>⑤ 校验/边界</strong>：有效值 <code>U=√(60²+(120/√2)²+(40/√2)²+(24/√2)²)</code> 用各次<strong>有效值</strong>平方和；不能把 ω 与 3ω 分量合并成一个相量——相量法只适用单一频率（陈述卡 4）。</p>
+            </div>
+            <div class="card-note"><b>陈述卡 4 · 三相 / 非正弦 / 传输线边界（复述，可抄笔记）</b><br>对称三相 <code>U_l=√3U_p</code>、<code>P=√3U_lI_lcosφ</code>（φ 是<strong>阻抗角</strong>）、二瓦计 <code>P₁+P₂=P</code>；只在对称+定相序下成立。非正弦：分解为直流+基波+各次谐波，有效值 <code>=√</code> 各次有效值平方和，<strong>只有同频配对生成功率</strong> <code>P=U₀I₀+ΣU_kI_kcosφ_k</code>，<strong>不同频率不可合并相量</strong>，直流按 <code>ω=0</code> 单独算。传输线：<code>l≪λ</code>（时域 <code>Δt≪T</code>）才集总，"长"是相对波长；飞行时间 vs 上升沿是工程判据；<code>Γ=(Z_L−Z₀)/(Z_L+Z₀)</code>，匹配 <code>Γ=0</code>、<code>|Γ|=1</code> 全反射；T/π 等效参数由分布模型在某一频率下求出，不是集总替代。〔邱 §12-1~§13-4、§18-1/§18-2〕</div>
+          </div>
+        </div>
+        <!-- QA:stage-3:BEGIN -->
+        <!-- QA:stage-3:END -->
+      </section>
+
+      <!-- ============ 环节 4 · 板块 D ============ -->
+      <section class="stage" id="stage-4">
+        <div class="stage-h">4 · 板块 D：工具选择与边界辨析（形态二，2 题）</div>
+
+        <div class="exam-q">
+          <div class="qt">D1（边界综合辨错）· 关于 S3 各工具的适用条件，下列说法正确的是？</div>
+          <div class="choicebox" data-qid="q-d1" data-hint="相量只适用单一频率；s 域分母根就是特征根；虚短要线性区+负反馈。" data-explain="不同频率不可合并相量；s 域分母根＝响应模态＝特征根；虚短虚断要求线性区+负反馈、饱和时不成立。">
+            <label><input type="radio" name="q-d1" value="a"/> ① 不同频率的正弦电压、电流分量可以合并成一个相量一起算功率</label>
+            <label><input type="radio" name="q-d1" value="b"/> ② s 域分母的根与时域特征根没有关系</label>
+            <label><input type="radio" name="q-d1" value="c"/> ③ 虚短虚断要求运放工作在线性区且有负反馈，饱和时不成立</label>
+            <button class="btn-sm" onclick="answerChoice('gate-d1','q-d1','c')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-d1" data-gate data-target="rev-d1" data-stage="4" onclick="revealBlock(this)" disabled>揭晓 D1 讲评 →</button>
+          <div class="reveal" id="rev-d1">
+            <div class="rev-grid">
+              <p><strong>正解：③</strong>。</p>
+              <p><strong>依据</strong>〔邱 §5-3、§13-4、§14-3；L3-02/04/05〕：①错——相量法只适用单一频率，不同频率不可合并；②错——s 域分母根就是响应模态、就是 L3-03 的特征根；③对（陈述卡 2）。</p>
+              <p><strong>常见错因</strong>：把"相量能叠加"误推广到不同频率。</p>
+              <p><strong>补弱</strong>：回 L3-02（虚短前提）、L3-04（分母根=特征根）、L3-05（谐波分析法）。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="exam-q">
+          <div class="qt">D2（判据适用范围）· 关于二阶临界电阻与传输线等效，下列说法正确的是？</div>
+          <div class="choicebox" data-qid="q-d2" data-hint="串联判据不能直接套并联；T/π 参数随频率由分布模型求出。" data-explain="并联 GLC 判据对偶不能套串联式；T/π 参数在某一频率下由分布模型求出、不是集总替代；特征根只由结构与参数定。">
+            <label><input type="radio" name="q-d2" value="a"/> ① RLC 串联的临界电阻判据 <code>R_c=2√(L/C)</code> 可以直接套到并联 GLC 电路</label>
+            <label><input type="radio" name="q-d2" value="b"/> ② 传输线两端的 T/π 等效电路与频率无关，是分布模型的集总替代</label>
+            <label><input type="radio" name="q-d2" value="c"/> ③ 二阶响应的形态只由 R、L、C 决定，与激励和初始储能无关</label>
+            <button class="btn-sm" onclick="answerChoice('gate-d2','q-d2','c')">提交答案</button>
+            <div class="fb"></div>
+          </div>
+          <p class="gate-note">提交后解锁讲评。</p>
+          <button class="reveal-btn" id="gate-d2" data-gate data-target="rev-d2" data-stage="4" onclick="revealBlock(this)" disabled>揭晓 D2 讲评 →</button>
+          <div class="reveal" id="rev-d2">
+            <div class="rev-grid">
+              <p><strong>正解：③</strong>。</p>
+              <p><strong>依据</strong>〔邱 §7-5、§18-1；L3-03/06〕：①错——并联 GLC 判据对偶（用 <code>G_c=2√(C/L)</code>，或 <code>R_p</code> 越小越阻尼），不能套串联式；②错——T/π 参数在<strong>某一频率下由分布模型求出</strong>，不是集总替代；③对（特征根只由结构与参数定，陈述卡 3）。</p>
+              <p><strong>常见错因</strong>：把串联临界电阻到处套、把等效电路理解成随便替换。</p>
+              <p><strong>补弱</strong>：回 L3-03（串并联对偶判据）、L3-06（集总假设与等效边界）。</p>
+            </div>
+          </div>
+        </div>
+        <!-- QA:stage-4:BEGIN -->
+        <!-- QA:stage-4:END -->
+      </section>
+
+      <!-- ============ 环节 5 · 错因定位与补弱 ============ -->
+      <section class="stage" id="stage-5">
+        <div class="stage-h">5 · 错因定位与补弱路线</div>
+        <p class="muted">每题讲评都给了"常见错因＋补弱指向"。按你错题的能力点（C1~C6）归类，得到自己的<strong>薄弱清单</strong>，再按表回炉。</p>
+        <table class="mini-t weak-t">
+          <tr><th>你错的题</th><th>能力点</th><th>回哪一课补</th></tr>
+          <tr><td>A1</td><td>C1 理想变压器 VCR 与阻抗变换</td><td>L3-01</td></tr>
+          <tr><td>A2、A4、D1（虚短部分）</td><td>C2 虚短虚断前提与四种组态</td><td>L3-02</td></tr>
+          <tr><td>B1、D2（二阶部分）</td><td>C3 二阶形态与临界电阻</td><td>L3-03</td></tr>
+          <tr><td>B2、D1（s 域部分）</td><td>C4 s 域阻抗与分母根</td><td>L3-04</td></tr>
+          <tr><td>B3、C、D1（频率部分）</td><td>C5 三相功率与非正弦功率</td><td>L3-05</td></tr>
+          <tr><td>A3、D2（传输线部分）</td><td>C6 集总/分布边界</td><td>L3-06</td></tr>
+        </table>
+        <div class="formula sm" style="margin-top:12px;">达标线：<strong>≥70%（10 题至少答对 7 题）且关键题（C1 变压器 A1、C2 运放 A2/A4、C3 判形态 B1、C6 边界 A3/D2）无原则性错误</strong>方可通过 S3。未达标按薄弱清单回对应课重做独立练习，再补测。</div>
+        <p><strong>两种任务形态小结</strong>：<strong>形态一（概念与求解，A1/A4/B/C）</strong>——没有提示时自己判断题型、选工具、列式、算数值、做校验；<strong>形态二（工具选择与边界辨析，A2/A3/D1/D2）</strong>——先判适用条件，不被"虚短无条件""不同频率可合并相量""T/π 是集总替代"这类漂亮结论误导。</p>
+        <p class="muted">下一课钩子：S3 电路分析进阶工具到此收官并通过阶段考核。从直流电阻电路（S1）、动态与正弦稳态（S2）到进阶工具（S3）的主干已全部走完。下一阶段将把这些工具投入<strong>综合工程场景</strong>（电源与功率电子、信号链、SI/PI 等），带着本课反复检验的<strong>"先判对象、再查适用条件、求解后校验"</strong>骨架，去处理真实系统里多工具叠加的问题。</p>
+        <!-- QA:stage-5:BEGIN -->
+        <!-- QA:stage-5:END -->
+      </section>
+
+      <!-- ============ 页尾资料（不抢第一屏） ============ -->
+      <div class="tail-meta">
+        <details><summary>讲什么 / 不讲什么（本课边界）</summary>
+          <p class="mini"><strong>讲</strong>：S3 全部 P1 的混合检验（C1~C6）；每题讲评给正解、书证依据、常见错因、补弱指向；陈述卡 0~4 复述；两种任务形态小结；达标线与补弱路线。</p>
+          <p class="mini"><strong>不讲</strong>：任何新定理/新公式/新记号（本课是考核课，只复述已学内容）；电报方程求解、传播常数/特性阻抗正式推导、复杂傅里叶系数手算、复杂部分分式展开、网络函数零极点/频响（P3「了解即可」或留后续）。</p>
+          <p class="mini"><strong>命题口径</strong>：全部数值为〔我编的题〕，独立验算自洽；概念/公式讲评只引用已校对书证（邱、李下），不引未摘章节号；H&amp;H、Bogatin 不引章节号。变比统一 <code>n=N₁/N₂</code>；记号与前六课一致。</p>
+        </details>
+        <details><summary>学习目标（交卷后能独立做什么）</summary>
+          <ol class="mini">
+            <li>在没有提示的前提下，判断题型属于变换/建模/求解还是适用边界，按对象选对工具（陈述卡 0）。</li>
+            <li>正确用变比与阻抗折算求变压器各量，用功率守恒校验；说清虚短虚断的前提。</li>
+            <li>正确用临界电阻判二阶形态、用 s 域阻抗求复频域量，并说出分母根与特征根的关系。</li>
+            <li>正确用三相功率公式与二瓦计法；对非正弦量按频率配对求平均功率，判断哪些分量不贡献。</li>
+            <li>对高频走线先判集总还是分布；并从错因反推该回哪一课补弱。</li>
+          </ol>
+        </details>
+        <details><summary>45 分钟节奏（预算，不是配额）</summary>
+          <p class="mini">考纲地图与作答规则 4′ / 板块 A 8′ / 板块 B 9′ / 板块 C 13′ / 板块 D 5′ / 错因定位与补弱 6′。45 分钟是预算：每题讲评直击"错因＋补弱"，不重讲整节新课；学生已会的题快速通过，把时间留给暴露漏洞的板块 C。</p>
+        </details>
+        <details><summary>来源台账（哪些是书，哪些是我补的）</summary>
+          <table class="mini-t">
+            <tr><th>内容</th><th>依据</th></tr>
+            <tr><td>C1 变比 <code>n=N₁/N₂</code>、<code>Z_in=n²Z_L</code>、功率守恒</td><td>邱 §10-1~§10-5〔L3-01 摘录〕；李下 §11 交叉佐证</td></tr>
+            <tr><td>C2 虚断/虚短及前提、四种增益、输出端不列 KCL</td><td>邱 §5-1~§5-3〔L3-02 摘录〕；李上 §2-3</td></tr>
+            <tr><td>C3 <code>α=R/(2L)</code>、<code>R_c=2√(L/C)</code>、四形态</td><td>邱 §7-5/§7-6〔L3-03 摘录〕；李上 §7</td></tr>
+            <tr><td>C4 <code>F(s)</code>、<code>Z_L=sL</code>/<code>Z_C=1/sC</code>、分母根=特征根</td><td>邱 §14-1~§14-5〔L3-04 摘录〕；李下 §12-1~§12-3</td></tr>
+            <tr><td>C5 对称三相、二瓦计、傅里叶、有效值、同频配对功率</td><td>邱 §12-1~§12-5、§13-1~§13-4〔L3-05 摘录〕；李下 §9-8/§10-4/§10-5</td></tr>
+            <tr><td>C6 集总假设、波长/上升沿判据、<code>Γ</code>、T/π 等效边界</td><td>邱 §18-1/§18-2〔L3-06 摘录〕；李下附篇 13-1；飞行时间/Γ 属〔通识〕</td></tr>
+            <tr><td>陈述卡 0~4、考纲地图、错因定位与补弱路线、达标线</td><td>通识 / 我整理的教法（依据上述书证）</td></tr>
+            <tr><td>全部试题数值（A1~D2，含 C 板块 <code>u=[60+120cos t+40cos2t+24cos3t]</code>/<code>i=[8cos(t−45°)+3cos(3t−120°)]</code>→<code>P₁≈339.4W</code>/<code>P₃=−18W</code>/<code>P≈321.4W</code>）</td><td>我编的题（数值已独立验算自洽）</td></tr>
+          </table>
+          <p class="mini">本页只引用已做正文摘录的邱关源、李瀚荪；H&amp;H、Bogatin 未摘正文，不引用其章节号。邱 PDF=印刷+24，李下按 PDF−7、李上按 PDF−18 推算，以原书为准故用章节号。变比全课统一 <code>n=N₁/N₂</code>。所有书证均为前六课摘录中已校对内容，见 <code>书籍/摘录/L3-E.md</code>。</p>
+        </details>
+      </div>
+    </div>
+  </main>
+
+  <script>window.LESSON_ID = 'L3-E-s3-exam';</script>
+  <script src="../assets/lesson.js"></script>
+  <script>
+  /* ===== L3-E 增量脚本：作答后解锁讲评 + 多空判定 + resetFlow 修补 ===== */
+  (function(){
+    var LS='hwxc_ex_'+(window.LESSON_ID||'L3-E-s3-exam');
+    function el(id){ return document.getElementById(id); }
+    function load(){ try{ return JSON.parse(localStorage.getItem(LS)||'{}'); }catch(e){ return {}; } }
+    function save(p){ try{ localStorage.setItem(LS,JSON.stringify(p)); }catch(e){} }
+    function refresh(){
+      var p=load(), n=0, qs=document.querySelectorAll('[data-qid]');
+      qs.forEach(function(q){ if(p[q.dataset.qid]) n++; });
+      var bar=el('ex-bar'), txt=el('ex-text'), pass=el('pass-text');
+      if(bar) bar.style.width=(qs.length?Math.round(n*100/qs.length):0)+'%';
+      if(txt) txt.textContent='练习进度：'+n+' / '+qs.length;
+      if(pass) pass.textContent='达标进度：'+n+' / '+qs.length+'（≥7 且关键题无原则性错误）';
+    }
+    function mark(id,ok,fb){
+      if(ok){ var p=load(); p[id]=true; save(p); }
+      if(fb){ fb.className='fb '+(ok?'ok':'bad'); fb.textContent=ok?'正确。':(fb.dataset.hint||'再想想：按顺序核对每个空。'); }
+      refresh();
+    }
+    /* 多数值空 / 数值+文字空 */
+    window.checkFields=function(id,expected,tol){
+      var box=el(id); if(!box) return;
+      var ins=box.querySelectorAll('input'), fb=box.querySelector('.fb'), ok=true;
+      for(var i=0;i<expected.length;i++){
+        var e=expected[i], raw=((ins[i]||{}).value||'').trim();
+        if(typeof e==='number'){
+          var v=parseFloat(raw), t=(typeof tol==='number')?tol:((tol&&tol[i]!=null)?tol[i]:0.02);
+          if(isNaN(v)||Math.abs(v-e)>t){ ok=false; break; }
+        }else{
+          if(raw.replace(/\s/g,'')!==e){ ok=false; break; }
+        }
+      }
+      if(fb) fb.dataset.hint='再想想：按顺序核对 '+expected.length+' 个空（参考：'+expected.join(' / ')+'）。';
+      mark(id,ok,fb);
+    };
+    window.enableGate=function(id){ var b=el(id); if(b) b.disabled=false; };
+
+    /* 所有空都填过（数值空须为合法数字）才解锁讲评；空提交不解锁 */
+    window.fieldsFilled=function(id,numericCount){
+      var box=el(id); if(!box) return false;
+      var ins=box.querySelectorAll('input'), nc=(numericCount==null?ins.length:numericCount);
+      if(ins.length===0) return false;
+      for(var i=0;i<ins.length;i++){
+        var v=(ins[i].value||'').trim();
+        if(v==='') return false;
+        if(i<nc && isNaN(parseFloat(v))) return false;
+      }
+      return true;
+    };
+    window.answerNum=function(gateId,id,expected){
+      if(typeof checkNum==='function') checkNum(id,expected,0.02);
+      var box=el(id), inp=box&&box.querySelector('input');
+      if(inp && inp.value.trim()!=='' && !isNaN(parseFloat(inp.value))) enableGate(gateId);
+      refresh();
+    };
+    window.answerChoice=function(gateId,qid,correctVal){
+      if(typeof checkChoice==='function') checkChoice(qid,correctVal);
+      var box=document.querySelector('[data-qid="'+qid+'"]');
+      if(box && box.querySelector('input[type="radio"]:checked')) enableGate(gateId);
+      refresh();
+    };
+    window.answerFields=function(gateId,id,expected,tol,numericCount){
+      if(typeof checkFields==='function') checkFields(id,expected,tol);
+      if(fieldsFilled(id,numericCount)) enableGate(gateId);
+    };
+
+    /* 共享 resetFlow 会解锁所有 .reveal-btn（含作答门），这里覆盖：
+       重来后重新锁上 10 个作答门，清空反馈与输入（避免残留答案泄题） */
+    var baseReset=window.resetFlow;
+    window.resetFlow=function(){
+      if(baseReset) baseReset();
+      document.querySelectorAll('.reveal-btn[data-gate]').forEach(function(b){ b.disabled=true; });
+      document.querySelectorAll('.fb').forEach(function(f){ f.className='fb'; f.textContent=''; delete f.dataset.hint; });
+      document.querySelectorAll('.numcheck input').forEach(function(i){ i.value=''; });
+      document.querySelectorAll('.choicebox input[type="radio"]').forEach(function(r){ r.checked=false; });
+      /* 考核课"重来"要连本机进度一起清空，避免残留 10/10 */
+      try{ localStorage.removeItem(LS); }catch(e){}
+      refresh();
+    };
+    refresh();
+  })();
+  </script>
+</body>
+</html>
